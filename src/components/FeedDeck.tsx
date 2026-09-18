@@ -80,7 +80,7 @@ export function FeedDeck() {
             }}
             aria-hidden={stackPosition !== 0}
           >
-            <div className="text-[9px] font-semibold tracking-[0.24em] text-neutral-700 uppercase">
+            <div className="text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
               That&rsquo;s today&rsquo;s edit
             </div>
             <div className="mt-4 font-serif text-[34px] leading-[1.08]">
@@ -88,14 +88,14 @@ export function FeedDeck() {
               <br />
               everything new.
             </div>
-            <p className="mt-3.5 max-w-[28ch] text-[13px] leading-[1.6] text-neutral-700">
+            <p className="mt-3.5 max-w-[28ch] text-[14px] leading-[1.6] text-neutral-700">
               A fresh selection arrives each morning, shaped by what you
               liked today.
             </p>
             <div className="mt-[26px] mb-[22px] h-[2px] bg-divider" />
             <button
               onClick={resetFeed}
-              className="flex h-[52px] items-center justify-between border border-neutral-400 px-5 text-[11px] font-semibold tracking-[0.16em] uppercase transition-colors hover:border-ink"
+              className="flex h-[52px] items-center justify-between border border-neutral-400 px-5 text-[13px] font-semibold tracking-[0.1em] uppercase transition-colors hover:border-ink"
             >
               <span>Look again</span>
               <ChevronRightIcon />
@@ -113,14 +113,14 @@ export function FeedDeck() {
       })}
 
       <div
-        className="pointer-events-none absolute top-0 right-0 left-0 z-10 bg-ink px-[22px] py-[9px] text-[9px] font-semibold tracking-[0.16em] text-paper uppercase transition-opacity duration-[400ms]"
+        className="pointer-events-none absolute top-0 right-0 left-0 z-10 bg-ink px-[22px] py-[10px] text-[10px] font-semibold tracking-[0.1em] text-paper uppercase transition-opacity duration-[400ms]"
         style={{ opacity: notice ? 1 : 0 }}
       >
         {notice || " "}
       </div>
 
       <div
-        className="pointer-events-none absolute right-0 bottom-2.5 left-0 flex items-center justify-center gap-[7px] text-[9px] font-semibold tracking-[0.2em] text-neutral-700 uppercase transition-opacity duration-500"
+        className="pointer-events-none absolute right-0 bottom-2.5 left-0 flex items-center justify-center gap-[7px] text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase transition-opacity duration-500"
         style={{ opacity: state.showSwipeHint ? 1 : 0 }}
       >
         <ChevronLeftIcon />

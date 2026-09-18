@@ -27,12 +27,12 @@ export function BottomNavigation() {
           <Link
             key={href}
             href={href}
-            className={`flex flex-1 flex-col items-center gap-[7px] pt-[11px] ${
-              active ? "opacity-100" : "opacity-[0.62]"
+            className={`flex flex-1 flex-col items-center gap-[6px] pt-[11px] ${
+              active ? "opacity-100" : "opacity-75"
             }`}
           >
             <Icon />
-            <span className="text-[8px] font-semibold tracking-[0.16em] uppercase">
+            <span className="text-[10px] font-semibold tracking-[0.08em] uppercase">
               {label}
             </span>
             <span

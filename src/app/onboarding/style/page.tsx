@@ -30,7 +30,7 @@ export default function StyleProfileIntroPage() {
   return (
     <div className="animate-rise flex h-dvh flex-col">
       <div className="flex-1 overflow-y-auto px-[30px] pt-6 pb-6">
-        <div className="text-[9px] font-semibold tracking-[0.24em] text-neutral-700 uppercase">
+        <div className="text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
           Your style
         </div>
         <div className="mt-4 font-serif text-[40px] leading-[1.04] tracking-[-0.015em]">
@@ -38,14 +38,14 @@ export default function StyleProfileIntroPage() {
           <br />
           Scandinavian
         </div>
-        <div className="mt-3 text-[13px] leading-[1.5] text-neutral-700">
+        <div className="mt-3 text-[14px] leading-[1.5] text-neutral-700">
           Relaxed tailoring · Minimal
         </div>
 
         <Divider className="mt-[26px]" />
 
         <div className="border-b border-neutral-300 py-[18px]">
-          <div className="mb-3 text-[9px] font-semibold tracking-[0.2em] text-neutral-700 uppercase">
+          <div className="mb-3 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
             Colours
           </div>
           <div className="flex items-center gap-2">
@@ -56,23 +56,23 @@ export default function StyleProfileIntroPage() {
                 style={{ background: s.hex }}
               />
             ))}
-            <span className="ml-1.5 text-[12px] text-neutral-700">
+            <span className="ml-1.5 text-[13px] text-neutral-700">
               Black · Navy · Beige · White
             </span>
           </div>
         </div>
 
         <div className="border-b border-neutral-300 py-[18px]">
-          <div className="mb-2.5 text-[9px] font-semibold tracking-[0.2em] text-neutral-700 uppercase">
+          <div className="mb-2.5 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
             Fit
           </div>
-          <div className="font-serif text-[22px]">
+          <div className="text-[17px] font-semibold">
             Relaxed · Straight · Oversized
           </div>
         </div>
 
         <div className="py-[18px]">
-          <div className="mb-3 text-[9px] font-semibold tracking-[0.2em] text-neutral-700 uppercase">
+          <div className="mb-3 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
             Key pieces
           </div>
           {KEY_PIECES.map((piece) => (
@@ -80,8 +80,8 @@ export default function StyleProfileIntroPage() {
               key={piece.label}
               className="flex items-baseline justify-between border-t border-neutral-300 py-[9px]"
             >
-              <span className="font-serif text-[20px]">{piece.label}</span>
-              <span className="text-[11px] text-neutral-700">
+              <span className="text-[16px] font-semibold">{piece.label}</span>
+              <span className="text-[12px] text-neutral-700">
                 {piece.strength}
               </span>
             </div>

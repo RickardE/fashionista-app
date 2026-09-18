@@ -7,7 +7,7 @@ export function Kicker({
 }) {
   return (
     <div
-      className={`text-[9px] font-semibold tracking-[0.24em] text-neutral-700 uppercase ${className}`}
+      className={`text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase ${className}`}
     >
       {children}
     </div>

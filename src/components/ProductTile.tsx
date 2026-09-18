@@ -24,25 +24,25 @@ export function ProductTile({
       <Link href={`/product/${product.id}`} className="block w-full pt-[9px]">
         <span
           className={`block font-semibold text-neutral-700 uppercase ${
-            compact
-              ? "text-[8px] tracking-[0.16em]"
-              : "text-[8.5px] tracking-[0.18em]"
+            compact ? "text-[9.5px] tracking-[0.1em]" : "text-[10px] tracking-[0.1em]"
           }`}
         >
           {product.brand}
         </span>
         <span
-          className={`mt-1 block font-serif leading-[1.15] ${
-            compact ? "text-[11px] leading-[1.25] font-sans not-italic" : "text-[17px]"
+          className={`mt-1 block font-semibold leading-[1.3] ${
+            compact ? "text-[13px]" : "text-[17px]"
           }`}
         >
           {product.name}
         </span>
-        {!compact && (
-          <span className="mt-[5px] block text-[11px] text-neutral-700">
-            {formatPrice(product.price, product.currency)}
-          </span>
-        )}
+        <span
+          className={`mt-1 block font-semibold text-neutral-800 ${
+            compact ? "text-[12px]" : "text-[13px]"
+          }`}
+        >
+          {formatPrice(product.price, product.currency)}
+        </span>
       </Link>
     </div>
   );

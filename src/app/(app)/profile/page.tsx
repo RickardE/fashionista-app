@@ -34,15 +34,15 @@ export default function ProfilePage() {
           <div className="mt-5 font-serif text-[32px] leading-[1.05]">
             Modern Scandinavian
           </div>
-          <div className="mt-2 text-[12px] leading-[1.5] text-neutral-700">
+          <div className="mt-2 text-[13px] leading-[1.5] text-neutral-700">
             Relaxed tailoring · Minimal · Quiet colour
           </div>
 
           <div className="mt-6 mb-2 flex items-center justify-between">
-            <span className="text-[9px] font-semibold tracking-[0.2em] text-neutral-700 uppercase">
+            <span className="text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
               How well we know you
             </span>
-            <span className="text-[10px] font-semibold tracking-[0.1em]">
+            <span className="text-[11px] font-semibold tracking-[0.06em]">
               {accuracy}%
             </span>
           </div>
@@ -56,13 +56,13 @@ export default function ProfilePage() {
               />
             ))}
           </div>
-          <div className="mt-2 text-[11px] leading-[1.6] text-neutral-700">
+          <div className="mt-2 text-[12px] leading-[1.6] text-neutral-700">
             {state.interactions < 3
               ? "Like or dismiss a few pieces and this sharpens quickly."
               : `Built from ${state.interactions} reactions in your feed.`}
           </div>
 
-          <div className="mt-[30px] mb-1 text-[9px] font-semibold tracking-[0.2em] text-neutral-700 uppercase">
+          <div className="mt-[30px] mb-1 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
             What you keep choosing
           </div>
           {affinityList.map((a) => (
@@ -70,40 +70,40 @@ export default function ProfilePage() {
               key={a.label}
               className="flex items-baseline justify-between border-b border-neutral-300 py-[11px]"
             >
-              <span className="font-serif text-[19px]">{a.label}</span>
-              <span className="text-[11px] text-neutral-700">{a.note}</span>
+              <span className="text-[16px] font-semibold">{a.label}</span>
+              <span className="text-[12px] text-neutral-700">{a.note}</span>
             </div>
           ))}
 
-          <div className="mt-[30px] mb-1 text-[9px] font-semibold tracking-[0.2em] text-neutral-700 uppercase">
+          <div className="mt-[30px] mb-1 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
             Preferences
           </div>
           <button
             onClick={() => router.push("/onboarding/upload")}
             className="flex w-full items-center justify-between border-b border-neutral-300 py-[14px]"
           >
-            <span className="text-[14px]">Add inspiration</span>
+            <span className="text-[15px] font-medium">Add inspiration</span>
             <ChevronRightIcon />
           </button>
           <div className="flex items-center justify-between border-b border-neutral-300 py-[14px]">
-            <span className="text-[14px]">Sizes</span>
-            <span className="text-[12px] text-neutral-700">M · 32 · 43</span>
+            <span className="text-[15px] font-medium">Sizes</span>
+            <span className="text-[13px] text-neutral-700">M · 32 · 43</span>
           </div>
           <div className="flex items-center justify-between border-b border-neutral-300 py-[14px]">
-            <span className="text-[14px]">Price range</span>
-            <span className="text-[12px] text-neutral-700">
+            <span className="text-[15px] font-medium">Price range</span>
+            <span className="text-[13px] text-neutral-700">
               900 – 4 000 SEK
             </span>
           </div>
           <div className="flex items-center justify-between border-b border-neutral-300 py-[14px]">
-            <span className="text-[14px]">Brands you follow</span>
-            <span className="text-[12px] text-neutral-700">7</span>
+            <span className="text-[15px] font-medium">Brands you follow</span>
+            <span className="text-[13px] text-neutral-700">7</span>
           </div>
           <button
             onClick={resetPrototype}
             className="flex w-full items-center justify-between border-b border-neutral-300 py-[14px] text-neutral-700"
           >
-            <span className="text-[14px]">Reset this prototype</span>
+            <span className="text-[15px] font-medium">Reset this prototype</span>
             <ChevronRightIcon />
           </button>
         </div>

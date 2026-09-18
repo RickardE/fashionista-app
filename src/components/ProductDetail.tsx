@@ -46,7 +46,7 @@ export function ProductDetail({
       <div className="flex h-[52px] flex-none items-center justify-between px-[18px] pl-4 [padding-top:env(safe-area-inset-top)]">
         <button
           onClick={onBack}
-          className="flex items-center gap-[7px] px-1 py-2 text-[9px] font-semibold tracking-[0.2em] text-neutral-700 uppercase"
+          className="flex items-center gap-[7px] px-1 py-2 text-[11px] font-semibold tracking-[0.1em] text-neutral-700 uppercase"
         >
           <ChevronLeftIcon />
           Back
@@ -72,53 +72,53 @@ export function ProductDetail({
           />
         </div>
         <div className="px-[22px] pt-[22px] pb-10">
-          <div className="text-[9px] font-semibold tracking-[0.2em] text-neutral-700 uppercase">
+          <div className="text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
             {product.brand}
           </div>
-          <div className="mt-[9px] font-serif text-[32px] leading-[1.06]">
+          <div className="mt-[9px] text-[26px] leading-[1.15] font-semibold tracking-[-0.01em]">
             {product.name}
           </div>
-          <div className="mt-3 text-[15px]">
+          <div className="mt-3 text-[17px] font-semibold">
             {formatPrice(product.price, product.currency)}
           </div>
 
           <div className="mt-5 h-[2px] bg-divider" />
           <div className="flex justify-between border-b border-neutral-300 py-3">
-            <span className="text-[9px] font-semibold tracking-[0.18em] text-neutral-700 uppercase">
+            <span className="text-[10px] font-semibold tracking-[0.1em] text-neutral-700 uppercase">
               Colour
             </span>
-            <span className="text-[13px]">{product.color}</span>
+            <span className="text-[14px] font-medium">{product.color}</span>
           </div>
           <div className="flex justify-between border-b border-neutral-300 py-3">
-            <span className="text-[9px] font-semibold tracking-[0.18em] text-neutral-700 uppercase">
+            <span className="text-[10px] font-semibold tracking-[0.1em] text-neutral-700 uppercase">
               Fit
             </span>
-            <span className="text-[13px]">{product.fit}</span>
+            <span className="text-[14px] font-medium">{product.fit}</span>
           </div>
           <div className="flex justify-between border-b border-neutral-300 py-3">
-            <span className="text-[9px] font-semibold tracking-[0.18em] text-neutral-700 uppercase">
+            <span className="text-[10px] font-semibold tracking-[0.1em] text-neutral-700 uppercase">
               Material
             </span>
-            <span className="text-[13px]">{product.material}</span>
+            <span className="text-[14px] font-medium">{product.material}</span>
           </div>
 
-          <button className="mt-[22px] flex h-[54px] w-full items-center justify-between bg-ink px-5 text-[12px] font-semibold tracking-[0.16em] text-paper uppercase transition-colors hover:bg-neutral-800">
+          <button className="mt-[22px] flex h-[54px] w-full items-center justify-between bg-ink px-5 text-[13px] font-semibold tracking-[0.1em] text-paper uppercase transition-colors hover:bg-neutral-800">
             <span>Shop at {product.retailer}</span>
             <ArrowUpRightIcon />
           </button>
 
           <div className="mt-[30px] border-t border-neutral-300 pt-[18px]">
-            <div className="text-[9px] font-semibold tracking-[0.2em] text-neutral-700 uppercase">
+            <div className="text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
               Why we picked this
             </div>
-            <div className="mt-[11px] font-serif text-[20px] leading-[1.35] text-pretty">
+            <div className="mt-[11px] text-[15px] leading-[1.6] font-medium text-pretty">
               {reason}
             </div>
           </div>
 
           {more.length > 0 && (
             <div className="mt-7 border-t border-neutral-300 pt-[18px]">
-              <div className="mb-3 text-[9px] font-semibold tracking-[0.2em] text-neutral-700 uppercase">
+              <div className="mb-3 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
                 More like this
               </div>
               <div className="grid grid-cols-3 gap-2">
@@ -133,10 +133,10 @@ export function ProductDetail({
                         className="object-cover"
                       />
                     </div>
-                    <span className="mt-[7px] block text-[8px] font-semibold tracking-[0.16em] text-neutral-700 uppercase">
+                    <span className="mt-[7px] block text-[9.5px] font-semibold tracking-[0.1em] text-neutral-700 uppercase">
                       {m.brand}
                     </span>
-                    <span className="mt-1 block text-[11px] leading-[1.25]">
+                    <span className="mt-1 block text-[12px] leading-[1.3] font-semibold">
                       {m.name}
                     </span>
                   </Link>

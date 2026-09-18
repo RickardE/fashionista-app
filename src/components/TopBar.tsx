@@ -22,7 +22,7 @@ export function TopBar({
         </span>
         <Link
           href="/profile"
-          className="flex items-center gap-[7px] text-[9px] font-semibold tracking-[0.16em] text-neutral-700 uppercase"
+          className="flex items-center gap-[7px] text-[10px] font-semibold tracking-[0.1em] text-neutral-700 uppercase"
         >
           <span>{tuningLabel(state.interactions)}</span>
           <GearIcon />
@@ -31,7 +31,9 @@ export function TopBar({
       <div className="flex h-11 items-start justify-between px-[22px]">
         <span className="font-serif text-[26px] leading-none">{title}</span>
         {meta && (
-          <span className="pt-[7px] text-[11px] text-neutral-700">{meta}</span>
+          <span className="pt-[7px] text-[12px] font-medium text-neutral-700">
+            {meta}
+          </span>
         )}
       </div>
     </header>

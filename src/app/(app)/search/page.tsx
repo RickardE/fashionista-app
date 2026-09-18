@@ -56,7 +56,7 @@ export default function SearchPage() {
 
         {!submitted ? (
           <div className="px-[22px] pt-[26px] pb-10">
-            <div className="mb-1.5 text-[9px] font-semibold tracking-[0.2em] text-neutral-700 uppercase">
+            <div className="mb-1.5 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
               Recent
             </div>
             {RECENT_SEARCHES.map((q) => (
@@ -65,7 +65,7 @@ export default function SearchPage() {
                 onClick={() => run(q)}
                 className="flex w-full items-center justify-between border-b border-neutral-300 py-[13px] transition-colors hover:text-accent-700"
               >
-                <span className="text-[14px]">{q}</span>
+                <span className="text-[15px]">{q}</span>
                 <svg
                   width="13"
                   height="13"
@@ -78,7 +78,7 @@ export default function SearchPage() {
                 </svg>
               </button>
             ))}
-            <div className="mt-7 mb-3 text-[9px] font-semibold tracking-[0.2em] text-neutral-700 uppercase">
+            <div className="mt-7 mb-3 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
               Suggested for you
             </div>
             <div className="flex flex-wrap gap-[7px]">
@@ -86,14 +86,14 @@ export default function SearchPage() {
                 <button
                   key={q}
                   onClick={() => run(q)}
-                  className="border border-neutral-400 px-[13px] py-[9px] text-[12px] whitespace-nowrap transition-colors hover:border-ink"
+                  className="border border-neutral-400 px-[13px] py-[9px] text-[13px] font-medium whitespace-nowrap transition-colors hover:border-ink"
                 >
                   {q}
                 </button>
               ))}
             </div>
             <div className="mt-[30px] mb-3.5 h-px bg-neutral-300" />
-            <p className="max-w-[30ch] text-[12px] leading-[1.6] text-neutral-700">
+            <p className="max-w-[30ch] text-[13px] leading-[1.6] text-neutral-700">
               Search is here when you know what you want. Results are ranked
               by your taste, so yours won&rsquo;t look like anyone else&rsquo;s.
             </p>
@@ -101,25 +101,25 @@ export default function SearchPage() {
         ) : (
           <div className="animate-rise px-[22px] pt-5 pb-10">
             <div className="flex items-baseline justify-between border-b border-neutral-300 pb-3">
-              <span className="flex-1 font-serif text-[21px] leading-[1.1]">
+              <span className="flex-1 text-[19px] font-semibold leading-[1.2]">
                 &ldquo;{submitted}&rdquo;
               </span>
-              <span className="text-[9px] font-semibold tracking-[0.16em] text-neutral-700 uppercase">
+              <span className="text-[10px] font-semibold tracking-[0.1em] text-neutral-700 uppercase">
                 {resultCount} pieces
               </span>
             </div>
             <div className="no-scrollbar flex items-center gap-[7px] overflow-x-auto py-3 pb-4">
-              <span className="flex items-center gap-1.5 border border-neutral-400 px-[11px] py-2 text-[9px] font-semibold tracking-[0.14em] whitespace-nowrap uppercase">
+              <span className="flex items-center gap-1.5 border border-neutral-400 px-[11px] py-2 text-[10px] font-semibold tracking-[0.1em] whitespace-nowrap uppercase">
                 <FiltersIcon />
                 Filters
               </span>
-              <span className="border border-ink bg-ink px-[11px] py-2 text-[9px] font-semibold tracking-[0.14em] whitespace-nowrap text-paper uppercase">
+              <span className="border border-ink bg-ink px-[11px] py-2 text-[10px] font-semibold tracking-[0.1em] whitespace-nowrap text-paper uppercase">
                 Your taste
               </span>
-              <span className="border border-neutral-400 px-[11px] py-2 text-[9px] font-semibold tracking-[0.14em] whitespace-nowrap uppercase">
+              <span className="border border-neutral-400 px-[11px] py-2 text-[10px] font-semibold tracking-[0.1em] whitespace-nowrap uppercase">
                 Price
               </span>
-              <span className="border border-neutral-400 px-[11px] py-2 text-[9px] font-semibold tracking-[0.14em] whitespace-nowrap uppercase">
+              <span className="border border-neutral-400 px-[11px] py-2 text-[10px] font-semibold tracking-[0.1em] whitespace-nowrap uppercase">
                 Colour
               </span>
             </div>

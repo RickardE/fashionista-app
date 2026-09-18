@@ -122,25 +122,25 @@ export function ProductFeedCard({
         </div>
 
         <div className="px-[22px] pt-5">
-          <span className="block text-[9px] font-semibold tracking-[0.2em] text-neutral-700 uppercase">
+          <span className="block text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
             {product.brand}
           </span>
-          <span className="mt-[7px] block font-serif text-[27px] leading-[1.08]">
+          <span className="mt-[6px] block text-[21px] leading-[1.2] font-semibold tracking-[-0.01em]">
             {product.name}
           </span>
           <span className="mt-[9px] flex items-center gap-2.5">
-            <span className="text-[13px]">
+            <span className="text-[15px] font-semibold">
               {formatPrice(product.price, product.currency)}
             </span>
             <span className="h-[11px] w-px bg-neutral-400" />
-            <span className="text-[12px] text-neutral-700">
+            <span className="text-[13px] text-neutral-700">
               {product.color}
             </span>
           </span>
         </div>
         <button
           onClick={onOpen}
-          className="mx-[22px] mt-3.5 flex items-center gap-2 self-start border-b border-neutral-400 pb-[3px] text-[9px] font-semibold tracking-[0.18em] text-neutral-700 uppercase transition-colors hover:border-ink hover:text-ink"
+          className="mx-[22px] mt-3.5 flex items-center gap-2 self-start border-b border-neutral-400 pb-[3px] text-[10px] font-semibold tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:border-ink hover:text-ink"
         >
           <span>Why this piece</span>
           <ArrowUpRightIcon />

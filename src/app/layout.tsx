@@ -5,7 +5,7 @@ import "./globals.css";
 
 const archivo = Archivo({
   subsets: ["latin"],
-  weight: ["400", "600", "800"],
+  weight: ["400", "500", "600"],
   variable: "--font-archivo",
   display: "swap",
 });
@@ -27,7 +27,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   themeColor: "#f8f4f4",
 };
 

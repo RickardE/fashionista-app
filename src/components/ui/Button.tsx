@@ -14,7 +14,7 @@ export function PrimaryButton({
   return (
     <button
       {...props}
-      className={`flex h-[54px] w-full items-center justify-between bg-ink px-5 text-[12px] font-semibold tracking-[0.16em] text-paper uppercase transition-colors hover:bg-neutral-800 disabled:opacity-40 ${className}`}
+      className={`flex h-[54px] w-full items-center justify-between bg-ink px-5 text-[13px] font-semibold tracking-[0.13em] text-paper uppercase transition-colors hover:bg-neutral-800 disabled:opacity-40 ${className}`}
     >
       <span>{children}</span>
       {icon ?? <ArrowRightIcon />}
@@ -31,7 +31,7 @@ export function SecondaryButton({
   return (
     <button
       {...props}
-      className={`flex h-[54px] w-full items-center justify-between border border-neutral-400 px-5 text-[12px] font-semibold tracking-[0.16em] uppercase transition-colors hover:border-ink disabled:opacity-40 ${className}`}
+      className={`flex h-[54px] w-full items-center justify-between border border-neutral-400 px-5 text-[13px] font-semibold tracking-[0.13em] uppercase transition-colors hover:border-ink disabled:opacity-40 ${className}`}
     >
       <span>{children}</span>
       {icon ?? <ArrowRightIcon />}

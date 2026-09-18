@@ -32,7 +32,7 @@ export default function SplashPage() {
       onClick={advance}
       className="relative block h-dvh w-full bg-paper px-[30px] pb-[46px] text-left"
     >
-      <div className="animate-breathe absolute top-6 left-[30px] text-[9px] font-semibold tracking-[0.2em] text-neutral-500 uppercase [padding-top:env(safe-area-inset-top)]">
+      <div className="animate-breathe absolute top-6 left-[30px] text-[10px] font-semibold tracking-[0.12em] text-neutral-500 uppercase [padding-top:env(safe-area-inset-top)]">
         Stockholm
       </div>
       <div className="animate-rise absolute bottom-[46px] left-[30px] right-[30px]">

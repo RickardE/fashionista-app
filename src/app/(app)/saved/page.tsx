@@ -40,13 +40,13 @@ export default function SavedPage() {
               <br />
               just yet.
             </div>
-            <p className="mt-3.5 mb-6 max-w-[27ch] text-[13px] leading-[1.6] text-neutral-700">
+            <p className="mt-3.5 mb-6 max-w-[27ch] text-[14px] leading-[1.6] text-neutral-700">
               Like a piece in your feed and it lands here, sorted as your
               collection grows.
             </p>
             <button
               onClick={() => router.push("/discover")}
-              className="flex h-[52px] items-center justify-between border border-neutral-400 px-5 text-[11px] font-semibold tracking-[0.16em] uppercase transition-colors hover:border-ink"
+              className="flex h-[52px] items-center justify-between border border-neutral-400 px-5 text-[13px] font-semibold tracking-[0.1em] uppercase transition-colors hover:border-ink"
             >
               <span>Back to discovery</span>
               <ArrowRightIcon />
@@ -59,7 +59,7 @@ export default function SavedPage() {
                 <button
                   key={c}
                   onClick={() => setCategory(c)}
-                  className={`border px-3 py-2 text-[9px] font-semibold tracking-[0.14em] whitespace-nowrap uppercase ${
+                  className={`border px-3 py-2 text-[10px] font-semibold tracking-[0.1em] whitespace-nowrap uppercase ${
                     category === c
                       ? "border-ink bg-ink text-paper"
                       : "border-neutral-400"

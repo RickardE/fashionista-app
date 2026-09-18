@@ -19,13 +19,13 @@ export default function AnalysisPage() {
         your style&hellip;
       </div>
       <div className="mt-[26px] flex flex-col gap-[9px]">
-        <div className="animate-rise text-[12px] text-neutral-700 [animation-delay:0.15s]">
+        <div className="animate-rise text-[13px] font-medium text-neutral-700 [animation-delay:0.15s]">
           Reading silhouettes
         </div>
-        <div className="animate-rise text-[12px] text-neutral-700 [animation-delay:0.85s]">
+        <div className="animate-rise text-[13px] font-medium text-neutral-700 [animation-delay:0.85s]">
           Reading palette
         </div>
-        <div className="animate-rise text-[12px] text-neutral-700 [animation-delay:1.6s]">
+        <div className="animate-rise text-[13px] font-medium text-neutral-700 [animation-delay:1.6s]">
           Composing your profile
         </div>
       </div>

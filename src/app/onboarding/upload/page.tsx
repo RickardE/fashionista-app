@@ -28,7 +28,7 @@ export default function UploadInspirationPage() {
       <div className="px-[22px] pt-4 pb-4">
         <button
           onClick={() => router.push("/onboarding")}
-          className="mb-5 flex items-center gap-1.5 text-[9px] font-semibold tracking-[0.2em] text-neutral-700 uppercase"
+          className="mb-5 flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase"
         >
           <ChevronLeftIcon />
           Back
@@ -37,10 +37,10 @@ export default function UploadInspirationPage() {
           Show us what you love.
         </div>
         <div className="mt-2.5 flex items-baseline justify-between">
-          <span className="text-[12px] leading-[1.5] text-neutral-700">
+          <span className="text-[13px] leading-[1.5] text-neutral-700">
             Choose three to five images.
           </span>
-          <span className="text-[10px] font-semibold tracking-[0.16em] text-neutral-700">
+          <span className="text-[11px] font-semibold tracking-[0.08em] text-neutral-700">
             {picks.length} / 5
           </span>
         </div>
@@ -66,7 +66,7 @@ export default function UploadInspirationPage() {
                 />
                 <button
                   onClick={() => toggle(i)}
-                  className={`absolute top-[5px] right-[5px] z-[3] flex h-[22px] w-[22px] items-center justify-center border font-semibold text-[9px] ${
+                  className={`absolute top-[5px] right-[5px] z-[3] flex h-[22px] w-[22px] items-center justify-center border text-[10px] font-semibold ${
                     on
                       ? "border-ink bg-ink text-paper"
                       : "border-neutral-400 bg-[rgba(248,244,244,0.82)] text-ink"
@@ -78,7 +78,7 @@ export default function UploadInspirationPage() {
             );
           })}
         </div>
-        <div className="mt-3.5 text-[11px] leading-[1.6] text-neutral-700">
+        <div className="mt-3.5 text-[12px] leading-[1.6] text-neutral-700">
           Tap a frame to drop in your own photo. Tap the corner to select it.
         </div>
       </div>
@@ -89,7 +89,7 @@ export default function UploadInspirationPage() {
             Read my style
           </PrimaryButton>
         ) : (
-          <div className="flex h-[54px] w-full items-center justify-between border border-neutral-300 px-5 text-[12px] font-semibold tracking-[0.16em] text-neutral-500 uppercase">
+          <div className="flex h-[54px] w-full items-center justify-between border border-neutral-300 px-5 text-[13px] font-semibold tracking-[0.13em] text-neutral-500 uppercase">
             <span>Select three to continue</span>
           </div>
         )}
