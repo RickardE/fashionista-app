@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/modernist-542a8ab7-35d1-483b-9e4a-992655bdd643/styles.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="crossorigin">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap">
+<script src="_ds/modernist-542a8ab7-35d1-483b-9e4a-992655bdd643/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<style>
+  html, body { margin: 0; background: #201e1d; }
+  a { color: var(--color-text); text-decoration: none; }
+  a:hover { color: var(--color-accent-700); }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
+  ::-webkit-scrollbar { display: none; }
+  [data-dim="1"] { opacity: .62; }
+  [data-bar="0"] { opacity: 0; }
+  [data-sel="1"] { background: var(--color-text) !important; color: var(--color-neutral-100) !important; border-color: var(--color-text) !important; }
+  [data-fade="1"] { opacity: 0; pointer-events: none; }
+  [data-pos] { transition: transform .58s cubic-bezier(.22,.61,.36,1); }
+  [data-pos="c"] { transform: translate3d(0,0,0); }
+  [data-pos="a"] { transform: translate3d(0,-100%,0); }
+  [data-pos="b"] { transform: translate3d(0,100%,0); }
+  [data-pos="ha"] { transform: translate3d(0,-200%,0); }
+  [data-pos="hb"] { transform: translate3d(0,200%,0); }
+  [data-sheet="1"] { transform: translate3d(0,0,0) !important; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  @keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  @keyframes breathe { 0%, 100% { opacity: .25; } 50% { opacity: .7; } }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#201e1d;color:var(--color-neutral-100);font-family:var(--font-body);display:flex;flex-wrap:wrap;align-items:flex-start;gap:56px;padding:52px 44px 72px">
+
+  <div style="flex:1 1 300px;min-width:min(300px,100%);max-width:420px">
+    <div style="font:600 11px/1 var(--font-body);letter-spacing:.42em;text-transform:uppercase;color:var(--color-neutral-100)">STYLEAI</div>
+    <div style="height:2px;background:var(--color-neutral-700);margin:22px 0 26px"></div>
+    <div style="font-family:'Instrument Serif',Georgia,serif;font-size:46px;line-height:1.02;letter-spacing:-.01em;color:var(--color-neutral-100)">Your style.<br>Found.</div>
+    <p style="margin:22px 0 0;font:400 13px/1.7 var(--font-body);color:var(--color-neutral-500);max-width:34ch;text-wrap:pretty">A fashion discovery prototype. Drag or scroll the feed vertically, like what feels like you, and the next pieces shift toward your taste. Drop your own photography onto any image field.</p>
+
+    <div style="height:1px;background:var(--color-neutral-800);margin:30px 0 0"></div>
+    <sc-for list="{{ flow }}" as="step" hint-placeholder-count="5">
+      <div style="display:flex;gap:14px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--color-neutral-800)">
+        <span style="font:600 9px/1 var(--font-body);letter-spacing:.14em;color:var(--color-neutral-700);width:18px">{{ step.n }}</span>
+        <span style="font:600 10px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-400)">{{ step.label }}</span>
+      </div>
+    </sc-for>
+
+    <div style="display:flex;gap:10px;margin-top:28px;flex-wrap:wrap">
+      <button onClick="{{ restart }}" style="border:1px solid var(--color-neutral-700);padding:11px 16px;font:600 10px/1 var(--font-body);letter-spacing:.18em;text-transform:uppercase;color:var(--color-neutral-300)" style-hover="border-color:var(--color-neutral-400);color:var(--color-neutral-100)">Restart flow</button>
+      <button onClick="{{ jumpFeed }}" style="border:1px solid var(--color-neutral-700);padding:11px 16px;font:600 10px/1 var(--font-body);letter-spacing:.18em;text-transform:uppercase;color:var(--color-neutral-300)" style-hover="border-color:var(--color-neutral-400);color:var(--color-neutral-100)">Skip to feed</button>
+    </div>
+  </div>
+
+  <div style="flex:0 0 auto;position:relative;width:414px;height:868px;background:#0f0e0e;border-radius:54px;padding:12px;box-shadow:0 40px 90px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.07)">
+    <div style="position:relative;width:390px;height:844px;overflow:hidden;border-radius:42px;background:var(--color-neutral-100);color:var(--color-text)">
+
+      <div style="position:absolute;top:0;left:0;right:0;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 30px 0 34px;z-index:60;font:600 13px/1 var(--font-body);letter-spacing:.01em">
+        <span>9:41</span>
+        <span style="display:flex;align-items:center;gap:6px">
+          <svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor"><rect x="0" y="7" width="3" height="4"></rect><rect x="4.5" y="5" width="3" height="6"></rect><rect x="9" y="2.5" width="3" height="8.5"></rect><rect x="13.5" y="0" width="3" height="11"></rect></svg>
+          <svg width="15" height="11" viewBox="0 0 15 11" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1 3.6a9 9 0 0 1 13 0"></path><path d="M3.6 6.3a5.4 5.4 0 0 1 7.8 0"></path><circle cx="7.5" cy="9.4" r="1" fill="currentColor" stroke="none"></circle></svg>
+          <svg width="24" height="11" viewBox="0 0 24 11" fill="none"><rect x="0.5" y="0.5" width="20" height="10" stroke="currentColor" stroke-opacity=".45"></rect><rect x="2" y="2" width="15" height="7" fill="currentColor"></rect><path d="M22 4v3c.9-.3 1.4-.8 1.4-1.5S22.9 4.3 22 4Z" fill="currentColor" fill-opacity=".45"></path></svg>
+        </span>
+      </div>
+
+      <div data-fade="{{ stageFade }}" style="position:absolute;top:44px;left:0;right:0;bottom:0;transition:opacity .2s ease">
+
+        <sc-if value="{{ isSplash }}" hint-placeholder-val="{{ true }}">
+          <button onClick="{{ toOnboard }}" style="position:absolute;inset:0;width:100%;display:block;padding:0 30px 46px;background:var(--color-neutral-100)">
+            <div style="position:absolute;left:30px;bottom:46px;right:30px;animation:rise .9s ease both">
+              <div style="font:600 13px/1 var(--font-body);letter-spacing:.48em;text-transform:uppercase">STYLEAI</div>
+              <div style="height:2px;background:var(--color-text);margin:18px 0 16px;transform-origin:left;animation:grow 1.6s cubic-bezier(.2,.7,.3,1) both"></div>
+              <div style="font-family:'Instrument Serif',Georgia,serif;font-size:30px;line-height:1.1">Your style. Found.</div>
+            </div>
+            <div style="position:absolute;left:30px;top:0;font:600 9px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-500);animation:breathe 2.4s ease-in-out infinite">Stockholm</div>
+          </button>
+        </sc-if>
+
+        <sc-if value="{{ isOnboard }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;padding:0 30px 40px;animation:rise .5s ease both">
+            <div style="flex:1;display:flex;flex-direction:column;justify-content:center;padding-bottom:20px">
+              <div style="font:600 9px/1 var(--font-body);letter-spacing:.24em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:22px">Welcome</div>
+              <div style="font-family:'Instrument Serif',Georgia,serif;font-size:44px;line-height:1.02;letter-spacing:-.015em">Let’s find<br>your style.</div>
+              <p style="margin:20px 0 0;font:400 14px/1.65 var(--font-body);color:var(--color-neutral-700);max-width:26ch;text-wrap:pretty">Show us a few outfits you love, or start discovering. Your feed sharpens with everything you like.</p>
+            </div>
+            <button onClick="{{ toUpload }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;height:54px;padding:0 20px;background:var(--color-text);color:var(--color-neutral-100);font:600 12px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase" style-hover="background:var(--color-neutral-800)">
+              <span>Upload inspiration</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+            </button>
+            <button onClick="{{ toFeedFresh }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;height:54px;padding:0 20px;margin-top:10px;border:1px solid var(--color-neutral-400);font:600 12px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase" style-hover="border-color:var(--color-text)">
+              <span>Start exploring</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+            </button>
+            <div style="font:400 11px/1.5 var(--font-body);color:var(--color-neutral-700);margin-top:16px">No account needed to look around.</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isUpload }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:rise .5s ease both">
+            <div style="padding:14px 22px 16px">
+              <button onClick="{{ toOnboard }}" style="display:flex;align-items:center;gap:6px;font:600 9px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:20px">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 18l-6-6 6-6"></path></svg>
+                Back
+              </button>
+              <div style="font-family:'Instrument Serif',Georgia,serif;font-size:30px;line-height:1.08">Show us what you love.</div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:10px">
+                <span style="font:400 12px/1.5 var(--font-body);color:var(--color-neutral-700)">Choose three to five images.</span>
+                <span style="font:600 10px/1 var(--font-body);letter-spacing:.16em;color:var(--color-neutral-700)">{{ pickCount }} / 5</span>
+              </div>
+            </div>
+            <div style="flex:1;overflow-y:auto;padding:0 22px 20px">
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px">
+                <sc-for list="{{ inspo }}" as="t" hint-placeholder-count="9">
+                  <div style="position:relative;width:100%;aspect-ratio:3/4;min-width:0;overflow:hidden;background:var(--color-neutral-200)">
+                    <image-slot id="{{ t.slot }}" shape="rect" placeholder="{{ t.ph }}"></image-slot>
+                    <button onClick="{{ t.toggle }}" data-sel="{{ t.on }}" style="position:absolute;top:5px;right:5px;width:22px;height:22px;border:1px solid var(--color-neutral-400);background:rgba(248,244,244,.82);display:flex;align-items:center;justify-content:center;font:600 9px/1 var(--font-body);z-index:3">
+                      <sc-if value="{{ t.on }}" hint-placeholder-val="{{ false }}"><span>{{ t.num }}</span></sc-if>
+                      <sc-if value="{{ t.off }}" hint-placeholder-val="{{ true }}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"></path></svg></sc-if>
+                    </button>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="font:400 11px/1.6 var(--font-body);color:var(--color-neutral-700);margin-top:14px">Tap a frame to drop in your own photo. Tap the corner to select it.</div>
+            </div>
+            <div style="padding:0 22px 34px">
+              <sc-if value="{{ canAnalyse }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ toAnalysis }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;height:54px;padding:0 20px;background:var(--color-text);color:var(--color-neutral-100);font:600 12px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase">
+                  <span>Read my style</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+                </button>
+              </sc-if>
+              <sc-if value="{{ cantAnalyse }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:center;justify-content:space-between;width:100%;height:54px;padding:0 20px;border:1px solid var(--color-neutral-300);color:var(--color-neutral-500);font:600 12px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase">
+                  <span>Select three to continue</span>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isAnalysis }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;padding:0 30px 46px;display:flex;flex-direction:column;justify-content:flex-end">
+            <div style="font-family:'Instrument Serif',Georgia,serif;font-size:34px;line-height:1.08;animation:rise .6s ease both">Understanding<br>your style…</div>
+            <div style="margin-top:26px;display:flex;flex-direction:column;gap:9px">
+              <div style="font:400 12px/1 var(--font-body);color:var(--color-neutral-700);animation:rise .5s ease .15s both">Reading silhouettes</div>
+              <div style="font:400 12px/1 var(--font-body);color:var(--color-neutral-700);animation:rise .5s ease .85s both">Reading palette</div>
+              <div style="font:400 12px/1 var(--font-body);color:var(--color-neutral-700);animation:rise .5s ease 1.6s both">Composing your profile</div>
+            </div>
+            <div style="height:2px;background:var(--color-neutral-300);margin-top:30px;position:relative;overflow:hidden">
+              <div style="position:absolute;inset:0;background:var(--color-text);transform-origin:left;animation:grow 2.5s cubic-bezier(.4,.1,.2,1) both"></div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isProfileIntro }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;animation:rise .55s ease both">
+            <div style="flex:1;overflow-y:auto;padding:26px 30px 24px">
+              <div style="font:600 9px/1 var(--font-body);letter-spacing:.24em;text-transform:uppercase;color:var(--color-neutral-700)">Your style</div>
+              <div style="font-family:'Instrument Serif',Georgia,serif;font-size:40px;line-height:1.04;letter-spacing:-.015em;margin-top:16px">Modern<br>Scandinavian</div>
+              <div style="font:400 13px/1.5 var(--font-body);color:var(--color-neutral-700);margin-top:12px">Relaxed tailoring · Minimal</div>
+              <div style="height:2px;background:var(--color-divider);margin:26px 0 0"></div>
+              <div style="padding:18px 0;border-bottom:1px solid var(--color-neutral-300)">
+                <div style="font:600 9px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:12px">Colours</div>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <span style="width:26px;height:26px;background:#201e1d"></span>
+                  <span style="width:26px;height:26px;background:#2d3142"></span>
+                  <span style="width:26px;height:26px;background:#cbbfa8"></span>
+                  <span style="width:26px;height:26px;background:#f8f4f4;border:1px solid var(--color-neutral-300)"></span>
+                  <span style="font:400 12px/1 var(--font-body);color:var(--color-neutral-700);margin-left:6px">Black · Navy · Beige · White</span>
+                </div>
+              </div>
+              <div style="padding:18px 0;border-bottom:1px solid var(--color-neutral-300)">
+                <div style="font:600 9px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:10px">Fit</div>
+                <div style="font-family:'Instrument Serif',Georgia,serif;font-size:22px">Relaxed · Straight · Oversized</div>
+              </div>
+              <div style="padding:18px 0">
+                <div style="font:600 9px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:12px">Key pieces</div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-top:1px solid var(--color-neutral-300)"><span style="font-family:'Instrument Serif',Georgia,serif;font-size:20px">Overshirts</span><span style="font:400 11px/1 var(--font-body);color:var(--color-neutral-700)">strong</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-top:1px solid var(--color-neutral-300)"><span style="font-family:'Instrument Serif',Georgia,serif;font-size:20px">Knitwear</span><span style="font:400 11px/1 var(--font-body);color:var(--color-neutral-700)">strong</span></div>
+                <div style="display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-top:1px solid var(--color-neutral-300)"><span style="font-family:'Instrument Serif',Georgia,serif;font-size:20px">Wide trousers</span><span style="font:400 11px/1 var(--font-body);color:var(--color-neutral-700)">emerging</span></div>
+              </div>
+            </div>
+            <div style="padding:0 30px 34px">
+              <button onClick="{{ toFeed }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;height:54px;padding:0 20px;background:var(--color-text);color:var(--color-neutral-100);font:600 12px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase" style-hover="background:var(--color-neutral-800)">
+                <span>Start discovering</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+              </button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isApp }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;inset:0">
+
+            <div style="position:absolute;top:0;left:0;right:0;height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;z-index:20;background:var(--color-neutral-100)">
+              <span style="font:600 11px/1 var(--font-body);letter-spacing:.42em;text-transform:uppercase">STYLEAI</span>
+              <button onClick="{{ goProfile }}" style="display:flex;align-items:center;gap:7px;font:600 9px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase;color:var(--color-neutral-700)">
+                <span>{{ tuning }}</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 8h10M18 8h2M4 16h4M12 16h8"></path><circle cx="16" cy="8" r="2"></circle><circle cx="10" cy="16" r="2"></circle></svg>
+              </button>
+            </div>
+
+            <div style="position:absolute;top:48px;left:0;right:0;height:44px;display:flex;align-items:flex-start;justify-content:space-between;padding:0 22px;z-index:20;background:var(--color-neutral-100)">
+              <span style="font-family:'Instrument Serif',Georgia,serif;font-size:26px;line-height:1">{{ tabTitle }}</span>
+              <span style="font:400 11px/1 var(--font-body);color:var(--color-neutral-700);padding-top:7px">{{ tabMeta }}</span>
+            </div>
+
+            <sc-if value="{{ onFeed }}" hint-placeholder-val="{{ true }}">
+              <div onPointerDown="{{ onDown }}" onPointerMove="{{ onMove }}" onPointerUp="{{ onUp }}" onPointerCancel="{{ onUp }}" onWheel="{{ onWheel }}" style="position:absolute;top:92px;left:0;right:0;height:632px;overflow:hidden;touch-action:none">
+                  <sc-for list="{{ feed }}" as="p" hint-placeholder-count="2">
+                    <div data-pos="{{ p.pos }}" style="position:absolute;top:0;left:0;width:390px;height:632px;background:var(--color-neutral-100);will-change:transform">
+                      <div style="position:relative;width:390px;height:474px;background:var(--color-neutral-200)">
+                        <image-slot id="{{ p.slot }}" shape="rect" placeholder="{{ p.ph }}"></image-slot>
+                      </div>
+                      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:20px 22px 0">
+                        <button onClick="{{ p.open }}" style="flex:1;display:block">
+                          <span style="display:block;font:600 9px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-700)">{{ p.brand }}</span>
+                          <span style="display:block;font-family:'Instrument Serif',Georgia,serif;font-size:27px;line-height:1.08;margin-top:7px">{{ p.name }}</span>
+                          <span style="display:flex;align-items:center;gap:10px;margin-top:9px">
+                            <span style="font:400 13px/1 var(--font-body)">{{ p.price }}</span>
+                            <span style="width:1px;height:11px;background:var(--color-neutral-400)"></span>
+                            <span style="font:400 12px/1 var(--font-body);color:var(--color-neutral-700)">{{ p.colour }}</span>
+                          </span>
+                        </button>
+                        <span style="display:flex;flex-direction:column;gap:2px;margin-top:-6px">
+                          <button onClick="{{ p.like }}" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center">
+                            <sc-if value="{{ p.liked }}" hint-placeholder-val="{{ false }}">
+                              <svg width="23" height="23" viewBox="0 0 24 24" fill="currentColor" style="color:var(--color-accent-700)"><path d="M12 21s-7.5-4.7-9.3-9.2C1.2 8 3.3 4.5 6.8 4.5c2 0 3.7 1.1 4.7 2.6h1c1-1.5 2.7-2.6 4.7-2.6 3.5 0 5.6 3.5 4.1 7.3C19.5 16.3 12 21 12 21Z"></path></svg>
+                            </sc-if>
+                            <sc-if value="{{ p.notLiked }}" hint-placeholder-val="{{ true }}">
+                              <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21s-7.5-4.7-9.3-9.2C1.2 8 3.3 4.5 6.8 4.5c2 0 3.7 1.1 4.7 2.6h1c1-1.5 2.7-2.6 4.7-2.6 3.5 0 5.6 3.5 4.1 7.3C19.5 16.3 12 21 12 21Z"></path></svg>
+                            </sc-if>
+                          </button>
+                          <button onClick="{{ p.dislike }}" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--color-neutral-500)" style-hover="color:var(--color-text)">
+                            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+                          </button>
+                        </span>
+                      </div>
+                      <button onClick="{{ p.open }}" style="display:flex;align-items:center;gap:8px;margin:14px 22px 0;padding-bottom:3px;border-bottom:1px solid var(--color-neutral-400);font:600 9px/1 var(--font-body);letter-spacing:.18em;text-transform:uppercase;color:var(--color-neutral-700)" style-hover="color:var(--color-text);border-color:var(--color-text)">
+                        <span>Why this piece</span>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M9 7h8v8"></path></svg>
+                      </button>
+                    </div>
+                  </sc-for>
+                  <div data-pos="{{ endPos }}" style="position:absolute;top:0;left:0;width:390px;height:632px;padding:0 22px;display:flex;flex-direction:column;justify-content:center;background:var(--color-neutral-100);will-change:transform">
+                    <div style="font:600 9px/1 var(--font-body);letter-spacing:.24em;text-transform:uppercase;color:var(--color-neutral-700)">That’s today’s edit</div>
+                    <div style="font-family:'Instrument Serif',Georgia,serif;font-size:34px;line-height:1.08;margin-top:16px">You’ve seen<br>everything new.</div>
+                    <p style="font:400 13px/1.6 var(--font-body);color:var(--color-neutral-700);margin:14px 0 0;max-width:28ch">A fresh selection arrives each morning, shaped by what you liked today.</p>
+                    <div style="height:2px;background:var(--color-divider);margin:26px 0 22px"></div>
+                    <button onClick="{{ restartFeed }}" style="display:flex;align-items:center;justify-content:space-between;height:52px;padding:0 20px;border:1px solid var(--color-neutral-400);font:600 11px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase" style-hover="border-color:var(--color-text)">
+                      <span>Look again</span>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+                    </button>
+                  </div>
+
+                <div data-fade="{{ noticeHidden }}" style="position:absolute;top:0;left:0;right:0;padding:9px 22px;background:var(--color-text);color:var(--color-neutral-100);font:600 9px/1.4 var(--font-body);letter-spacing:.16em;text-transform:uppercase;transition:opacity .4s ease;z-index:10">{{ notice }}</div>
+
+                <div data-fade="{{ hintHidden }}" style="position:absolute;bottom:10px;left:0;right:22px;display:flex;justify-content:flex-end;align-items:center;gap:7px;font:600 9px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-700);transition:opacity .5s ease;pointer-events:none">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5v14M6 13l6 6 6-6"></path></svg>
+                  <span>Swipe for more</span>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ onSearch }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;top:92px;left:0;right:0;height:632px;overflow-y:auto">
+                <div style="padding:6px 22px 0">
+                  <div style="display:flex;align-items:center;gap:10px;border-bottom:2px solid var(--color-text);padding-bottom:10px">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                    <input value="{{ query }}" onChange="{{ onQuery }}" onKeyDown="{{ onQueryKey }}" placeholder="What are you looking for?" style="flex:1;border:0;outline:none;background:transparent;font:400 15px/1.3 var(--font-body);color:var(--color-text)">
+                    <sc-if value="{{ hasQuery }}" hint-placeholder-val="{{ false }}">
+                      <button onClick="{{ clearQuery }}" style="color:var(--color-neutral-700);display:flex"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+                    </sc-if>
+                  </div>
+                </div>
+
+                <sc-if value="{{ noResults }}" hint-placeholder-val="{{ true }}">
+                  <div style="padding:26px 22px 40px">
+                    <div style="font:600 9px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:6px">Recent</div>
+                    <sc-for list="{{ recents }}" as="r" hint-placeholder-count="3">
+                      <button onClick="{{ r.run }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:13px 0;border-bottom:1px solid var(--color-neutral-300)" style-hover="color:var(--color-accent-700)">
+                        <span style="font:400 14px/1.3 var(--font-body)">{{ r.q }}</span>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 17 17 7M9 7h8v8"></path></svg>
+                      </button>
+                    </sc-for>
+                    <div style="font:600 9px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-700);margin:28px 0 12px">Suggested for you</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:7px">
+                      <sc-for list="{{ suggests }}" as="s" hint-placeholder-count="5">
+                        <button onClick="{{ s.run }}" style="border:1px solid var(--color-neutral-400);padding:9px 13px;font:400 12px/1 var(--font-body);white-space:nowrap" style-hover="border-color:var(--color-text)">{{ s.q }}</button>
+                      </sc-for>
+                    </div>
+                    <div style="height:1px;background:var(--color-neutral-300);margin:30px 0 14px"></div>
+                    <p style="font:400 12px/1.6 var(--font-body);color:var(--color-neutral-700);margin:0;max-width:30ch">Search is here when you know what you want. Results are ranked by your taste, so yours won’t look like anyone else’s.</p>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{ hasResults }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:20px 22px 40px;animation:rise .4s ease both">
+                    <div style="display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid var(--color-neutral-300);padding-bottom:12px">
+                      <span style="font-family:'Instrument Serif',Georgia,serif;font-size:21px;line-height:1.1;flex:1">“{{ submitted }}”</span>
+                      <span style="font:600 9px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase;color:var(--color-neutral-700)">{{ resultCount }} pieces</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:7px;padding:12px 0 16px;overflow-x:auto">
+                      <span style="display:flex;align-items:center;gap:6px;border:1px solid var(--color-neutral-400);padding:8px 11px;font:600 9px/1 var(--font-body);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 8h10M18 8h2M4 16h4M12 16h8"></path></svg>
+                        Filters
+                      </span>
+                      <span data-sel="1" style="border:1px solid var(--color-neutral-400);padding:8px 11px;font:600 9px/1 var(--font-body);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap">Your taste</span>
+                      <span style="border:1px solid var(--color-neutral-400);padding:8px 11px;font:600 9px/1 var(--font-body);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap">Price</span>
+                      <span style="border:1px solid var(--color-neutral-400);padding:8px 11px;font:600 9px/1 var(--font-body);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap">Colour</span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 12px">
+                      <sc-for list="{{ results }}" as="p" hint-placeholder-count="4">
+                        <div>
+                          <div style="position:relative;width:100%;aspect-ratio:3/4;min-width:0;overflow:hidden;background:var(--color-neutral-200)">
+                            <image-slot id="{{ p.slot }}" shape="rect" placeholder="{{ p.ph }}"></image-slot>
+                          </div>
+                          <button onClick="{{ p.open }}" style="display:block;width:100%;padding-top:9px">
+                            <span style="display:block;font:600 8.5px/1 var(--font-body);letter-spacing:.18em;text-transform:uppercase;color:var(--color-neutral-700)">{{ p.brand }}</span>
+                            <span style="display:block;font-family:'Instrument Serif',Georgia,serif;font-size:17px;line-height:1.15;margin-top:5px">{{ p.name }}</span>
+                            <span style="display:block;font:400 11px/1 var(--font-body);color:var(--color-neutral-700);margin-top:5px">{{ p.price }}</span>
+                          </button>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ onSaved }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;top:92px;left:0;right:0;height:632px;overflow-y:auto">
+                <sc-if value="{{ savedEmpty }}" hint-placeholder-val="{{ true }}">
+                  <div style="padding:40px 22px;height:100%;display:flex;flex-direction:column;justify-content:center">
+                    <div style="height:2px;background:var(--color-divider)"></div>
+                    <div style="font-family:'Instrument Serif',Georgia,serif;font-size:30px;line-height:1.1;margin-top:22px">Nothing saved<br>just yet.</div>
+                    <p style="font:400 13px/1.6 var(--font-body);color:var(--color-neutral-700);margin:14px 0 24px;max-width:27ch">Like a piece in your feed and it lands here, sorted as your collection grows.</p>
+                    <button onClick="{{ goFeed }}" style="display:flex;align-items:center;justify-content:space-between;height:52px;padding:0 20px;border:1px solid var(--color-neutral-400);font:600 11px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase" style-hover="border-color:var(--color-text)">
+                      <span>Back to discovery</span>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+                    </button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ savedAny }}" hint-placeholder-val="{{ false }}">
+                  <div style="padding:6px 22px 40px">
+                    <div style="display:flex;gap:7px;overflow-x:auto;padding-bottom:16px">
+                      <sc-for list="{{ cats }}" as="c" hint-placeholder-count="4">
+                        <button onClick="{{ c.pick }}" data-sel="{{ c.on }}" style="border:1px solid var(--color-neutral-400);padding:8px 12px;font:600 9px/1 var(--font-body);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap">{{ c.label }}</button>
+                      </sc-for>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 12px">
+                      <sc-for list="{{ savedList }}" as="p" hint-placeholder-count="4">
+                        <div>
+                          <div style="position:relative;width:100%;aspect-ratio:3/4;min-width:0;overflow:hidden;background:var(--color-neutral-200)">
+                            <image-slot id="{{ p.slot }}" shape="rect" placeholder="{{ p.ph }}"></image-slot>
+                          </div>
+                          <button onClick="{{ p.open }}" style="display:block;width:100%;padding-top:9px">
+                            <span style="display:block;font:600 8.5px/1 var(--font-body);letter-spacing:.18em;text-transform:uppercase;color:var(--color-neutral-700)">{{ p.brand }}</span>
+                            <span style="display:block;font-family:'Instrument Serif',Georgia,serif;font-size:17px;line-height:1.15;margin-top:5px">{{ p.name }}</span>
+                            <span style="display:block;font:400 11px/1 var(--font-body);color:var(--color-neutral-700);margin-top:5px">{{ p.price }}</span>
+                          </button>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ onProfile }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;top:92px;left:0;right:0;height:632px;overflow-y:auto">
+                <div style="padding:6px 22px 40px">
+                  <div style="height:2px;background:var(--color-divider)"></div>
+                  <div style="font-family:'Instrument Serif',Georgia,serif;font-size:32px;line-height:1.05;margin-top:20px">Modern Scandinavian</div>
+                  <div style="font:400 12px/1.5 var(--font-body);color:var(--color-neutral-700);margin-top:9px">Relaxed tailoring · Minimal · Quiet colour</div>
+
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 8px">
+                    <span style="font:600 9px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-700)">How well we know you</span>
+                    <span style="font:600 10px/1 var(--font-body);letter-spacing:.1em">{{ accuracy }}</span>
+                  </div>
+                  <div style="display:flex;gap:3px">
+                    <sc-for list="{{ meter }}" as="m" hint-placeholder-count="12">
+                      <span data-sel="{{ m.on }}" style="flex:1;height:12px;border:1px solid var(--color-neutral-400)"></span>
+                    </sc-for>
+                  </div>
+                  <div style="font:400 11px/1.6 var(--font-body);color:var(--color-neutral-700);margin-top:9px">{{ accuracyNote }}</div>
+
+                  <div style="font:600 9px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-700);margin:30px 0 4px">What you keep choosing</div>
+                  <sc-for list="{{ affList }}" as="a" hint-placeholder-count="3">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--color-neutral-300)">
+                      <span style="font-family:'Instrument Serif',Georgia,serif;font-size:19px">{{ a.label }}</span>
+                      <span style="font:400 11px/1 var(--font-body);color:var(--color-neutral-700)">{{ a.note }}</span>
+                    </div>
+                  </sc-for>
+
+                  <div style="font:600 9px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-700);margin:30px 0 4px">Preferences</div>
+                  <button onClick="{{ toUpload }}" style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:14px 0;border-bottom:1px solid var(--color-neutral-300)"><span style="font:400 14px/1 var(--font-body)">Add inspiration</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"></path></svg></button>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--color-neutral-300)"><span style="font:400 14px/1 var(--font-body)">Sizes</span><span style="font:400 12px/1 var(--font-body);color:var(--color-neutral-700)">M · 32 · 43</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--color-neutral-300)"><span style="font:400 14px/1 var(--font-body)">Price range</span><span style="font:400 12px/1 var(--font-body);color:var(--color-neutral-700)">900 – 4 000 SEK</span></div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--color-neutral-300)"><span style="font:400 14px/1 var(--font-body)">Brands you follow</span><span style="font:400 12px/1 var(--font-body);color:var(--color-neutral-700)">7</span></div>
+                  <button onClick="{{ restart }}" style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:14px 0;border-bottom:1px solid var(--color-neutral-300);color:var(--color-neutral-700)"><span style="font:400 14px/1 var(--font-body)">Reset this prototype</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 6l6 6-6 6"></path></svg></button>
+                </div>
+              </div>
+            </sc-if>
+
+            <div style="position:absolute;bottom:0;left:0;right:0;height:76px;display:flex;align-items:flex-start;border-top:1px solid var(--color-neutral-300);background:var(--color-neutral-100);z-index:20">
+              <button onClick="{{ goFeed }}" data-dim="{{ dimFeed }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;padding-top:11px">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="4" y="3" width="16" height="13"></rect><path d="M7 20h10"></path></svg>
+                <span style="font:600 8px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase">For You</span>
+                <span data-bar="{{ barFeed }}" style="width:14px;height:2px;background:var(--color-text)"></span>
+              </button>
+              <button onClick="{{ goSearch }}" data-dim="{{ dimSearch }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;padding-top:11px">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                <span style="font:600 8px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase">Search</span>
+                <span data-bar="{{ barSearch }}" style="width:14px;height:2px;background:var(--color-text)"></span>
+              </button>
+              <button onClick="{{ goSaved }}" data-dim="{{ dimSaved }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;padding-top:11px">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 21s-7.5-4.7-9.3-9.2C1.2 8 3.3 4.5 6.8 4.5c2 0 3.7 1.1 4.7 2.6h1c1-1.5 2.7-2.6 4.7-2.6 3.5 0 5.6 3.5 4.1 7.3C19.5 16.3 12 21 12 21Z"></path></svg>
+                <span style="font:600 8px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase">Saved</span>
+                <span data-bar="{{ barSaved }}" style="width:14px;height:2px;background:var(--color-text)"></span>
+              </button>
+              <button onClick="{{ goProfile }}" data-dim="{{ dimProfile }}" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;padding-top:11px">
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="8" r="4"></circle><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path></svg>
+                <span style="font:600 8px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase">Profile</span>
+                <span data-bar="{{ barProfile }}" style="width:14px;height:2px;background:var(--color-text)"></span>
+              </button>
+            </div>
+
+            <div data-sheet="{{ sheetOpen }}" style="position:absolute;inset:0;background:var(--color-neutral-100);z-index:40;transform:translate3d(0,100%,0);transition:transform .44s cubic-bezier(.22,.61,.36,1)">
+              <sc-if value="{{ hasDetail }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column">
+                  <div style="height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 18px 0 16px;flex:0 0 auto">
+                    <button onClick="{{ closeDetail }}" style="display:flex;align-items:center;gap:7px;font:600 9px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-700);padding:8px 4px">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 18l-6-6 6-6"></path></svg>
+                      Back
+                    </button>
+                    <button onClick="{{ toggleDetailLike }}" style="width:44px;height:44px;display:flex;align-items:center;justify-content:center">
+                      <sc-if value="{{ d.liked }}" hint-placeholder-val="{{ false }}">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" style="color:var(--color-accent-700)"><path d="M12 21s-7.5-4.7-9.3-9.2C1.2 8 3.3 4.5 6.8 4.5c2 0 3.7 1.1 4.7 2.6h1c1-1.5 2.7-2.6 4.7-2.6 3.5 0 5.6 3.5 4.1 7.3C19.5 16.3 12 21 12 21Z"></path></svg>
+                      </sc-if>
+                      <sc-if value="{{ d.notLiked }}" hint-placeholder-val="{{ true }}">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M12 21s-7.5-4.7-9.3-9.2C1.2 8 3.3 4.5 6.8 4.5c2 0 3.7 1.1 4.7 2.6h1c1-1.5 2.7-2.6 4.7-2.6 3.5 0 5.6 3.5 4.1 7.3C19.5 16.3 12 21 12 21Z"></path></svg>
+                      </sc-if>
+                    </button>
+                  </div>
+                  <div style="flex:1;overflow-y:auto">
+                    <div style="position:relative;width:390px;height:488px;background:var(--color-neutral-200)">
+                      <image-slot id="{{ d.slot }}" shape="rect" placeholder="{{ d.ph }}"></image-slot>
+                    </div>
+                    <div style="padding:22px 22px 40px">
+                      <div style="font:600 9px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-700)">{{ d.brand }}</div>
+                      <div style="font-family:'Instrument Serif',Georgia,serif;font-size:32px;line-height:1.06;margin-top:9px">{{ d.name }}</div>
+                      <div style="font:400 15px/1 var(--font-body);margin-top:12px">{{ d.price }}</div>
+                      <div style="height:2px;background:var(--color-divider);margin:20px 0 0"></div>
+                      <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--color-neutral-300)"><span style="font:600 9px/1 var(--font-body);letter-spacing:.18em;text-transform:uppercase;color:var(--color-neutral-700)">Colour</span><span style="font:400 13px/1 var(--font-body)">{{ d.colour }}</span></div>
+                      <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--color-neutral-300)"><span style="font:600 9px/1 var(--font-body);letter-spacing:.18em;text-transform:uppercase;color:var(--color-neutral-700)">Fit</span><span style="font:400 13px/1 var(--font-body)">{{ d.fit }}</span></div>
+                      <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--color-neutral-300)"><span style="font:600 9px/1 var(--font-body);letter-spacing:.18em;text-transform:uppercase;color:var(--color-neutral-700)">Material</span><span style="font:400 13px/1 var(--font-body)">{{ d.material }}</span></div>
+                      <button onClick="{{ noop }}" style="display:flex;align-items:center;justify-content:space-between;width:100%;height:54px;padding:0 20px;margin-top:22px;background:var(--color-text);color:var(--color-neutral-100);font:600 12px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase" style-hover="background:var(--color-neutral-800)">
+                        <span>Shop at {{ d.retailer }}</span>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 17 17 7M9 7h8v8"></path></svg>
+                      </button>
+                      <div style="border-top:1px solid var(--color-neutral-300);margin-top:30px;padding-top:18px">
+                        <div style="font:600 9px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-700)">Why we picked this</div>
+                        <div style="font-family:'Instrument Serif',Georgia,serif;font-size:20px;line-height:1.35;margin-top:11px;text-wrap:pretty">{{ d.reason }}</div>
+                      </div>
+                      <div style="border-top:1px solid var(--color-neutral-300);margin-top:28px;padding-top:18px">
+                        <div style="font:600 9px/1 var(--font-body);letter-spacing:.2em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:12px">More like this</div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+                          <sc-for list="{{ d.more }}" as="m" hint-placeholder-count="3">
+                            <div>
+                              <div style="position:relative;width:100%;aspect-ratio:3/4;min-width:0;overflow:hidden;background:var(--color-neutral-200)">
+                                <image-slot id="{{ m.slot }}" shape="rect" placeholder="{{ m.ph }}"></image-slot>
+                              </div>
+                              <button onClick="{{ m.open }}" style="display:block;width:100%;padding-top:7px">
+                                <span style="display:block;font:600 8px/1 var(--font-body);letter-spacing:.16em;text-transform:uppercase;color:var(--color-neutral-700)">{{ m.brand }}</span>
+                                <span style="display:block;font:400 11px/1.25 var(--font-body);margin-top:4px">{{ m.name }}</span>
+                              </button>
+                            </div>
+                          </sc-for>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+
+          </div>
+        </sc-if>
+
+      </div>
+
+      <div style="position:absolute;bottom:7px;left:50%;width:128px;height:4px;margin-left:-64px;background:var(--color-text);opacity:.22;z-index:70;pointer-events:none"></div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;startScreen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Splash&quot;,&quot;Onboarding&quot;,&quot;For You feed&quot;],&quot;default&quot;:&quot;Splash&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;showSwipeHint&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;accentLikes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Prototype&quot;}}">
+const CARD_H = 632;
+
+const TAGW = {
+  neutral: 'neutral tones', relaxed: 'relaxed silhouettes', oversized: 'oversized cuts',
+  wide: 'wide legs', knitwear: 'soft knitwear', outerwear: 'considered outerwear',
+  tailoring: 'relaxed tailoring', black: 'a black-led palette', natural: 'natural fabrics',
+  leather: 'quiet leather', shoes: 'low-key footwear', layer: 'easy layering'
+};
+
+const P = [
+  { id: 'nn07-overshirt', brand: 'NN07', name: 'Relaxed Overshirt', price: '1 799 SEK', colour: 'Beige', fit: 'Relaxed fit', material: 'Cotton twill', retailer: 'NN07', cat: 'Jackets', tags: ['neutral', 'relaxed', 'outerwear', 'layer'], reason: 'A quiet overshirt in a warm neutral — the easiest piece to wear over everything else you keep.' },
+  { id: 'norse-knit', brand: 'Norse Projects', name: 'Sigfred Merino Knit', price: '1 590 SEK', colour: 'Charcoal', fit: 'Regular fit', material: 'Merino wool', retailer: 'Norse Store', cat: 'Knitwear', tags: ['knitwear', 'neutral', 'layer'], reason: 'Fine-gauge merino in a muted grey: the knit that disappears into the rest of your wardrobe.' },
+  { id: 'legacy-trouser', brand: 'Our Legacy', name: 'Borrowed Wide Trouser', price: '2 400 SEK', colour: 'Black', fit: 'Wide leg', material: 'Wool blend', retailer: 'Our Legacy', cat: 'Trousers', tags: ['wide', 'black', 'tailoring'], reason: 'Soft tailoring with a wide, unhurried leg — formal in shape, relaxed in feel.' },
+  { id: 'arket-coat', brand: 'Arket', name: 'Wool-blend Overcoat', price: '2 990 SEK', colour: 'Oat', fit: 'Oversized', material: 'Wool blend', retailer: 'Arket', cat: 'Jackets', tags: ['outerwear', 'neutral', 'oversized', 'tailoring'], reason: 'An oat overcoat cut generously — the one loud decision in an otherwise quiet outfit.' },
+  { id: 'samsoe-shirt', brand: 'Samsøe Samsøe', name: 'Boxy Linen Shirt', price: '1 200 SEK', colour: 'Sand', fit: 'Boxy fit', material: 'Washed linen', retailer: 'Samsøe', cat: 'Shirts', tags: ['natural', 'neutral', 'relaxed'], reason: 'Washed linen with a boxy shoulder: warm-weather ease in your palette.' },
+  { id: 'jeanerica-jean', brand: 'Jeanerica', name: 'TM005 Wide Jean', price: '1 690 SEK', colour: 'Vintage 95', fit: 'Wide leg', material: 'Organic denim', retailer: 'Jeanerica', cat: 'Trousers', tags: ['wide', 'relaxed', 'natural'], reason: 'A straight-to-wide Swedish denim, rigid enough to hold the line you seem to like.' },
+  { id: 'cqp-sneaker', brand: 'CQP', name: 'Racquet Leather Sneaker', price: '2 950 SEK', colour: 'Off-white', fit: 'True to size', material: 'Italian leather', retailer: 'CQP', cat: 'Shoes', tags: ['leather', 'shoes', 'neutral'], reason: 'A plain leather court shoe. Nothing on it — which is why it works with everything.' },
+  { id: 'stutterheim-coat', brand: 'Stutterheim', name: 'Stockholm Raincoat', price: '2 600 SEK', colour: 'Black', fit: 'Oversized', material: 'Rubberised cotton', retailer: 'Stutterheim', cat: 'Jackets', tags: ['outerwear', 'black', 'oversized'], reason: 'Matte black rubber, unlined and unfussy: Stockholm weather answered properly.' },
+  { id: 'acne-cardigan', brand: 'Acne Studios', name: 'Cotton Cardigan', price: '3 200 SEK', colour: 'Ecru', fit: 'Relaxed fit', material: 'Cotton', retailer: 'Acne Studios', cat: 'Knitwear', tags: ['knitwear', 'relaxed', 'neutral', 'layer'], reason: 'An ecru cardigan you can wear as a shirt or a jacket, depending on the day.' },
+  { id: 'sunflower-pleat', brand: 'Sunflower', name: 'Loose Pleated Trouser', price: '2 100 SEK', colour: 'Navy', fit: 'Loose fit', material: 'Wool', retailer: 'Sunflower', cat: 'Trousers', tags: ['wide', 'tailoring', 'relaxed'], reason: 'A single pleat, a loose leg: the trouser that reads as tailoring without the stiffness.' },
+  { id: 'toteme-scarf', brand: 'Totême', name: 'Wool Scarf Jacket', price: '4 000 SEK', colour: 'Camel', fit: 'Oversized', material: 'Wool', retailer: 'Totême', cat: 'Jackets', tags: ['outerwear', 'neutral', 'oversized', 'layer'], reason: 'A camel jacket with a built-in scarf — one gesture, nothing else needed.' },
+  { id: 'filippa-tee', brand: 'Filippa K', name: 'Heavy Cotton Tee', price: '900 SEK', colour: 'White', fit: 'Straight fit', material: 'Heavy cotton', retailer: 'Filippa K', cat: 'Shirts', tags: ['neutral', 'natural', 'layer'], reason: 'The base layer everything else sits on. Heavier cotton so it holds its shape.' }
+];
+
+const BY = {};
+P.forEach(p => { BY[p.id] = p; });
+
+const INSPO = ['Knit', 'Trousers', 'Shirt', 'Overcoat', 'Wool', 'Tailoring', 'Linen', 'Leather', 'Camel'];
+const RECENTS = ['beige oversized linen shirt', 'wide wool trouser', 'black overshirt'];
+const SUGGESTS = ['relaxed tailoring', 'merino knit', 'quiet leather', 'unstructured blazer', 'off-white sneaker'];
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const start = props.startScreen || 'Splash';
+    this.aff = {};
+    this.state = {
+      screen: start === 'For You feed' ? 'app' : start === 'Onboarding' ? 'onboard' : 'splash',
+      tab: 'feed', idx: 0, order: P.map(p => p.id), liked: {}, disliked: {},
+      inter: 0, notice: '', hint: true, detail: null, open: false,
+      picks: [], query: '', submitted: '', cat: 'All'
+    };
+  }
+
+
+  componentDidMount() {
+    if (this.state.screen === 'splash') this.timer = setTimeout(() => this.go('onboard'), 2300);
+    this.onKey = e => {
+      if (this.state.screen !== 'app' || this.state.tab !== 'feed' || this.state.open) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); this.next(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); this.prev(); }
+    };
+    window.addEventListener('keydown', this.onKey);
+
+  }
+
+  componentWillUnmount() { clearTimeout(this.timer); window.removeEventListener('keydown', this.onKey); }
+
+
+
+  go(screen, after) {
+    clearTimeout(this.timer);
+    this.setState({ fade: true });
+    this.timer = setTimeout(() => {
+      this.setState({ screen: screen, fade: false });
+      if (after) after();
+    }, 210);
+  }
+
+  flash(msg) {
+    this.setState({ notice: msg });
+    clearTimeout(this.noticeTimer);
+    this.noticeTimer = setTimeout(() => this.setState({ notice: '' }), 2400);
+  }
+
+  feedLen() { return this.state.order.length + 1; }
+
+  posAt(i) {
+    const idx = this.state.idx;
+    if (i === idx) return 'c';
+    if (i === idx - 1) return 'a';
+    if (i === idx + 1) return 'b';
+    return i < idx ? 'ha' : 'hb';
+  }
+
+  next() {
+    if (this.state.idx >= this.feedLen() - 1) return;
+    this.setState(s => ({ idx: s.idx + 1, hint: false }));
+  }
+
+  prev() {
+    if (this.state.idx <= 0) return;
+    this.setState(s => ({ idx: s.idx - 1 }));
+  }
+
+  score(id) {
+    const p = BY[id];
+    return p.tags.reduce((s, t) => s + (this.aff[t] || 0), 0);
+  }
+
+  reorder(idx) {
+    const order = this.state.order;
+    const head = order.slice(0, idx + 2);
+    const tail = order.slice(idx + 2).slice();
+    tail.sort((a, b) => this.score(b) - this.score(a));
+    return head.concat(tail);
+  }
+
+  react(id, dir) {
+    const p = BY[id];
+    p.tags.forEach(t => { this.aff[t] = (this.aff[t] || 0) + dir; });
+    const inter = this.state.inter + 1;
+    this.setState(s => {
+      const liked = Object.assign({}, s.liked);
+      const disliked = Object.assign({}, s.disliked);
+      if (dir > 0) { liked[id] = true; delete disliked[id]; } else { disliked[id] = true; delete liked[id]; }
+      return { liked: liked, disliked: disliked, inter: inter, order: this.reorder(s.idx), hint: false };
+    });
+    if (dir > 0) this.flash('Saved to your collection');
+    else if (inter === 3) this.flash('Noted — fewer of those');
+    if (inter === 4) setTimeout(() => this.flash('Your feed is getting to know you'), 2600);
+    setTimeout(() => this.next(), dir > 0 ? 380 : 220);
+  }
+
+  openDetail(id) { this.setState({ detail: id, open: true }); }
+
+  closeDetail() { this.setState({ open: false }); }
+
+  onDown(e) {
+    if (this.state.open) return;
+    this.drag = { y: e.clientY, d: 0, live: true, fired: false };
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+  }
+
+  onMove(e) {
+    if (!this.drag || !this.drag.live) return;
+    this.drag.d = e.clientY - this.drag.y;
+    if (this.drag.fired || Math.abs(this.drag.d) < 58) return;
+    this.drag.fired = true;
+    if (this.drag.d < 0) this.next(); else this.prev();
+  }
+
+  onUp() {
+    if (!this.drag || !this.drag.live) return;
+    const d = this.drag.d;
+    const fired = this.drag.fired;
+    this.drag.live = false;
+    if (fired) return;
+    if (d < -26) this.next();
+    else if (d > 26) this.prev();
+  }
+
+  onWheel(e) {
+    if (this.state.open) return;
+    const now = Date.now();
+    if (Math.abs(e.deltaY) < 6) return;
+    if (now - (this.wlock || 0) < 560) return;
+    this.wlock = now;
+    if (e.deltaY > 0) this.next(); else this.prev();
+  }
+
+  topTags(n) {
+    return Object.keys(this.aff)
+      .filter(t => this.aff[t] > 0 && TAGW[t])
+      .sort((a, b) => this.aff[b] - this.aff[a])
+      .slice(0, n);
+  }
+
+  reasonFor(p) {
+    const hits = this.topTags(4).filter(t => p.tags.indexOf(t) >= 0).slice(0, 2);
+    if (hits.length === 2) return 'Because you keep choosing ' + TAGW[hits[0]] + ' and ' + TAGW[hits[1]] + '.';
+    if (hits.length === 1) return 'Because you tend to like ' + TAGW[hits[0]] + '. ' + p.reason;
+    return p.reason;
+  }
+
+  vm(id) {
+    const p = BY[id];
+    return {
+      id: id, slot: 'ph-' + id, ph: p.brand + ' · ' + p.name, brand: p.brand, name: p.name,
+      price: p.price, colour: p.colour, fit: p.fit, material: p.material, retailer: p.retailer,
+      liked: !!this.state.liked[id], notLiked: !this.state.liked[id],
+      open: () => this.openDetail(id),
+      like: () => this.react(id, 1),
+      dislike: () => this.react(id, -1)
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const accentLike = this.props.accentLikes !== false;
+    const savedIds = P.map(p => p.id).filter(id => s.liked[id]);
+    const catSet = ['All'].concat(savedIds.map(id => BY[id].cat).filter((c, i, a) => a.indexOf(c) === i));
+    const shown = savedIds.filter(id => s.cat === 'All' || BY[id].cat === s.cat);
+    const ranked = P.map(p => p.id).slice().sort((a, b) => this.score(b) - this.score(a));
+    const acc = Math.min(94, 34 + s.inter * 8);
+    const tags = this.topTags(3);
+    const d = s.detail ? this.vm(s.detail) : { slot: 'ph-none', ph: '', more: [] };
+    if (s.detail) {
+      d.reason = this.reasonFor(BY[s.detail]);
+      d.more = ranked.filter(id => id !== s.detail).slice(0, 3).map(id => this.vm(id));
+    }
+
+    return {
+      flow: [
+        { n: '01', label: 'Onboard' }, { n: '02', label: 'Create style' },
+        { n: '03', label: 'Discover · swipe' }, { n: '04', label: 'Open · save' },
+        { n: '05', label: 'Search · return' }
+      ],
+      isSplash: s.screen === 'splash', isOnboard: s.screen === 'onboard', isUpload: s.screen === 'upload',
+      isAnalysis: s.screen === 'analysis', isProfileIntro: s.screen === 'profile', isApp: s.screen === 'app',
+      onFeed: s.tab === 'feed', onSearch: s.tab === 'search', onSaved: s.tab === 'saved', onProfile: s.tab === 'profile',
+      stageFade: s.fade ? '1' : '0',
+      sheetOpen: s.open ? '1' : '0',
+      endPos: this.posAt(s.order.length),
+      noop: () => {},
+
+      toOnboard: () => this.go('onboard'),
+      toUpload: () => this.go('upload'),
+      toAnalysis: () => this.go('analysis', () => { this.timer = setTimeout(() => this.go('profile'), 2700); }),
+      toFeed: () => this.go('app'),
+      toFeedFresh: () => this.go('app', () => this.flash('Your feed is getting to know you')),
+      restart: () => { this.aff = {}; this.setState({ screen: 'splash', tab: 'feed', idx: 0, order: P.map(p => p.id), liked: {}, disliked: {}, inter: 0, picks: [], notice: '', hint: true, detail: null, open: false, query: '', submitted: '', cat: 'All' }, () => { this.timer = setTimeout(() => this.go('onboard'), 2300); }); },
+      jumpFeed: () => this.go('app'),
+      restartFeed: () => this.setState({ idx: 0 }),
+
+      inspo: INSPO.map((ph, i) => {
+        const on = s.picks.indexOf(i) >= 0;
+        return {
+          slot: 'insp-' + i, ph: ph, on: on ? '1' : '0', off: !on, num: (s.picks.indexOf(i) + 1) + '',
+          toggle: () => this.setState(st => {
+            const picks = st.picks.slice();
+            const at = picks.indexOf(i);
+            if (at >= 0) picks.splice(at, 1); else if (picks.length < 5) picks.push(i);
+            return { picks: picks };
+          })
+        };
+      }),
+      pickCount: s.picks.length + '',
+      canAnalyse: s.picks.length >= 3,
+      cantAnalyse: s.picks.length < 3,
+
+      feed: s.order.map((id, i) => {
+        const v = this.vm(id);
+        v.pos = this.posAt(i);
+        return v;
+      }),
+      tuning: s.inter < 3 ? 'Getting to know you' : s.inter < 6 ? 'Learning your taste' : 'Tuned to you',
+      tabTitle: s.tab === 'feed' ? 'For You' : s.tab === 'search' ? 'Search' : s.tab === 'saved' ? 'Your collection' : 'Your style',
+      tabMeta: s.tab === 'feed' ? (Math.min(s.idx + 1, P.length) + ' / ' + P.length)
+        : s.tab === 'saved' ? (savedIds.length + ' saved')
+        : s.tab === 'search' ? 'Personalised' : 'Since May 2026',
+      notice: s.notice || '\u00a0',
+      noticeHidden: s.notice ? '0' : '1',
+      hintHidden: (s.hint && this.props.showSwipeHint !== false) ? '0' : '1',
+
+      dimFeed: s.tab === 'feed' ? '0' : '1', barFeed: s.tab === 'feed' ? '1' : '0',
+      dimSearch: s.tab === 'search' ? '0' : '1', barSearch: s.tab === 'search' ? '1' : '0',
+      dimSaved: s.tab === 'saved' ? '0' : '1', barSaved: s.tab === 'saved' ? '1' : '0',
+      dimProfile: s.tab === 'profile' ? '0' : '1', barProfile: s.tab === 'profile' ? '1' : '0',
+      goFeed: () => this.setState({ tab: 'feed' }), goSearch: () => this.setState({ tab: 'search' }),
+      goSaved: () => this.setState({ tab: 'saved' }), goProfile: () => this.setState({ tab: 'profile' }),
+
+      onDown: e => this.onDown(e), onMove: e => this.onMove(e), onUp: () => this.onUp(), onWheel: e => this.onWheel(e),
+
+      query: s.query,
+      hasQuery: !!s.query,
+      onQuery: e => this.setState({ query: e.target.value }),
+      onQueryKey: e => { if (e.key === 'Enter' && s.query.trim()) this.setState({ submitted: s.query.trim() }); },
+      clearQuery: () => this.setState({ query: '', submitted: '' }),
+      recents: RECENTS.map(q => ({ q: q, run: () => this.setState({ query: q, submitted: q }) })),
+      suggests: SUGGESTS.map(q => ({ q: q, run: () => this.setState({ query: q, submitted: q }) })),
+      hasResults: !!s.submitted, noResults: !s.submitted, submitted: s.submitted,
+      resultCount: (18 + s.inter * 3) + '',
+      results: ranked.slice(0, 6).map(id => this.vm(id)),
+
+      savedEmpty: savedIds.length === 0, savedAny: savedIds.length > 0,
+      savedList: shown.map(id => this.vm(id)),
+      cats: catSet.map(c => ({ label: c, on: s.cat === c ? '1' : '0', pick: () => this.setState({ cat: c }) })),
+
+      accuracy: acc + '%',
+      accuracyNote: s.inter < 3 ? 'Like or dismiss a few pieces and this sharpens quickly.' : 'Built from ' + s.inter + ' reactions in your feed.',
+      meter: Array.from({ length: 12 }, (x, i) => ({ on: i < Math.round(acc / 100 * 12) ? '1' : '0' })),
+      affList: (tags.length ? tags : ['relaxed', 'neutral', 'knitwear']).map((t, i) => ({
+        label: TAGW[t].charAt(0).toUpperCase() + TAGW[t].slice(1),
+        note: tags.length ? (i === 0 ? 'strongest signal' : 'growing') : 'from your inspiration'
+      })),
+
+      hasDetail: !!s.detail,
+      d: d,
+      toggleDetailLike: () => { if (s.detail) { if (s.liked[s.detail]) { const liked = Object.assign({}, s.liked); delete liked[s.detail]; this.setState({ liked: liked }); } else { const p = BY[s.detail]; p.tags.forEach(t => { this.aff[t] = (this.aff[t] || 0) + 1; }); const liked = Object.assign({}, s.liked); liked[s.detail] = true; this.setState({ liked: liked, inter: s.inter + 1 }); } } },
+      closeDetail: () => this.closeDetail(),
+      accentLike: accentLike
+    };
+  }
+}
+</script>
+</body>
+</html>
