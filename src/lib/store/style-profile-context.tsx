@@ -41,6 +41,7 @@ type Action =
       description: string;
     }
   | { type: "duplicateStyle"; sourceId: string; name: string }
+  | { type: "renameStyle"; id: string; name: string }
   | { type: "saveOutfit"; anchorId: string; items: OutfitItems }
   | { type: "removeOutfit"; id: string }
   | { type: "restart" };
@@ -219,6 +220,12 @@ function reducer(state: StyleProfileState, action: Action): StyleProfileState {
       };
     }
 
+    case "renameStyle": {
+      const name = action.name.trim();
+      if (!name) return state;
+      return updateStyle(state, action.id, (style) => ({ ...style, name }));
+    }
+
     case "saveOutfit": {
       const outfit: Outfit = {
         id: `look-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -264,6 +271,7 @@ interface StyleProfileContextValue {
     seedAffinity?: AffinityMap;
   }) => void;
   duplicateStyle: (sourceId: string, name: string) => void;
+  renameStyle: (id: string, name: string) => void;
   saveOutfit: (anchorId: string, items: OutfitItems) => void;
   removeOutfit: (id: string) => void;
   restart: () => void;
@@ -358,6 +366,10 @@ export function StyleProfileProvider({
       dispatch({ type: "duplicateStyle", sourceId, name }),
     [],
   );
+  const renameStyle = useCallback(
+    (id: string, name: string) => dispatch({ type: "renameStyle", id, name }),
+    [],
+  );
   const saveOutfit = useCallback(
     (anchorId: string, items: OutfitItems) =>
       dispatch({ type: "saveOutfit", anchorId, items }),
@@ -405,6 +417,7 @@ export function StyleProfileProvider({
       setActiveStyle,
       createStyle,
       duplicateStyle,
+      renameStyle,
       saveOutfit,
       removeOutfit,
       restart,
@@ -425,6 +438,7 @@ export function StyleProfileProvider({
       setActiveStyle,
       createStyle,
       duplicateStyle,
+      renameStyle,
       saveOutfit,
       removeOutfit,
       restart,

@@ -2,18 +2,22 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeftIcon, CopyIcon } from "@/components/icons";
+import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { PrimaryButton, SecondaryButton } from "@/components/ui/Button";
 import { Divider } from "@/components/ui/Kicker";
-import { colorsFor, fitsFor, keyPiecesFor } from "@/lib/style-derive";
+import { TAG_LABELS } from "@/lib/data/products";
+import { accuracyFor, topTags } from "@/lib/personalization";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
+
+const FALLBACK_TAGS = ["relaxed", "neutral", "knitwear"] as const;
 
 export default function StyleDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const { styles, activeStyle, setActiveStyle, duplicateStyle } =
+  const { state, styles, activeStyle, setActiveStyle, duplicateStyle, renameStyle } =
     useStyleProfile();
-  const [duplicating, setDuplicating] = useState(false);
+  const [panel, setPanel] = useState<"rename" | "duplicate" | null>(null);
+  const [renameValue, setRenameValue] = useState("");
   const [duplicateName, setDuplicateName] = useState("");
 
   const style = styles.find((s) => s.id === params.id);
@@ -35,14 +39,31 @@ export default function StyleDetailPage() {
   }
 
   const isActive = style.id === activeStyle.id;
-  const words = style.description.split(" · ").filter(Boolean);
-  const colors = colorsFor(style);
-  const fits = fitsFor(style);
-  const keyPieces = keyPiecesFor(style);
+  const accuracy = accuracyFor(style.interactions);
+  const tags = topTags(style.affinity, 3);
+  const affinityList = (tags.length ? tags : FALLBACK_TAGS).map((tag, i) => ({
+    label: TAG_LABELS[tag].charAt(0).toUpperCase() + TAG_LABELS[tag].slice(1),
+    note: tags.length ? (i === 0 ? "strongest signal" : "growing") : "from your inspiration",
+  }));
+  const likedCount = Object.keys(style.liked).length;
+  const passedCount = Object.keys(style.disliked).length;
+  const savedCount = state.savedOutfits.filter((o) => o.styleId === style.id).length;
 
-  function startDuplicate() {
+  function openRename() {
+    setRenameValue(style!.name);
+    setPanel("rename");
+  }
+
+  function confirmRename() {
+    const name = renameValue.trim();
+    if (!name) return;
+    renameStyle(style!.id, name);
+    setPanel(null);
+  }
+
+  function openDuplicate() {
     setDuplicateName(`${style!.name} copy`);
-    setDuplicating(true);
+    setPanel("duplicate");
   }
 
   function confirmDuplicate() {
@@ -60,102 +81,157 @@ export default function StyleDetailPage() {
           className="flex items-center gap-[7px] px-1 py-2 text-[11px] font-semibold tracking-[0.1em] text-neutral-700 uppercase"
         >
           <ChevronLeftIcon />
-          Back
+          My styles
         </button>
       </div>
 
-      <div className="no-scrollbar animate-rise flex-1 overflow-y-auto px-[22px] pb-10">
-        <div className="text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
-          {isActive ? "Active style" : "Style"}
+      <div className="no-scrollbar animate-rise flex-1 overflow-y-auto px-[22px] pb-12">
+        <div className="flex items-center gap-2.5">
+          <span className="font-serif text-[36px] leading-[1.08]">
+            {style.name}
+          </span>
+          {isActive && (
+            <span className="text-[9px] font-semibold tracking-[0.1em] text-accent-700 uppercase">
+              Active
+            </span>
+          )}
         </div>
-        <div className="mt-3 font-serif text-[36px] leading-[1.08]">
-          {style.name}
+        <div className="mt-1.5 text-[14px] leading-[1.5] text-neutral-700">
+          {style.description}
         </div>
-        <div className="mt-2">
-          {(words.length ? words : ["Just getting started"]).map((w) => (
-            <div key={w} className="text-[15px] leading-[1.5] text-neutral-700">
-              {w}
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 text-[12px] font-medium text-neutral-500">
-          {style.interactions} interaction{style.interactions === 1 ? "" : "s"}
-        </div>
+
+        {!isActive && (
+          <SecondaryButton className="mt-4 h-11" onClick={() => setActiveStyle(style!.id)}>
+            Set as active style
+          </SecondaryButton>
+        )}
 
         <Divider className="mt-6" />
 
-        <div className="border-b border-neutral-300 py-[18px]">
-          <div className="mb-3 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
-            Colours
-          </div>
-          <div className="text-[16px] font-semibold">{colors.join(" · ")}</div>
+        <div className="mt-6 mb-2 flex items-center justify-between">
+          <span className="text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
+            How well we know you
+          </span>
+          <span className="text-[11px] font-semibold tracking-[0.06em]">
+            {accuracy}%
+          </span>
         </div>
-
-        <div className="border-b border-neutral-300 py-[18px]">
-          <div className="mb-2.5 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
-            Fit
-          </div>
-          <div className="text-[16px] font-semibold">{fits.join(" · ")}</div>
-        </div>
-
-        <div className="py-[18px]">
-          <div className="mb-3 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
-            Key pieces
-          </div>
-          {keyPieces.map((piece) => (
-            <div
-              key={piece}
-              className="border-t border-neutral-300 py-[9px] text-[16px] font-semibold first:border-t-0"
-            >
-              {piece}
-            </div>
+        <div className="flex gap-[3px]">
+          {Array.from({ length: 12 }, (_, i) => (
+            <span
+              key={i}
+              className={`h-3 flex-1 border border-neutral-400 ${
+                i < Math.round((accuracy / 100) * 12) ? "bg-ink" : ""
+              }`}
+            />
           ))}
         </div>
-
-        <div className="mt-6">
-          {!isActive && (
-            <PrimaryButton onClick={() => setActiveStyle(style!.id)}>
-              Set as active style
-            </PrimaryButton>
-          )}
-
-          {!duplicating ? (
-            <button
-              onClick={startDuplicate}
-              className="mt-2.5 flex w-full items-center justify-center gap-[7px] py-3 text-[11px] font-semibold tracking-[0.1em] text-neutral-700 uppercase"
-            >
-              <CopyIcon />
-              Duplicate style
-            </button>
-          ) : (
-            <div className="mt-4">
-              <div className="mb-1.5 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
-                Name the copy
-              </div>
-              <input
-                value={duplicateName}
-                onChange={(e) => setDuplicateName(e.target.value)}
-                autoFocus
-                className="w-full border-b-2 border-ink bg-transparent pb-2 text-[16px] outline-none"
-              />
-              <div className="mt-3 flex gap-2.5">
-                <SecondaryButton
-                  className="h-11 flex-1"
-                  onClick={() => setDuplicating(false)}
-                >
-                  Cancel
-                </SecondaryButton>
-                <PrimaryButton
-                  className="h-11 flex-1"
-                  disabled={!duplicateName.trim()}
-                  onClick={confirmDuplicate}
-                >
-                  Duplicate
-                </PrimaryButton>
-              </div>
-            </div>
-          )}
+        <div className="mt-2 text-[12px] leading-[1.6] text-neutral-700">
+          {style.interactions < 3
+            ? "Like or dismiss a few pieces and this sharpens quickly."
+            : `Built from ${style.interactions} reactions in your feed.`}
         </div>
+
+        <div className="mt-[30px] mb-1 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
+          What you keep choosing
+        </div>
+        {affinityList.map((a) => (
+          <div
+            key={a.label}
+            className="flex items-baseline justify-between border-b border-neutral-300 py-[11px]"
+          >
+            <span className="text-[16px] font-semibold">{a.label}</span>
+            <span className="text-[12px] text-neutral-700">{a.note}</span>
+          </div>
+        ))}
+
+        <div className="mt-[30px] mb-2.5 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
+          Recent activity
+        </div>
+        <div className="flex items-baseline gap-4 text-[15px] font-medium">
+          <span>{likedCount} liked</span>
+          <span className="text-neutral-400">·</span>
+          <span>{passedCount} passed</span>
+          <span className="text-neutral-400">·</span>
+          <span>{savedCount} saved</span>
+        </div>
+
+        <div className="mt-[30px] mb-1 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
+          Style settings
+        </div>
+        <button
+          onClick={openRename}
+          className="flex w-full items-center justify-between border-b border-neutral-300 py-[14px] text-left"
+        >
+          <span className="text-[15px] font-medium">Rename style</span>
+          <ChevronRightIcon />
+        </button>
+        <button
+          onClick={() => router.push("/onboarding/upload")}
+          className="flex w-full items-center justify-between border-b border-neutral-300 py-[14px] text-left"
+        >
+          <span className="text-[15px] font-medium">Add inspiration</span>
+          <ChevronRightIcon />
+        </button>
+        <button
+          onClick={openDuplicate}
+          className="flex w-full items-center justify-between border-b border-neutral-300 py-[14px] text-left"
+        >
+          <span className="text-[15px] font-medium">Duplicate style</span>
+          <ChevronRightIcon />
+        </button>
+
+        {panel === "rename" && (
+          <div className="mt-5">
+            <div className="mb-1.5 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
+              New name
+            </div>
+            <input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              autoFocus
+              className="w-full border-b-2 border-ink bg-transparent pb-2 text-[16px] outline-none"
+            />
+            <div className="mt-3 flex gap-2.5">
+              <SecondaryButton className="h-11 flex-1" onClick={() => setPanel(null)}>
+                Cancel
+              </SecondaryButton>
+              <PrimaryButton
+                className="h-11 flex-1"
+                disabled={!renameValue.trim()}
+                onClick={confirmRename}
+              >
+                Save
+              </PrimaryButton>
+            </div>
+          </div>
+        )}
+
+        {panel === "duplicate" && (
+          <div className="mt-5">
+            <div className="mb-1.5 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
+              Name the copy
+            </div>
+            <input
+              value={duplicateName}
+              onChange={(e) => setDuplicateName(e.target.value)}
+              autoFocus
+              className="w-full border-b-2 border-ink bg-transparent pb-2 text-[16px] outline-none"
+            />
+            <div className="mt-3 flex gap-2.5">
+              <SecondaryButton className="h-11 flex-1" onClick={() => setPanel(null)}>
+                Cancel
+              </SecondaryButton>
+              <PrimaryButton
+                className="h-11 flex-1"
+                disabled={!duplicateName.trim()}
+                onClick={confirmDuplicate}
+              >
+                Duplicate
+              </PrimaryButton>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
