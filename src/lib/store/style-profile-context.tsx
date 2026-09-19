@@ -9,8 +9,10 @@ import {
   useReducer,
 } from "react";
 import { PRODUCTS, PRODUCTS_BY_ID } from "@/lib/data/products";
-import { reorderTail } from "@/lib/personalization";
+import { DEFAULT_STYLE_ID, styleById } from "@/lib/data/styles";
+import { mergeAffinity, reorderTail } from "@/lib/personalization";
 import type { AffinityMap } from "@/lib/personalization";
+import type { Outfit, OutfitItems } from "@/lib/types";
 
 const STORAGE_KEY = "styleai:v1";
 
@@ -23,6 +25,8 @@ interface StyleProfileState {
   feedIndex: number;
   showSwipeHint: boolean;
   hasOnboarded: boolean;
+  activeStyleId: string;
+  savedOutfits: Outfit[];
 }
 
 type Action =
@@ -34,6 +38,9 @@ type Action =
   | { type: "resetFeed" }
   | { type: "toggleDetailLike"; id: string }
   | { type: "completeOnboarding" }
+  | { type: "setActiveStyle"; styleId: string }
+  | { type: "saveOutfit"; anchorId: string; items: OutfitItems }
+  | { type: "removeOutfit"; id: string }
   | { type: "restart" };
 
 function initialState(): StyleProfileState {
@@ -46,6 +53,8 @@ function initialState(): StyleProfileState {
     feedIndex: 0,
     showSwipeHint: true,
     hasOnboarded: false,
+    activeStyleId: DEFAULT_STYLE_ID,
+    savedOutfits: [],
   };
 }
 
@@ -127,6 +136,35 @@ function reducer(state: StyleProfileState, action: Action): StyleProfileState {
     case "completeOnboarding":
       return { ...state, hasOnboarded: true };
 
+    case "setActiveStyle": {
+      const affinity = mergeAffinity(
+        styleById(action.styleId).seedAffinity,
+        state.affinity,
+      );
+      return {
+        ...state,
+        activeStyleId: action.styleId,
+        feedOrder: reorderTail(state.feedOrder, state.feedIndex, affinity),
+      };
+    }
+
+    case "saveOutfit": {
+      const outfit: Outfit = {
+        id: `look-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        anchorId: action.anchorId,
+        items: action.items,
+        styleId: state.activeStyleId,
+        createdAt: Date.now(),
+      };
+      return { ...state, savedOutfits: [outfit, ...state.savedOutfits] };
+    }
+
+    case "removeOutfit":
+      return {
+        ...state,
+        savedOutfits: state.savedOutfits.filter((o) => o.id !== action.id),
+      };
+
     case "restart":
       return initialState();
 
@@ -144,8 +182,13 @@ interface StyleProfileContextValue {
   resetFeed: () => void;
   toggleDetailLike: (id: string) => void;
   completeOnboarding: () => void;
+  setActiveStyle: (styleId: string) => void;
+  saveOutfit: (anchorId: string, items: OutfitItems) => void;
+  removeOutfit: (id: string) => void;
   restart: () => void;
   feedLength: number;
+  /** The active personal style's seed leaning merged with everything the user has actually liked/disliked. */
+  effectiveAffinity: AffinityMap;
 }
 
 const StyleProfileContext = createContext<StyleProfileContextValue | null>(
@@ -163,8 +206,11 @@ export function StyleProfileProvider({
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as StyleProfileState;
-        dispatch({ type: "hydrate", state: parsed });
+        const parsed = JSON.parse(raw) as Partial<StyleProfileState>;
+        // Merge over fresh defaults so state saved before a schema change
+        // (e.g. an older build with no personal styles / saved outfits)
+        // still hydrates safely.
+        dispatch({ type: "hydrate", state: { ...initialState(), ...parsed } });
       }
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
@@ -200,6 +246,19 @@ export function StyleProfileProvider({
     () => dispatch({ type: "completeOnboarding" }),
     [],
   );
+  const setActiveStyle = useCallback(
+    (styleId: string) => dispatch({ type: "setActiveStyle", styleId }),
+    [],
+  );
+  const saveOutfit = useCallback(
+    (anchorId: string, items: OutfitItems) =>
+      dispatch({ type: "saveOutfit", anchorId, items }),
+    [],
+  );
+  const removeOutfit = useCallback(
+    (id: string) => dispatch({ type: "removeOutfit", id }),
+    [],
+  );
   const restart = useCallback(() => {
     try {
       window.localStorage.removeItem(STORAGE_KEY);
@@ -209,6 +268,11 @@ export function StyleProfileProvider({
     }
     dispatch({ type: "restart" });
   }, []);
+
+  const effectiveAffinity = useMemo(
+    () => mergeAffinity(styleById(state.activeStyleId).seedAffinity, state.affinity),
+    [state.activeStyleId, state.affinity],
+  );
 
   const value = useMemo<StyleProfileContextValue>(
     () => ({
@@ -220,8 +284,12 @@ export function StyleProfileProvider({
       resetFeed,
       toggleDetailLike,
       completeOnboarding,
+      setActiveStyle,
+      saveOutfit,
+      removeOutfit,
       restart,
       feedLength: feedLength(state),
+      effectiveAffinity,
     }),
     [
       state,
@@ -232,7 +300,11 @@ export function StyleProfileProvider({
       resetFeed,
       toggleDetailLike,
       completeOnboarding,
+      setActiveStyle,
+      saveOutfit,
+      removeOutfit,
       restart,
+      effectiveAffinity,
     ],
   );
 

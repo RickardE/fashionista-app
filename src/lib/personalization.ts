@@ -58,3 +58,13 @@ export function tuningLabel(interactions: number): string {
 export function accuracyFor(interactions: number): number {
   return Math.min(94, 34 + interactions * 8);
 }
+
+export function mergeAffinity(...maps: AffinityMap[]): AffinityMap {
+  const merged: AffinityMap = {};
+  maps.forEach((map) => {
+    (Object.keys(map) as StyleTag[]).forEach((tag) => {
+      merged[tag] = (merged[tag] ?? 0) + (map[tag] ?? 0);
+    });
+  });
+  return merged;
+}

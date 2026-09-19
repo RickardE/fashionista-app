@@ -8,9 +8,11 @@ import { useStyleProfile } from "@/lib/store/style-profile-context";
 export function TopBar({
   title,
   meta,
+  metaSlot,
 }: {
   title: string;
   meta?: string;
+  metaSlot?: React.ReactNode;
 }) {
   const { state } = useStyleProfile();
 
@@ -30,11 +32,12 @@ export function TopBar({
       </div>
       <div className="flex h-11 items-start justify-between px-[22px]">
         <span className="font-serif text-[26px] leading-none">{title}</span>
-        {meta && (
-          <span className="pt-[7px] text-[12px] font-medium text-neutral-700">
-            {meta}
-          </span>
-        )}
+        {metaSlot ??
+          (meta && (
+            <span className="pt-[7px] text-[12px] font-medium text-neutral-700">
+              {meta}
+            </span>
+          ))}
       </div>
     </header>
   );

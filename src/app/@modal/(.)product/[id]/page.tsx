@@ -12,6 +12,14 @@ export default function InterceptedProductPage({
   const { id } = use(params);
 
   return (
-    <Modal>{(close) => <ProductDetail productId={id} onBack={close} />}</Modal>
+    <Modal>
+      {(close) => (
+        <ProductDetail
+          productId={id}
+          onBack={() => close()}
+          onBuildOutfit={(productId) => close(`/outfit/${productId}`)}
+        />
+      )}
+    </Modal>
   );
 }

@@ -35,3 +35,24 @@ export interface Product {
   tags: StyleTag[];
   reason: string;
 }
+
+/** The role a piece plays in an outfit, independent of its catalog category. */
+export type OutfitRole = "outerwear" | "top" | "bottom" | "footwear";
+
+/** A resolved outfit: one product id per role that's filled. */
+export type OutfitItems = Partial<Record<OutfitRole, string>>;
+
+export interface Outfit {
+  id: string;
+  anchorId: string;
+  items: OutfitItems;
+  styleId: string;
+  createdAt: number;
+}
+
+export interface PersonalStyle {
+  id: string;
+  label: string;
+  description: string;
+  seedAffinity: Partial<Record<StyleTag, number>>;
+}

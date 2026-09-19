@@ -8,7 +8,11 @@ export function ProductPageClient({ id }: { id: string }) {
 
   return (
     <div className="h-dvh w-full bg-paper">
-      <ProductDetail productId={id} onBack={() => router.push("/discover")} />
+      <ProductDetail
+        productId={id}
+        onBack={() => router.push("/discover")}
+        onBuildOutfit={(productId) => router.push(`/outfit/${productId}`)}
+      />
     </div>
   );
 }

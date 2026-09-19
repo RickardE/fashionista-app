@@ -2,7 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeftIcon, HeartIcon, ArrowUpRightIcon } from "@/components/icons";
+import {
+  ChevronLeftIcon,
+  HeartIcon,
+  ArrowUpRightIcon,
+  LayersIcon,
+} from "@/components/icons";
 import { formatPrice } from "@/lib/format";
 import { PRODUCTS_BY_ID } from "@/lib/data/products";
 import { rankedIds, reasonFor } from "@/lib/personalization";
@@ -11,9 +16,11 @@ import { useStyleProfile } from "@/lib/store/style-profile-context";
 export function ProductDetail({
   productId,
   onBack,
+  onBuildOutfit,
 }: {
   productId: string;
   onBack: () => void;
+  onBuildOutfit: (productId: string) => void;
 }) {
   const { state, toggleDetailLike } = useStyleProfile();
   const product = PRODUCTS_BY_ID[productId];
@@ -105,6 +112,13 @@ export function ProductDetail({
           <button className="mt-[22px] flex h-[54px] w-full items-center justify-between bg-ink px-5 text-[13px] font-semibold tracking-[0.1em] text-paper uppercase transition-colors hover:bg-neutral-800">
             <span>Shop at {product.retailer}</span>
             <ArrowUpRightIcon />
+          </button>
+          <button
+            onClick={() => onBuildOutfit(product.id)}
+            className="mt-2.5 flex h-[54px] w-full items-center justify-between border border-neutral-400 px-5 text-[13px] font-semibold tracking-[0.1em] uppercase transition-colors hover:border-ink"
+          >
+            <span>Build an outfit</span>
+            <LayersIcon />
           </button>
 
           <div className="mt-[30px] border-t border-neutral-300 pt-[18px]">
