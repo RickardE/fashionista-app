@@ -8,24 +8,19 @@ import {
   useMemo,
   useReducer,
 } from "react";
-import { PRODUCTS, PRODUCTS_BY_ID } from "@/lib/data/products";
-import { DEFAULT_STYLE_ID, styleById } from "@/lib/data/styles";
-import { mergeAffinity, reorderTail } from "@/lib/personalization";
+import { PRODUCTS_BY_ID } from "@/lib/data/products";
+import { BUILTIN_STYLE_PRESETS, DEFAULT_STYLE_ID } from "@/lib/data/styles";
+import { mergeAffinity, rankedIds, reorderTail } from "@/lib/personalization";
 import type { AffinityMap } from "@/lib/personalization";
-import type { Outfit, OutfitItems } from "@/lib/types";
+import type { Outfit, OutfitItems, StylePreset, StyleProfile, StyleTag } from "@/lib/types";
 
-const STORAGE_KEY = "styleai:v1";
+const STORAGE_KEY = "styleai:v2";
 
 interface StyleProfileState {
-  liked: Record<string, true>;
-  disliked: Record<string, true>;
-  affinity: AffinityMap;
-  interactions: number;
-  feedOrder: string[];
-  feedIndex: number;
-  showSwipeHint: boolean;
-  hasOnboarded: boolean;
+  styles: Record<string, StyleProfile>;
+  styleOrder: string[];
   activeStyleId: string;
+  hasOnboarded: boolean;
   savedOutfits: Outfit[];
 }
 
@@ -39,27 +34,66 @@ type Action =
   | { type: "toggleDetailLike"; id: string }
   | { type: "completeOnboarding" }
   | { type: "setActiveStyle"; styleId: string }
+  | {
+      type: "createStyle";
+      name: string;
+      seedAffinity: AffinityMap;
+      description: string;
+    }
+  | { type: "duplicateStyle"; sourceId: string; name: string }
   | { type: "saveOutfit"; anchorId: string; items: OutfitItems }
   | { type: "removeOutfit"; id: string }
   | { type: "restart" };
 
-function initialState(): StyleProfileState {
+function makeStyleProfile(preset: {
+  id: string;
+  name: string;
+  description: string;
+  seedAffinity: AffinityMap;
+}): StyleProfile {
   return {
+    id: preset.id,
+    name: preset.name,
+    description: preset.description,
+    seedAffinity: preset.seedAffinity,
     liked: {},
     disliked: {},
     affinity: {},
     interactions: 0,
-    feedOrder: PRODUCTS.map((p) => p.id),
+    feedOrder: rankedIds(preset.seedAffinity),
     feedIndex: 0,
     showSwipeHint: true,
-    hasOnboarded: false,
+    createdAt: Date.now(),
+  };
+}
+
+function initialState(): StyleProfileState {
+  const styles: Record<string, StyleProfile> = {};
+  BUILTIN_STYLE_PRESETS.forEach((preset) => {
+    styles[preset.id] = makeStyleProfile(preset);
+  });
+  return {
+    styles,
+    styleOrder: BUILTIN_STYLE_PRESETS.map((p) => p.id),
     activeStyleId: DEFAULT_STYLE_ID,
+    hasOnboarded: false,
     savedOutfits: [],
   };
 }
 
-function feedLength(state: StyleProfileState): number {
-  return state.feedOrder.length + 1;
+function feedLengthOf(style: StyleProfile): number {
+  return style.feedOrder.length + 1;
+}
+
+/** Applies an update to a single style profile, leaving every other style untouched. */
+function updateStyle(
+  state: StyleProfileState,
+  id: string,
+  fn: (style: StyleProfile) => StyleProfile,
+): StyleProfileState {
+  const current = state.styles[id];
+  if (!current) return state;
+  return { ...state, styles: { ...state.styles, [id]: fn(current) } };
 }
 
 function reducer(state: StyleProfileState, action: Action): StyleProfileState {
@@ -70,81 +104,118 @@ function reducer(state: StyleProfileState, action: Action): StyleProfileState {
     case "react": {
       const product = PRODUCTS_BY_ID[action.id];
       if (!product) return state;
-      const affinity = { ...state.affinity };
-      product.tags.forEach((tag) => {
-        affinity[tag] = (affinity[tag] ?? 0) + action.direction;
+      return updateStyle(state, state.activeStyleId, (style) => {
+        const affinity = { ...style.affinity };
+        product.tags.forEach((tag) => {
+          affinity[tag] = (affinity[tag] ?? 0) + action.direction;
+        });
+        const liked = { ...style.liked };
+        const disliked = { ...style.disliked };
+        if (action.direction > 0) {
+          liked[action.id] = true;
+          delete disliked[action.id];
+        } else {
+          disliked[action.id] = true;
+          delete liked[action.id];
+        }
+        const effective = mergeAffinity(style.seedAffinity, affinity);
+        return {
+          ...style,
+          affinity,
+          liked,
+          disliked,
+          interactions: style.interactions + 1,
+          feedOrder: reorderTail(style.feedOrder, style.feedIndex, effective),
+          showSwipeHint: false,
+        };
       });
-      const liked = { ...state.liked };
-      const disliked = { ...state.disliked };
-      if (action.direction > 0) {
-        liked[action.id] = true;
-        delete disliked[action.id];
-      } else {
-        disliked[action.id] = true;
-        delete liked[action.id];
-      }
-      return {
-        ...state,
-        affinity,
-        liked,
-        disliked,
-        interactions: state.interactions + 1,
-        feedOrder: reorderTail(state.feedOrder, state.feedIndex, affinity),
-        showSwipeHint: false,
-      };
     }
 
     case "next":
-      return {
-        ...state,
-        feedIndex: Math.min(state.feedIndex + 1, feedLength(state) - 1),
+      return updateStyle(state, state.activeStyleId, (style) => ({
+        ...style,
+        feedIndex: Math.min(style.feedIndex + 1, feedLengthOf(style) - 1),
         showSwipeHint: false,
-      };
+      }));
 
     case "prev":
-      return { ...state, feedIndex: Math.max(state.feedIndex - 1, 0) };
+      return updateStyle(state, state.activeStyleId, (style) => ({
+        ...style,
+        feedIndex: Math.max(style.feedIndex - 1, 0),
+      }));
 
     case "setFeedIndex":
-      return {
-        ...state,
-        feedIndex: Math.max(0, Math.min(action.index, feedLength(state) - 1)),
-      };
+      return updateStyle(state, state.activeStyleId, (style) => ({
+        ...style,
+        feedIndex: Math.max(0, Math.min(action.index, feedLengthOf(style) - 1)),
+      }));
 
     case "resetFeed":
-      return { ...state, feedIndex: 0 };
+      return updateStyle(state, state.activeStyleId, (style) => ({
+        ...style,
+        feedIndex: 0,
+      }));
 
     case "toggleDetailLike": {
       const product = PRODUCTS_BY_ID[action.id];
       if (!product) return state;
-      if (state.liked[action.id]) {
-        const liked = { ...state.liked };
-        delete liked[action.id];
-        return { ...state, liked };
-      }
-      const affinity = { ...state.affinity };
-      product.tags.forEach((tag) => {
-        affinity[tag] = (affinity[tag] ?? 0) + 1;
+      return updateStyle(state, state.activeStyleId, (style) => {
+        if (style.liked[action.id]) {
+          const liked = { ...style.liked };
+          delete liked[action.id];
+          return { ...style, liked };
+        }
+        const affinity = { ...style.affinity };
+        product.tags.forEach((tag) => {
+          affinity[tag] = (affinity[tag] ?? 0) + 1;
+        });
+        return {
+          ...style,
+          liked: { ...style.liked, [action.id]: true },
+          affinity,
+          interactions: style.interactions + 1,
+        };
       });
-      return {
-        ...state,
-        liked: { ...state.liked, [action.id]: true },
-        affinity,
-        interactions: state.interactions + 1,
-      };
     }
 
     case "completeOnboarding":
       return { ...state, hasOnboarded: true };
 
-    case "setActiveStyle": {
-      const affinity = mergeAffinity(
-        styleById(action.styleId).seedAffinity,
-        state.affinity,
-      );
+    case "setActiveStyle":
+      if (!state.styles[action.styleId]) return state;
+      return { ...state, activeStyleId: action.styleId };
+
+    case "createStyle": {
+      const id = `style-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const style = makeStyleProfile({
+        id,
+        name: action.name,
+        description: action.description,
+        seedAffinity: action.seedAffinity,
+      });
       return {
         ...state,
-        activeStyleId: action.styleId,
-        feedOrder: reorderTail(state.feedOrder, state.feedIndex, affinity),
+        styles: { ...state.styles, [id]: style },
+        styleOrder: [...state.styleOrder, id],
+        activeStyleId: id,
+      };
+    }
+
+    case "duplicateStyle": {
+      const source = state.styles[action.sourceId];
+      if (!source) return state;
+      const id = `style-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const clone: StyleProfile = {
+        ...source,
+        id,
+        name: action.name,
+        createdAt: Date.now(),
+      };
+      return {
+        ...state,
+        styles: { ...state.styles, [id]: clone },
+        styleOrder: [...state.styleOrder, id],
+        activeStyleId: id,
       };
     }
 
@@ -175,6 +246,10 @@ function reducer(state: StyleProfileState, action: Action): StyleProfileState {
 
 interface StyleProfileContextValue {
   state: StyleProfileState;
+  /** The full style list, in display order. */
+  styles: StyleProfile[];
+  /** The currently active style — the one driving the feed, builder and saved views. */
+  activeStyle: StyleProfile;
   react: (id: string, direction: 1 | -1) => void;
   next: () => void;
   prev: () => void;
@@ -183,17 +258,36 @@ interface StyleProfileContextValue {
   toggleDetailLike: (id: string) => void;
   completeOnboarding: () => void;
   setActiveStyle: (styleId: string) => void;
+  createStyle: (input: {
+    name: string;
+    description?: string;
+    seedAffinity?: AffinityMap;
+  }) => void;
+  duplicateStyle: (sourceId: string, name: string) => void;
   saveOutfit: (anchorId: string, items: OutfitItems) => void;
   removeOutfit: (id: string) => void;
   restart: () => void;
   feedLength: number;
-  /** The active personal style's seed leaning merged with everything the user has actually liked/disliked. */
+  /** The active style's seed leaning merged with everything the user has actually liked/disliked in it. */
   effectiveAffinity: AffinityMap;
 }
 
 const StyleProfileContext = createContext<StyleProfileContextValue | null>(
   null,
 );
+
+/** A short "Word · Word · Word" description built from a style's own top tags. */
+function describeFromTags(seedAffinity: AffinityMap): string {
+  const tags = (Object.keys(seedAffinity) as StyleTag[]).sort(
+    (a, b) => (seedAffinity[b] ?? 0) - (seedAffinity[a] ?? 0),
+  );
+  if (!tags.length) return "Just getting started";
+  const words = tags.slice(0, 3).map((t) => {
+    const first = t.split(" ")[0];
+    return first.charAt(0).toUpperCase() + first.slice(1);
+  });
+  return words.join(" · ");
+}
 
 export function StyleProfileProvider({
   children,
@@ -208,7 +302,6 @@ export function StyleProfileProvider({
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<StyleProfileState>;
         // Merge over fresh defaults so state saved before a schema change
-        // (e.g. an older build with no personal styles / saved outfits)
         // still hydrates safely.
         dispatch({ type: "hydrate", state: { ...initialState(), ...parsed } });
       }
@@ -250,6 +343,21 @@ export function StyleProfileProvider({
     (styleId: string) => dispatch({ type: "setActiveStyle", styleId }),
     [],
   );
+  const createStyle = useCallback(
+    (input: { name: string; description?: string; seedAffinity?: AffinityMap }) =>
+      dispatch({
+        type: "createStyle",
+        name: input.name,
+        seedAffinity: input.seedAffinity ?? {},
+        description: input.description ?? describeFromTags(input.seedAffinity ?? {}),
+      }),
+    [],
+  );
+  const duplicateStyle = useCallback(
+    (sourceId: string, name: string) =>
+      dispatch({ type: "duplicateStyle", sourceId, name }),
+    [],
+  );
   const saveOutfit = useCallback(
     (anchorId: string, items: OutfitItems) =>
       dispatch({ type: "saveOutfit", anchorId, items }),
@@ -269,14 +377,24 @@ export function StyleProfileProvider({
     dispatch({ type: "restart" });
   }, []);
 
+  const activeStyle =
+    state.styles[state.activeStyleId] ?? Object.values(state.styles)[0];
+
   const effectiveAffinity = useMemo(
-    () => mergeAffinity(styleById(state.activeStyleId).seedAffinity, state.affinity),
-    [state.activeStyleId, state.affinity],
+    () => mergeAffinity(activeStyle.seedAffinity, activeStyle.affinity),
+    [activeStyle],
+  );
+
+  const styles = useMemo(
+    () => state.styleOrder.map((id) => state.styles[id]).filter(Boolean),
+    [state.styleOrder, state.styles],
   );
 
   const value = useMemo<StyleProfileContextValue>(
     () => ({
       state,
+      styles,
+      activeStyle,
       react,
       next,
       prev,
@@ -285,14 +403,18 @@ export function StyleProfileProvider({
       toggleDetailLike,
       completeOnboarding,
       setActiveStyle,
+      createStyle,
+      duplicateStyle,
       saveOutfit,
       removeOutfit,
       restart,
-      feedLength: feedLength(state),
+      feedLength: feedLengthOf(activeStyle),
       effectiveAffinity,
     }),
     [
       state,
+      styles,
+      activeStyle,
       react,
       next,
       prev,
@@ -301,6 +423,8 @@ export function StyleProfileProvider({
       toggleDetailLike,
       completeOnboarding,
       setActiveStyle,
+      createStyle,
+      duplicateStyle,
       saveOutfit,
       removeOutfit,
       restart,
@@ -322,3 +446,5 @@ export function useStyleProfile() {
   }
   return ctx;
 }
+
+export type { StylePreset };

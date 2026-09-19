@@ -289,6 +289,23 @@ export function BookmarkIcon({
   );
 }
 
+export function CopyIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      className={className}
+    >
+      <rect x="8" y="8" width="12" height="12" rx="0.5" />
+      <path d="M16 8V4.5a.5.5 0 0 0-.5-.5H4.5a.5.5 0 0 0-.5.5V15.5a.5.5 0 0 0 .5.5H8" />
+    </svg>
+  );
+}
+
 export function ProfileTabIcon({ className }: { className?: string }) {
   return (
     <svg

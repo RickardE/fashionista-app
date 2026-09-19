@@ -17,9 +17,9 @@ const LOOK_INTERVAL = 4;
 export function FeedDeck() {
   const router = useRouter();
   const pathname = usePathname();
-  const { state, next, react, resetFeed, effectiveAffinity, saveOutfit } =
+  const { activeStyle, next, react, resetFeed, effectiveAffinity, saveOutfit } =
     useStyleProfile();
-  const { feedOrder, feedIndex } = state;
+  const { feedOrder, feedIndex } = activeStyle;
 
   const [notice, setNotice] = useState("");
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -66,10 +66,10 @@ export function FeedDeck() {
     react(id, direction);
     if (direction > 0) {
       flash("Saved to your collection");
-    } else if (state.interactions + 1 === 3) {
+    } else if (activeStyle.interactions + 1 === 3) {
       flash("Noted — fewer of those");
     }
-    if (state.interactions + 1 === 4) {
+    if (activeStyle.interactions + 1 === 4) {
       setTimeout(() => flash("Your feed is getting to know you"), 2600);
     }
     next();
@@ -167,7 +167,7 @@ export function FeedDeck() {
 
       <div
         className="pointer-events-none absolute right-0 bottom-2.5 left-0 flex items-center justify-center gap-[7px] text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase transition-opacity duration-500"
-        style={{ opacity: state.showSwipeHint ? 1 : 0 }}
+        style={{ opacity: activeStyle.showSwipeHint ? 1 : 0 }}
       >
         <ChevronLeftIcon />
         <span>Swipe to explore</span>

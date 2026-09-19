@@ -50,9 +50,30 @@ export interface Outfit {
   createdAt: number;
 }
 
-export interface PersonalStyle {
+/** A starting point for a style: its name, description and initial fashion leaning. */
+export interface StylePreset {
   id: string;
-  label: string;
+  name: string;
   description: string;
   seedAffinity: Partial<Record<StyleTag, number>>;
+}
+
+/**
+ * One independent style profile — its own learned taste, likes, dislikes and
+ * feed order. A user can hold several of these at once (Everyday, Work,
+ * Vacation, ...) and switch which one is "active" without the others changing.
+ */
+export interface StyleProfile {
+  id: string;
+  name: string;
+  description: string;
+  seedAffinity: Partial<Record<StyleTag, number>>;
+  liked: Record<string, true>;
+  disliked: Record<string, true>;
+  affinity: Partial<Record<StyleTag, number>>;
+  interactions: number;
+  feedOrder: string[];
+  feedIndex: number;
+  showSwipeHint: boolean;
+  createdAt: number;
 }

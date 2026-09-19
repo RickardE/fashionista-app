@@ -9,7 +9,7 @@ import { rankedIds } from "@/lib/personalization";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
 
 export default function SearchPage() {
-  const { state, effectiveAffinity } = useStyleProfile();
+  const { activeStyle, effectiveAffinity } = useStyleProfile();
   const [query, setQuery] = useState("");
   const [submitted, setSubmitted] = useState("");
 
@@ -21,7 +21,7 @@ export default function SearchPage() {
   const results = rankedIds(effectiveAffinity)
     .slice(0, 6)
     .map((id) => PRODUCTS_BY_ID[id]);
-  const resultCount = 18 + state.interactions * 3;
+  const resultCount = 18 + activeStyle.interactions * 3;
 
   return (
     <>

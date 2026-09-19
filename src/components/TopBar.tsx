@@ -14,7 +14,7 @@ export function TopBar({
   meta?: string;
   metaSlot?: React.ReactNode;
 }) {
-  const { state } = useStyleProfile();
+  const { activeStyle } = useStyleProfile();
 
   return (
     <header className="z-20 flex-none bg-paper [padding-top:env(safe-area-inset-top)]">
@@ -26,7 +26,7 @@ export function TopBar({
           href="/profile"
           className="flex items-center gap-[7px] text-[10px] font-semibold tracking-[0.1em] text-neutral-700 uppercase"
         >
-          <span>{tuningLabel(state.interactions)}</span>
+          <span>{tuningLabel(activeStyle.interactions)}</span>
           <GearIcon />
         </Link>
       </div>

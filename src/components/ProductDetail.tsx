@@ -22,7 +22,7 @@ export function ProductDetail({
   onBack: () => void;
   onBuildOutfit: (productId: string) => void;
 }) {
-  const { state, toggleDetailLike } = useStyleProfile();
+  const { activeStyle, effectiveAffinity, toggleDetailLike } = useStyleProfile();
   const product = PRODUCTS_BY_ID[productId];
 
   if (!product) {
@@ -41,9 +41,9 @@ export function ProductDetail({
     );
   }
 
-  const liked = !!state.liked[productId];
-  const reason = reasonFor(product, state.affinity);
-  const more = rankedIds(state.affinity)
+  const liked = !!activeStyle.liked[productId];
+  const reason = reasonFor(product, effectiveAffinity);
+  const more = rankedIds(effectiveAffinity)
     .filter((id) => id !== productId)
     .slice(0, 3)
     .map((id) => PRODUCTS_BY_ID[id]);
