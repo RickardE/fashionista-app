@@ -49,6 +49,8 @@ export type ModelResult =
       ok: false;
       reason: ModelFailureReason;
       message: string;
+      /** HTTP status of a provider_error, when the provider returned one. */
+      status?: number;
       usage: ModelUsage;
       latencyMs: number;
       rawText?: string;

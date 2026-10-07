@@ -45,9 +45,19 @@ export interface RunOptions {
   logger?: Logger;
 }
 
+/**
+ * A run whose first attempts all fail like this is misconfigured (bad key,
+ * unknown model, malformed request) — every further call would fail the same
+ * way, so the run stops instead of recording one failure per product.
+ */
+const FAIL_FAST_AFTER = 3;
+const CONFIG_ERROR_STATUSES = new Set([400, 401, 403, 404]);
+
 export interface RunResult {
   runId: number;
-  stats: Awaited<ReturnType<typeof computeRunStats>>;
+  /** Set when the run stopped early (fail-fast); remaining products were not attempted. */
+  aborted: string | null;
+  stats: Awaited<ReturnType<typeof computeRunStats>> & { skipped_locked: number; not_attempted: number };
 }
 
 const addUsage = (a: ModelUsage, b: ModelUsage): ModelUsage => ({
@@ -57,10 +67,10 @@ const addUsage = (a: ModelUsage, b: ModelUsage): ModelUsage => ({
   cacheWriteTokens: a.cacheWriteTokens + b.cacheWriteTokens,
 });
 
-async function pool<T>(items: T[], concurrency: number, fn: (item: T) => Promise<void>) {
+async function pool<T>(items: T[], concurrency: number, fn: (item: T) => Promise<void>, stopped: () => boolean) {
   let next = 0;
   const workers = Array.from({ length: Math.max(1, Math.min(concurrency, items.length)) }, async () => {
-    while (next < items.length) await fn(items[next++]);
+    while (next < items.length && !stopped()) await fn(items[next++]);
   });
   await Promise.all(workers);
 }
@@ -123,18 +133,36 @@ export async function runEnrichment(db: Db, opts: RunOptions): Promise<RunResult
     const ordered = claimed.map((id) => byId.get(id)).filter((r): r is EnrichableProduct => !!r);
 
     let done = 0;
-    await pool(ordered, opts.concurrency ?? DEFAULT_CONCURRENCY, async (product) => {
-      const outcome = await enrichOne(db, { runId, product, provider, imageMode, activate });
-      done++;
-      log.info("product enriched", { runId, done, of: ordered.length, product: product.id, outcome });
-    });
+    let configFailures = 0;
+    let reachedModel = false;
+    let aborted: string | null = null;
+    await pool(
+      ordered,
+      opts.concurrency ?? DEFAULT_CONCURRENCY,
+      async (product) => {
+        const { outcome, configError } = await enrichOne(db, { runId, product, provider, imageMode, activate });
+        done++;
+        log.info("product enriched", { runId, done, of: ordered.length, product: product.id, outcome });
+        if (!configError) reachedModel = true;
+        else if (!reachedModel && ++configFailures >= FAIL_FAST_AFTER && !aborted) {
+          aborted = `stopped after ${configFailures} consecutive provider errors: ${configError}`;
+          log.error("run stopped: provider rejected every request", { runId, reason: configError });
+        }
+      },
+      () => aborted !== null,
+    );
+    if (aborted && activate) await releaseClaims(db, claimed);
 
-    const stats = { ...(await computeRunStats(db, runId)), skipped_locked: skippedLocked };
+    const stats = {
+      ...(await computeRunStats(db, runId)),
+      skipped_locked: skippedLocked,
+      not_attempted: ordered.length - done,
+    };
     await db
       .update(enrichmentRuns)
-      .set({ status: "succeeded", finishedAt: new Date(), stats })
+      .set({ status: aborted ? "failed" : "succeeded", finishedAt: new Date(), stats, error: aborted })
       .where(eq(enrichmentRuns.id, runId));
-    return { runId, stats };
+    return { runId, stats, aborted };
   } catch (err) {
     if (activate) await releaseClaims(db, claimed);
     await db
@@ -147,6 +175,8 @@ export async function runEnrichment(db: Db, opts: RunOptions): Promise<RunResult
 
 interface Attempt {
   outcome: EnrichmentOutcome;
+  /** Provider rejected the request itself (auth/config); message for fail-fast. */
+  configError?: string;
   attributes: Record<string, unknown> | null;
   confidences: Record<string, unknown> | null;
   rawOutput: unknown;
@@ -161,7 +191,7 @@ interface Attempt {
 async function enrichOne(
   db: Db,
   ctx: { runId: number; product: EnrichableProduct; provider: ModelProvider; imageMode: ImageMode; activate: boolean },
-): Promise<EnrichmentOutcome> {
+): Promise<{ outcome: EnrichmentOutcome; configError?: string }> {
   const { product, provider } = ctx;
   const input = buildEnrichmentInput(product);
   const request: ModelRequest = {
@@ -225,7 +255,7 @@ async function enrichOne(
       error: attempt.error,
     });
   }
-  return attempt.outcome;
+  return { outcome: attempt.outcome, configError: attempt.configError };
 }
 
 /** Fingerprint of everything sent to the model except the image (fingerprinted separately). */
@@ -281,7 +311,11 @@ async function callAndValidate(provider: ModelProvider, request: ModelRequest, p
         lastRaw = result.rawText ?? null;
         continue;
       }
-      return failedAttempt(result.reason, result.message, usage, latencyMs, calls, { rawOutput: result.rawText ?? lastRaw });
+      const failed = failedAttempt(result.reason, result.message, usage, latencyMs, calls, { rawOutput: result.rawText ?? lastRaw });
+      if (result.reason === "provider_error" && result.status && CONFIG_ERROR_STATUSES.has(result.status)) {
+        failed.configError = `${result.status} ${result.message}`.slice(0, 300);
+      }
+      return failed;
     }
 
     lastRaw = result.output;

@@ -173,6 +173,47 @@ describe("failures and retries", () => {
   });
 });
 
+describe("fail-fast", () => {
+  const rejected = (status: number) => () => ({
+    ok: false as const,
+    reason: "provider_error" as const,
+    message: "This API key is not scoped to a workspace",
+    status,
+    usage: { inputTokens: 0, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 },
+    latencyMs: 1,
+  });
+
+  it("stops a run whose first requests are all rejected, and releases its claims", async () => {
+    const ids = await Promise.all(Array.from({ length: 10 }, () => insertProduct(db)));
+    const provider = mockProvider(rejected(400));
+    const result = await run(provider, ids);
+    expect(result.aborted).toMatch(/stopped after 3 consecutive provider errors: 400/);
+    expect(provider.calls.length).toBeLessThan(10);
+    expect(result.stats.not_attempted).toBe(10 - provider.calls.length);
+    const [runRow] = await db.select().from(enrichmentRuns).where(eq(enrichmentRuns.id, result.runId));
+    expect(runRow.status).toBe("failed");
+    expect(runRow.error).toMatch(/workspace/);
+    // Nothing is left claimed; untouched products are still pending.
+    expect((await statusCounts(db)).processing).toBe(0);
+    expect((await selectProductsToEnrich(db)).length).toBe(10 - provider.calls.length);
+  });
+
+  it("does not stop on server errors (5xx are transient, already retried by the SDK)", async () => {
+    const ids = await Promise.all(Array.from({ length: 5 }, () => insertProduct(db)));
+    const result = await run(mockProvider(rejected(500)), ids);
+    expect(result.aborted).toBeNull();
+    expect(result.stats).toMatchObject({ failed: 5, not_attempted: 0 });
+  });
+
+  it("does not stop on a product-specific rejection once requests have succeeded", async () => {
+    const ids = await Promise.all(Array.from({ length: 6 }, () => insertProduct(db)));
+    const provider = mockProvider((_req, call) => (call === 1 ? ok(modelOutput()) : rejected(400)()));
+    const result = await runEnrichment(db, { kind: "incremental", provider, productIds: ids, logger: silentLogger, concurrency: 1 });
+    expect(result.aborted).toBeNull();
+    expect(provider.calls).toHaveLength(6);
+  });
+});
+
 describe("locking", () => {
   it("lets only one claimant take a product", async () => {
     const id = await insertProduct(db);

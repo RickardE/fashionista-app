@@ -62,10 +62,16 @@ describe("AnthropicProvider", () => {
     expect(await provider.generate(request)).toMatchObject({ ok: false, reason: "invalid_json" });
   });
 
-  it("turns API errors into provider_error results", async () => {
+  it("turns API errors into provider_error results, keeping the HTTP status", async () => {
     const client = { messages: { create: async () => Promise.reject(new Error("boom")) } } as unknown as Anthropic;
     const provider = new AnthropicProvider({ provider: "anthropic", model: "m" }, client);
-    expect(await provider.generate(request)).toMatchObject({ ok: false, reason: "provider_error" });
+    expect(await provider.generate(request)).toMatchObject({ ok: false, reason: "provider_error", message: "boom" });
+
+    const { APIError } = await import("@anthropic-ai/sdk");
+    const apiError = APIError.generate(400, { type: "error", error: { type: "invalid_request_error", message: "not scoped" } }, "not scoped", new Headers());
+    const rejecting = { messages: { create: async () => Promise.reject(apiError) } } as unknown as Anthropic;
+    const result = await new AnthropicProvider({ provider: "anthropic", model: "m" }, rejecting).generate(request);
+    expect(result).toMatchObject({ ok: false, reason: "provider_error", status: 400 });
   });
 
   it("rejects unknown effort levels up front", () => {

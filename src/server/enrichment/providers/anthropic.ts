@@ -31,7 +31,11 @@ export class AnthropicProvider implements ModelProvider {
       throw new Error(`Unsupported Anthropic effort "${config.effort}" (use ${EFFORTS.join(", ")})`);
     }
     // SDK retries cover transient failures (429, 5xx, connection errors).
-    this.client = client ?? new Anthropic({ maxRetries: 3 });
+    // Keys not scoped to a workspace must name one per request.
+    const workspace = process.env.ANTHROPIC_WORKSPACE_ID;
+    this.client =
+      client ??
+      new Anthropic({ maxRetries: 3, ...(workspace ? { defaultHeaders: { "anthropic-workspace-id": workspace } } : {}) });
   }
 
   async generate(request: ModelRequest): Promise<ModelResult> {
@@ -68,7 +72,8 @@ export class AnthropicProvider implements ModelProvider {
       return {
         ok: false,
         reason: "provider_error",
-        message: err instanceof Anthropic.APIError ? `${err.status ?? ""} ${err.message}`.trim() : String(err),
+        message: err instanceof Error ? err.message : String(err),
+        status: err instanceof Anthropic.APIError ? err.status : undefined,
         usage: ZERO_USAGE,
         latencyMs: Date.now() - started,
       };

@@ -73,7 +73,7 @@ async function main() {
       return;
     }
 
-    const { runId, stats } = await runEnrichment(db, {
+    const { runId, stats, aborted } = await runEnrichment(db, {
       kind,
       provider: createModelProvider(config),
       productIds,
@@ -85,6 +85,11 @@ async function main() {
     console.log(`\nEnrichment run #${runId} (${kind})`);
     console.table(statsRows(stats));
     printReasons("Failure reasons", stats.failure_reasons);
+    if (aborted) {
+      console.log(`\nRun stopped early — ${aborted}`);
+      console.log(`${stats.not_attempted} product(s) not attempted. Fix the configuration and run again.`);
+      process.exitCode = 1;
+    }
     printReasons("Review reasons", stats.review_reasons);
   } finally {
     await close();

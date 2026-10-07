@@ -57,7 +57,8 @@ export class OpenAIProvider implements ModelProvider {
       return {
         ok: false,
         reason: "provider_error",
-        message: err instanceof OpenAI.APIError ? `${err.status ?? ""} ${err.message}`.trim() : String(err),
+        message: err instanceof Error ? err.message : String(err),
+        status: err instanceof OpenAI.APIError ? err.status : undefined,
         usage: ZERO_USAGE,
         latencyMs: Date.now() - started,
       };

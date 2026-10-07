@@ -115,7 +115,7 @@ async function main() {
     }
 
     const config = modelConfigFrom(values);
-    const { runId, stats } = await runEnrichment(db, {
+    const { runId, stats, aborted } = await runEnrichment(db, {
       kind: "pilot",
       provider: createModelProvider(config),
       productIds,
@@ -127,6 +127,11 @@ async function main() {
     console.log(`\nPilot run #${runId} — ${config.provider}:${config.model}${config.effort ? ` (effort ${config.effort})` : ""}`);
     console.table(statsRows(stats));
     printReasons("Failure reasons", stats.failure_reasons);
+    if (aborted) {
+      console.log(`\nRun stopped early — ${aborted}`);
+      console.log(`${stats.not_attempted} product(s) not attempted. Fix the configuration and run again.`);
+      process.exitCode = 1;
+    }
     printReasons("Review reasons", stats.review_reasons);
     printReasons("Taxonomy gaps", stats.taxonomy_gaps);
     console.log(`\nReview: npm run products:enrich-report -- --run ${runId} --html --csv`);
