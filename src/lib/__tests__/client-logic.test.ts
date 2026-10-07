@@ -8,6 +8,7 @@ import {
   parseOutfitItems,
   roleFor,
 } from "@/lib/outfits";
+import { initialState, reducer } from "@/lib/store/style-profile-context";
 import { migratePersistedState, STORAGE_KEY } from "@/lib/store/style-profile-migrate";
 import type { Product } from "@/lib/types";
 
@@ -191,5 +192,25 @@ describe("outfit links", () => {
   it("ignores malformed items", () => {
     expect(parseOutfitItems("hat:123,top:not-an-id")).toBeUndefined();
     expect(parseOutfitItems(null)).toBeUndefined();
+  });
+});
+
+describe("feed refresh", () => {
+  it("drops a stale feed so it is fetched again from the start", () => {
+    const base = initialState();
+    const id = base.activeStyleId;
+    const stale = {
+      ...base,
+      styles: {
+        ...base.styles,
+        [id]: { ...base.styles[id], feedOrder: ["a", "b", "c"], feedIndex: 2, feedExhausted: true, liked: { a: true as const } },
+      },
+    };
+    const next = reducer(stale, { type: "refreshFeed" });
+    expect(next.styles[id]).toMatchObject({ feedOrder: [], feedIndex: 0, feedExhausted: false });
+    // Taste and saved items survive; only the queued feed is dropped.
+    expect(next.styles[id].liked).toEqual({ a: true });
+    const other = base.styleOrder.find((s) => s !== id)!;
+    expect(next.styles[other]).toBe(stale.styles[other]);
   });
 });

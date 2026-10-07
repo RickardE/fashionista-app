@@ -14,7 +14,7 @@ import type { Product } from "@/lib/types";
 export function FeedDeck() {
   const router = useRouter();
   const pathname = usePathname();
-  const { activeStyle, next, react, resetFeed, chooseGender } = useStyleProfile();
+  const { activeStyle, next, react, resetFeed, refreshFeed, chooseGender } = useStyleProfile();
   const { feedOrder, feedIndex, feedExhausted } = activeStyle;
   const catalog = useCatalog();
   const feed = useFeed();
@@ -24,10 +24,17 @@ export function FeedDeck() {
   const current = productAt(feedIndex);
   const currentState = feedOrder[feedIndex] ? catalog.stateOf(feedOrder[feedIndex]) : "idle";
 
-  // Products that went out of stock (or vanished) since they were queued are skipped.
+  // Products that went out of stock (or vanished) since they were queued are
+  // skipped. feedIndex is a dependency because the next card's state is often
+  // already "missing" (cards are resolved in batches), so the state alone
+  // doesn't change between consecutive skips. A finished feed that ends in
+  // unusable cards would otherwise strand the deck — fetch it afresh instead.
   useEffect(() => {
-    if ((current && !current.available) || currentState === "missing") next();
-  }, [current, currentState, next]);
+    const unusable = (current && !current.available) || currentState === "missing";
+    if (!unusable) return;
+    if (feedExhausted && feedIndex >= feedOrder.length - 1) refreshFeed();
+    else next();
+  }, [current, currentState, feedIndex, feedOrder.length, feedExhausted, next, refreshFeed]);
 
   const [notice, setNotice] = useState("");
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(

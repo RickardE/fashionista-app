@@ -49,6 +49,7 @@ type Action =
   | { type: "prev" }
   | { type: "setFeedIndex"; index: number }
   | { type: "resetFeed" }
+  | { type: "refreshFeed" }
   | { type: "toggleDetailLike"; id: string; tags: StyleTag[] }
   | { type: "completeOnboarding" }
   | { type: "setActiveStyle"; styleId: string }
@@ -238,6 +239,16 @@ export function reducer(state: StyleProfileState, action: Action): StyleProfileS
         feedIndex: 0,
       }));
 
+    // Drops the queued feed so it is fetched again from the start — for a feed
+    // that can no longer show anything (e.g. ids from a previous catalogue).
+    case "refreshFeed":
+      return updateStyle(state, state.activeStyleId, (style) => ({
+        ...style,
+        feedOrder: [],
+        feedIndex: 0,
+        feedExhausted: false,
+      }));
+
     case "toggleDetailLike": {
       return updateStyle(state, state.activeStyleId, (style) => {
         if (style.liked[action.id]) {
@@ -353,6 +364,7 @@ interface StyleProfileContextValue {
   prev: () => void;
   setFeedIndex: (index: number) => void;
   resetFeed: () => void;
+  refreshFeed: () => void;
   toggleDetailLike: (product: Product) => void;
   completeOnboarding: () => void;
   setActiveStyle: (styleId: string) => void;
@@ -463,6 +475,7 @@ export function StyleProfileProvider({
     [],
   );
   const resetFeed = useCallback(() => dispatch({ type: "resetFeed" }), []);
+  const refreshFeed = useCallback(() => dispatch({ type: "refreshFeed" }), []);
   const toggleDetailLike = useCallback(
     (product: Product) => dispatch({ type: "toggleDetailLike", id: product.id, tags: product.tags }),
     [],
@@ -545,6 +558,7 @@ export function StyleProfileProvider({
       prev,
       setFeedIndex,
       resetFeed,
+      refreshFeed,
       toggleDetailLike,
       completeOnboarding,
       setActiveStyle,
@@ -572,6 +586,7 @@ export function StyleProfileProvider({
       prev,
       setFeedIndex,
       resetFeed,
+      refreshFeed,
       toggleDetailLike,
       completeOnboarding,
       setActiveStyle,
