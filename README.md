@@ -28,9 +28,34 @@ npm start
 
 ## Deploy
 
-Push to a Git repo and import it in [Vercel](https://vercel.com/new) — no
-extra configuration needed. Product photography is served from
-`images.unsplash.com` via `next/image` (configured in `next.config.ts`).
+Vercel (app) + Neon (Postgres). The app only reads the catalogue at runtime;
+imports, migrations and enrichment run from your machine via the CLI scripts.
+
+1. **Neon connection strings** — in the Neon console, *Connect*: copy the
+   pooled string (host contains `-pooler`) and the direct one into `.env.neon`
+   (git-ignored):
+
+   ```bash
+   DATABASE_URL="postgresql://…-pooler…/neondb?sslmode=require&channel_binding=require"
+   DATABASE_URL_UNPOOLED="postgresql://…/neondb?sslmode=require&channel_binding=require"
+   ADTRACTION_JOHNELLS_FEED_URL="…"   # same as in .env.local
+   ```
+
+2. **Schema + catalogue** (scripts prefer the direct URL):
+
+   ```bash
+   ENV_FILE=.env.neon npm run db:migrate
+   ENV_FILE=.env.neon npm run products:import
+   ```
+
+3. **Vercel** — import the GitHub repo and set `DATABASE_URL` to the *pooled*
+   Neon string (Production + Preview). Functions are pinned to `fra1` in
+   `vercel.json`, next to the Neon project (AWS eu-central-1, Frankfurt);
+   change both together. Nothing else is needed at runtime: feed URLs and model
+   API keys are CLI-only.
+
+Product photography is served from the merchant via `next/image`
+(`remotePatterns` in `next.config.ts`).
 
 ## How it works
 

@@ -6,7 +6,7 @@ import { createLogger } from "@/server/log";
 const log = createLogger("db:migrate");
 
 async function main() {
-  const { db, close } = connect();
+  const { db, close } = connect({ direct: true });
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await migrate(db as any, { migrationsFolder: "./drizzle" });

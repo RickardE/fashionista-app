@@ -53,7 +53,7 @@ async function main() {
     },
   });
 
-  const { db, close } = connect();
+  const { db, close } = connect({ direct: true });
   try {
     let productIds: string[];
     let selectionSummary: unknown;

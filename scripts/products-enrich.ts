@@ -50,7 +50,7 @@ async function main() {
   const imageMode = imageModeFrom(values["image-mode"]);
   const concurrency = positiveInt(values.concurrency, "--concurrency");
 
-  const { db, close } = connect();
+  const { db, close } = connect({ direct: true });
   try {
     const productIds = values.ids?.length
       ? values.ids

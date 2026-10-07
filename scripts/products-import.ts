@@ -35,7 +35,7 @@ async function main() {
     throw new Error("--limit must be a positive integer");
   }
 
-  const { db, close } = connect();
+  const { db, close } = connect({ direct: true });
   let failed = false;
   try {
     for (const key of sourceKeys) {

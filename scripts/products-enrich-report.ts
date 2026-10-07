@@ -43,7 +43,7 @@ async function main() {
     return;
   }
 
-  const { db, close } = connect();
+  const { db, close } = connect({ direct: true });
   try {
     const runIds = (values.run ?? []).map((r) => positiveInt(r, "--run"));
     if (!runIds.length) {
