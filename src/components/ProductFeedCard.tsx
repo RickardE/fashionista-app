@@ -128,14 +128,8 @@ export function ProductFeedCard({
           <span className="mt-[6px] block text-[21px] leading-[1.2] font-semibold tracking-[-0.01em]">
             {product.name}
           </span>
-          <span className="mt-[9px] flex items-center gap-2.5">
-            <span className="text-[15px] font-semibold">
-              {formatPrice(product.price, product.currency)}
-            </span>
-            <span className="h-[11px] w-px bg-neutral-400" />
-            <span className="text-[13px] text-neutral-700">
-              {product.color}
-            </span>
+          <span className="mt-[9px] block text-[15px] font-semibold">
+            {formatPrice(product.price, product.currency)}
           </span>
         </div>
         <button
@@ -153,10 +147,10 @@ export function ProductFeedCard({
           tonal scrim (not a badge) keeps the type readable over any photo. */}
       <motion.div
         style={{ opacity: loveOpacity, zIndex: isFront ? 2 : 1 }}
-        className="pointer-events-none absolute inset-x-0 top-0"
+        className="pointer-events-none absolute inset-0 flex items-center"
       >
-        <div className="from-paper via-paper/75 h-44 w-full bg-gradient-to-b to-transparent" />
-        <div className="absolute inset-x-0 top-14 flex flex-col items-center gap-2">
+        <div className="via-paper/85 h-44 w-full bg-gradient-to-b from-transparent to-transparent" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
           <span className="font-serif text-[36px] leading-none text-accent-700 italic">
             Love
           </span>
@@ -166,10 +160,10 @@ export function ProductFeedCard({
 
       <motion.div
         style={{ opacity: passOpacity, zIndex: isFront ? 2 : 1 }}
-        className="pointer-events-none absolute inset-x-0 top-0"
+        className="pointer-events-none absolute inset-0 flex items-center"
       >
-        <div className="from-paper via-paper/75 h-44 w-full bg-gradient-to-b to-transparent" />
-        <div className="absolute inset-x-0 top-14 flex flex-col items-center gap-2">
+        <div className="via-paper/85 h-44 w-full bg-gradient-to-b from-transparent to-transparent" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
           <span className="font-serif text-[36px] leading-none text-ink italic">
             Not for me
           </span>

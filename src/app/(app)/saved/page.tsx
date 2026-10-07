@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LookTile } from "@/components/LookTile";
 import { ProductTile } from "@/components/ProductTile";
+import { StyleSelector } from "@/components/StyleSelector";
 import { TopBar } from "@/components/TopBar";
 import { ArrowRightIcon } from "@/components/icons";
 import { PRODUCTS, PRODUCTS_BY_ID } from "@/lib/data/products";
@@ -15,7 +16,6 @@ export default function SavedPage() {
   const router = useRouter();
   const { state, activeStyle } = useStyleProfile();
   const [tab, setTab] = useState<SavedTab>("products");
-  const [category, setCategory] = useState("All");
 
   const savedIds = useMemo(
     () => PRODUCTS.map((p) => p.id).filter((id) => activeStyle.liked[id]),
@@ -25,50 +25,27 @@ export default function SavedPage() {
     () => state.savedOutfits.filter((o) => o.styleId === activeStyle.id),
     [state.savedOutfits, activeStyle.id],
   );
-  const categories = useMemo(
-    () => [
-      "All",
-      ...Array.from(new Set(savedIds.map((id) => PRODUCTS_BY_ID[id].category))),
-    ],
-    [savedIds],
-  );
-  const shown = savedIds.filter(
-    (id) => category === "All" || PRODUCTS_BY_ID[id].category === category,
-  );
-
-  const meta =
-    tab === "products"
-      ? `${savedIds.length} saved`
-      : `${savedOutfits.length} saved`;
-
   return (
     <>
-      <TopBar title="Your collection" meta={meta} />
+      <TopBar title="Your collection" />
       <main className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-        <div className="flex items-center gap-[7px] px-[22px] pt-1.5 pb-4">
-          <button
-            onClick={() => setTab("products")}
-            className={`border px-3.5 py-2 text-[10px] font-semibold tracking-[0.1em] uppercase ${
-              tab === "products"
-                ? "border-ink bg-ink text-paper"
-                : "border-neutral-400"
-            }`}
-          >
-            Products
-          </button>
-          <button
-            onClick={() => setTab("looks")}
-            className={`border px-3.5 py-2 text-[10px] font-semibold tracking-[0.1em] uppercase ${
-              tab === "looks"
-                ? "border-ink bg-ink text-paper"
-                : "border-neutral-400"
-            }`}
-          >
-            Looks
-          </button>
-          <span className="ml-auto text-[11px] font-medium text-neutral-500">
-            {activeStyle.name}
-          </span>
+        <div className="px-[22px] pb-3">
+          <StyleSelector placement="inline" />
+        </div>
+        <div className="flex items-center gap-6 px-[22px] pt-1.5 pb-4">
+          {(["products", "looks"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`border-b-2 pb-1.5 text-[11px] font-semibold tracking-[0.12em] uppercase ${
+                tab === t
+                  ? "border-ink text-ink"
+                  : "border-transparent text-neutral-500"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
         </div>
 
         {tab === "products" ? (
@@ -81,8 +58,8 @@ export default function SavedPage() {
                 just yet.
               </div>
               <p className="mt-3.5 mb-6 max-w-[27ch] text-[14px] leading-[1.6] text-neutral-700">
-                Like a piece in your feed and it lands here, sorted as your
-                collection grows.
+                Love a piece in your feed and it lands here — your own
+                moodboard, building as you browse.
               </p>
               <button
                 onClick={() => router.push("/discover")}
@@ -94,23 +71,8 @@ export default function SavedPage() {
             </div>
           ) : (
             <div className="px-[22px] pb-10">
-              <div className="no-scrollbar flex gap-[7px] overflow-x-auto pb-4">
-                {categories.map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => setCategory(c)}
-                    className={`border px-3 py-2 text-[10px] font-semibold tracking-[0.1em] whitespace-nowrap uppercase ${
-                      category === c
-                        ? "border-ink bg-ink text-paper"
-                        : "border-neutral-400"
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-4">
-                {shown.map((id) => (
+              <div className="grid grid-cols-2 gap-x-3 gap-y-5">
+                {savedIds.map((id) => (
                   <ProductTile key={id} product={PRODUCTS_BY_ID[id]} compact />
                 ))}
               </div>

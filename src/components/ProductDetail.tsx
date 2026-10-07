@@ -10,7 +10,7 @@ import {
 } from "@/components/icons";
 import { formatPrice } from "@/lib/format";
 import { PRODUCTS_BY_ID } from "@/lib/data/products";
-import { rankedIds, reasonFor } from "@/lib/personalization";
+import { rankedIds } from "@/lib/personalization";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
 
 export function ProductDetail({
@@ -42,7 +42,6 @@ export function ProductDetail({
   }
 
   const liked = !!activeStyle.liked[productId];
-  const reason = reasonFor(product, effectiveAffinity);
   const more = rankedIds(effectiveAffinity)
     .filter((id) => id !== productId)
     .slice(0, 3)
@@ -89,46 +88,22 @@ export function ProductDetail({
             {formatPrice(product.price, product.currency)}
           </div>
 
-          <div className="mt-5 h-[2px] bg-divider" />
-          <div className="flex justify-between border-b border-neutral-300 py-3">
-            <span className="text-[10px] font-semibold tracking-[0.1em] text-neutral-700 uppercase">
-              Colour
-            </span>
-            <span className="text-[14px] font-medium">{product.color}</span>
-          </div>
-          <div className="flex justify-between border-b border-neutral-300 py-3">
-            <span className="text-[10px] font-semibold tracking-[0.1em] text-neutral-700 uppercase">
-              Fit
-            </span>
-            <span className="text-[14px] font-medium">{product.fit}</span>
-          </div>
-          <div className="flex justify-between border-b border-neutral-300 py-3">
-            <span className="text-[10px] font-semibold tracking-[0.1em] text-neutral-700 uppercase">
-              Material
-            </span>
-            <span className="text-[14px] font-medium">{product.material}</span>
+          <div className="mt-1.5 text-[13px] text-neutral-700">
+            {[product.color, product.fit, product.material].join(" · ")}
           </div>
 
-          <button className="mt-[22px] flex h-[54px] w-full items-center justify-between bg-ink px-5 text-[13px] font-semibold tracking-[0.1em] text-paper uppercase transition-colors hover:bg-neutral-800">
-            <span>Shop at {product.retailer}</span>
-            <ArrowUpRightIcon />
-          </button>
           <button
             onClick={() => onBuildOutfit(product.id)}
-            className="mt-2.5 flex h-[54px] w-full items-center justify-between border border-neutral-400 px-5 text-[13px] font-semibold tracking-[0.1em] uppercase transition-colors hover:border-ink"
+            className="mt-6 flex h-[54px] w-full items-center justify-between border border-neutral-400 px-5 text-[13px] font-semibold tracking-[0.1em] uppercase transition-colors hover:border-ink"
           >
             <span>Build an outfit</span>
             <LayersIcon />
           </button>
 
-          <div className="mt-[30px] border-t border-neutral-300 pt-[18px]">
-            <div className="text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
-              Why we picked this
-            </div>
-            <div className="mt-[11px] text-[15px] leading-[1.6] font-medium text-pretty">
-              {reason}
-            </div>
-          </div>
+          <button className="mt-2.5 flex h-[54px] w-full items-center justify-between bg-ink px-5 text-[13px] font-semibold tracking-[0.1em] text-paper uppercase transition-colors hover:bg-neutral-800">
+            <span>Shop at {product.retailer}</span>
+            <ArrowUpRightIcon />
+          </button>
 
           {more.length > 0 && (
             <div className="mt-7 border-t border-neutral-300 pt-[18px]">

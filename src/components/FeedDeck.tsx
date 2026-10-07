@@ -64,14 +64,7 @@ export function FeedDeck() {
     const id = feedOrder[feedIndex];
     if (!id) return;
     react(id, direction);
-    if (direction > 0) {
-      flash("Saved to your collection");
-    } else if (activeStyle.interactions + 1 === 3) {
-      flash("Noted — fewer of those");
-    }
-    if (activeStyle.interactions + 1 === 4) {
-      setTimeout(() => flash("Your feed is getting to know you"), 2600);
-    }
+    if (direction > 0) flash("Saved to your collection");
     next();
   }
 

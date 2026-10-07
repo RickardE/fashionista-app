@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Instrument_Serif } from "next/font/google";
+import { StyleSwitchOverlay } from "@/components/StyleSwitchOverlay";
 import { StyleProfileProvider } from "@/lib/store/style-profile-context";
 import "./globals.css";
 
@@ -47,6 +48,7 @@ export default function RootLayout({
             {children}
             {modal}
           </div>
+          <StyleSwitchOverlay />
         </StyleProfileProvider>
       </body>
     </html>

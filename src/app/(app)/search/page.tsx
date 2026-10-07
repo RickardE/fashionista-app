@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CloseIcon, FiltersIcon, SearchIcon } from "@/components/icons";
+import { CloseIcon, SearchIcon } from "@/components/icons";
 import { ProductTile } from "@/components/ProductTile";
 import { TopBar } from "@/components/TopBar";
 import { PRODUCTS_BY_ID, RECENT_SEARCHES, SUGGESTED_SEARCHES } from "@/lib/data/products";
@@ -9,7 +9,7 @@ import { rankedIds } from "@/lib/personalization";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
 
 export default function SearchPage() {
-  const { activeStyle, effectiveAffinity } = useStyleProfile();
+  const { effectiveAffinity } = useStyleProfile();
   const [query, setQuery] = useState("");
   const [submitted, setSubmitted] = useState("");
 
@@ -21,11 +21,10 @@ export default function SearchPage() {
   const results = rankedIds(effectiveAffinity)
     .slice(0, 6)
     .map((id) => PRODUCTS_BY_ID[id]);
-  const resultCount = 18 + activeStyle.interactions * 3;
 
   return (
     <>
-      <TopBar title="Search" meta="Personalised" />
+      <TopBar title="Search" />
       <main className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="px-[22px] pt-1.5">
           <div className="flex items-center gap-2.5 border-b-2 border-ink pb-2.5">
@@ -92,38 +91,16 @@ export default function SearchPage() {
                 </button>
               ))}
             </div>
-            <div className="mt-[30px] mb-3.5 h-px bg-neutral-300" />
-            <p className="max-w-[30ch] text-[13px] leading-[1.6] text-neutral-700">
-              Search is here when you know what you want. Results are ranked
-              by your taste, so yours won&rsquo;t look like anyone else&rsquo;s.
+            <p className="mt-8 max-w-[30ch] text-[13px] leading-[1.6] text-neutral-700">
+              Search when you know what you&rsquo;re looking for.
             </p>
           </div>
         ) : (
           <div className="animate-rise px-[22px] pt-5 pb-10">
-            <div className="flex items-baseline justify-between border-b border-neutral-300 pb-3">
-              <span className="flex-1 text-[19px] font-semibold leading-[1.2]">
-                &ldquo;{submitted}&rdquo;
-              </span>
-              <span className="text-[10px] font-semibold tracking-[0.1em] text-neutral-700 uppercase">
-                {resultCount} pieces
-              </span>
+            <div className="border-b border-neutral-300 pb-3 text-[19px] leading-[1.2] font-semibold">
+              &ldquo;{submitted}&rdquo;
             </div>
-            <div className="no-scrollbar flex items-center gap-[7px] overflow-x-auto py-3 pb-4">
-              <span className="flex items-center gap-1.5 border border-neutral-400 px-[11px] py-2 text-[10px] font-semibold tracking-[0.1em] whitespace-nowrap uppercase">
-                <FiltersIcon />
-                Filters
-              </span>
-              <span className="border border-ink bg-ink px-[11px] py-2 text-[10px] font-semibold tracking-[0.1em] whitespace-nowrap text-paper uppercase">
-                Your taste
-              </span>
-              <span className="border border-neutral-400 px-[11px] py-2 text-[10px] font-semibold tracking-[0.1em] whitespace-nowrap uppercase">
-                Price
-              </span>
-              <span className="border border-neutral-400 px-[11px] py-2 text-[10px] font-semibold tracking-[0.1em] whitespace-nowrap uppercase">
-                Colour
-              </span>
-            </div>
-            <div className="grid grid-cols-2 gap-x-3 gap-y-3.5">
+            <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-5">
               {results.map((product) => (
                 <ProductTile key={product.id} product={product} compact />
               ))}

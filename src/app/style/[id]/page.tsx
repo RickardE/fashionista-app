@@ -3,18 +3,16 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
+import { StyleAvatar } from "@/components/StyleAvatar";
 import { PrimaryButton, SecondaryButton } from "@/components/ui/Button";
-import { Divider } from "@/components/ui/Kicker";
 import { TAG_LABELS } from "@/lib/data/products";
-import { accuracyFor, topTags } from "@/lib/personalization";
+import { mergeAffinity, topTags } from "@/lib/personalization";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
-
-const FALLBACK_TAGS = ["relaxed", "neutral", "knitwear"] as const;
 
 export default function StyleDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const { state, styles, activeStyle, setActiveStyle, duplicateStyle, renameStyle } =
+  const { styles, activeStyle, setActiveStyle, duplicateStyle, renameStyle } =
     useStyleProfile();
   const [panel, setPanel] = useState<"rename" | "duplicate" | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -39,15 +37,10 @@ export default function StyleDetailPage() {
   }
 
   const isActive = style.id === activeStyle.id;
-  const accuracy = accuracyFor(style.interactions);
-  const tags = topTags(style.affinity, 3);
-  const affinityList = (tags.length ? tags : FALLBACK_TAGS).map((tag, i) => ({
-    label: TAG_LABELS[tag].charAt(0).toUpperCase() + TAG_LABELS[tag].slice(1),
-    note: tags.length ? (i === 0 ? "strongest signal" : "growing") : "from your inspiration",
-  }));
-  const likedCount = Object.keys(style.liked).length;
-  const passedCount = Object.keys(style.disliked).length;
-  const savedCount = state.savedOutfits.filter((o) => o.styleId === style.id).length;
+  const tags = topTags(mergeAffinity(style.seedAffinity, style.affinity), 3);
+  const choosing = tags.map(
+    (tag) => TAG_LABELS[tag].charAt(0).toUpperCase() + TAG_LABELS[tag].slice(1),
+  );
 
   function openRename() {
     setRenameValue(style!.name);
@@ -86,8 +79,9 @@ export default function StyleDetailPage() {
       </div>
 
       <div className="no-scrollbar animate-rise flex-1 overflow-y-auto px-[22px] pb-12">
-        <div className="flex items-center gap-2.5">
-          <span className="font-serif text-[36px] leading-[1.08]">
+        <StyleAvatar style={style} size={56} />
+        <div className="flex items-baseline gap-2.5 pt-4">
+          <span className="font-serif text-[44px] leading-[1.02] tracking-[-0.015em]">
             {style.name}
           </span>
           {isActive && (
@@ -96,90 +90,52 @@ export default function StyleDetailPage() {
             </span>
           )}
         </div>
-        <div className="mt-1.5 text-[14px] leading-[1.5] text-neutral-700">
+        <div className="mt-3 text-[15px] leading-[1.5] text-neutral-700">
           {style.description}
         </div>
 
         {!isActive && (
-          <SecondaryButton className="mt-4 h-11" onClick={() => setActiveStyle(style!.id)}>
-            Set as active style
+          <SecondaryButton
+            className="mt-6 h-12"
+            onClick={() => setActiveStyle(style!.id)}
+          >
+            Use this style
           </SecondaryButton>
         )}
 
-        <Divider className="mt-6" />
+        {choosing.length > 0 && (
+          <>
+            <div className="mt-10 mb-1 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
+              What you keep choosing
+            </div>
+            {choosing.map((label) => (
+              <div
+                key={label}
+                className="border-b border-neutral-300 py-[13px] text-[17px] font-semibold"
+              >
+                {label}
+              </div>
+            ))}
+          </>
+        )}
 
-        <div className="mt-6 mb-2 flex items-center justify-between">
-          <span className="text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
-            How well we know you
-          </span>
-          <span className="text-[11px] font-semibold tracking-[0.06em]">
-            {accuracy}%
-          </span>
-        </div>
-        <div className="flex gap-[3px]">
-          {Array.from({ length: 12 }, (_, i) => (
-            <span
-              key={i}
-              className={`h-3 flex-1 border border-neutral-400 ${
-                i < Math.round((accuracy / 100) * 12) ? "bg-ink" : ""
-              }`}
-            />
-          ))}
-        </div>
-        <div className="mt-2 text-[12px] leading-[1.6] text-neutral-700">
-          {style.interactions < 3
-            ? "Like or dismiss a few pieces and this sharpens quickly."
-            : `Built from ${style.interactions} reactions in your feed.`}
-        </div>
-
-        <div className="mt-[30px] mb-1 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
-          What you keep choosing
-        </div>
-        {affinityList.map((a) => (
-          <div
-            key={a.label}
-            className="flex items-baseline justify-between border-b border-neutral-300 py-[11px]"
-          >
-            <span className="text-[16px] font-semibold">{a.label}</span>
-            <span className="text-[12px] text-neutral-700">{a.note}</span>
-          </div>
-        ))}
-
-        <div className="mt-[30px] mb-2.5 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
-          Recent activity
-        </div>
-        <div className="flex items-baseline gap-4 text-[15px] font-medium">
-          <span>{likedCount} liked</span>
-          <span className="text-neutral-400">·</span>
-          <span>{passedCount} passed</span>
-          <span className="text-neutral-400">·</span>
-          <span>{savedCount} saved</span>
-        </div>
-
-        <div className="mt-[30px] mb-1 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
+        <div className="mt-10 mb-0.5 text-[10px] font-semibold tracking-[0.12em] text-neutral-500 uppercase">
           Style settings
         </div>
-        <button
-          onClick={openRename}
-          className="flex w-full items-center justify-between border-b border-neutral-300 py-[14px] text-left"
-        >
-          <span className="text-[15px] font-medium">Rename style</span>
-          <ChevronRightIcon />
-        </button>
-        <button
-          onClick={() => router.push("/onboarding/upload")}
-          className="flex w-full items-center justify-between border-b border-neutral-300 py-[14px] text-left"
-        >
-          <span className="text-[15px] font-medium">Add inspiration</span>
-          <ChevronRightIcon />
-        </button>
-        <button
-          onClick={openDuplicate}
-          className="flex w-full items-center justify-between border-b border-neutral-300 py-[14px] text-left"
-        >
-          <span className="text-[15px] font-medium">Duplicate style</span>
-          <ChevronRightIcon />
-        </button>
+        {[
+          { label: "Rename style", onClick: openRename },
+          { label: "Add inspiration", onClick: () => router.push("/onboarding/upload") },
+          { label: "Duplicate style", onClick: openDuplicate },
+        ].map((row) => (
+          <button
+            key={row.label}
+            onClick={row.onClick}
+            className="flex w-full items-center justify-between py-[11px] text-left text-neutral-700"
+          >
+            <span className="text-[14px]">{row.label}</span>
+            <ChevronRightIcon />
+          </button>
+        ))}
 
         {panel === "rename" && (
           <div className="mt-5">

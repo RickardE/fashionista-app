@@ -7,6 +7,7 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useState,
 } from "react";
 import { PRODUCTS_BY_ID } from "@/lib/data/products";
 import { BUILTIN_STYLE_PRESETS, DEFAULT_STYLE_ID } from "@/lib/data/styles";
@@ -276,6 +277,8 @@ interface StyleProfileContextValue {
   removeOutfit: (id: string) => void;
   restart: () => void;
   feedLength: number;
+  /** The most recent user-initiated style switch — a UI event for the switch transition, not state. */
+  styleSwitch: { id: string; at: number } | null;
   /** The active style's seed leaning merged with everything the user has actually liked/disliked in it. */
   effectiveAffinity: AffinityMap;
 }
@@ -303,6 +306,7 @@ export function StyleProfileProvider({
   children: React.ReactNode;
 }) {
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
+  const [styleSwitch, setStyleSwitch] = useState<{ id: string; at: number } | null>(null);
 
   useEffect(() => {
     try {
@@ -348,7 +352,10 @@ export function StyleProfileProvider({
     [],
   );
   const setActiveStyle = useCallback(
-    (styleId: string) => dispatch({ type: "setActiveStyle", styleId }),
+    (styleId: string) => {
+      dispatch({ type: "setActiveStyle", styleId });
+      setStyleSwitch({ id: styleId, at: Date.now() });
+    },
     [],
   );
   const createStyle = useCallback(
@@ -422,6 +429,7 @@ export function StyleProfileProvider({
       removeOutfit,
       restart,
       feedLength: feedLengthOf(activeStyle),
+      styleSwitch,
       effectiveAffinity,
     }),
     [
@@ -442,6 +450,7 @@ export function StyleProfileProvider({
       saveOutfit,
       removeOutfit,
       restart,
+      styleSwitch,
       effectiveAffinity,
     ],
   );

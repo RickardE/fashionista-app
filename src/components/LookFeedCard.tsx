@@ -135,10 +135,10 @@ export function LookFeedCard({
 
       <motion.div
         style={{ opacity: loveOpacity }}
-        className="pointer-events-none absolute inset-x-0 top-0 z-[2]"
+        className="pointer-events-none absolute inset-0 flex items-center z-[2]"
       >
-        <div className="from-paper via-paper/75 h-44 w-full bg-gradient-to-b to-transparent" />
-        <div className="absolute inset-x-0 top-14 flex flex-col items-center gap-2">
+        <div className="via-paper/85 h-44 w-full bg-gradient-to-b from-transparent to-transparent" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
           <span className="font-serif text-[36px] leading-none text-accent-700 italic">
             Love
           </span>
@@ -148,10 +148,10 @@ export function LookFeedCard({
 
       <motion.div
         style={{ opacity: passOpacity }}
-        className="pointer-events-none absolute inset-x-0 top-0 z-[2]"
+        className="pointer-events-none absolute inset-0 flex items-center z-[2]"
       >
-        <div className="from-paper via-paper/75 h-44 w-full bg-gradient-to-b to-transparent" />
-        <div className="absolute inset-x-0 top-14 flex flex-col items-center gap-2">
+        <div className="via-paper/85 h-44 w-full bg-gradient-to-b from-transparent to-transparent" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
           <span className="font-serif text-[36px] leading-none text-ink italic">
             Not for me
           </span>

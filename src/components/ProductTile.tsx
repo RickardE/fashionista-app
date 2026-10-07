@@ -36,13 +36,11 @@ export function ProductTile({
         >
           {product.name}
         </span>
-        <span
-          className={`mt-1 block font-semibold text-neutral-800 ${
-            compact ? "text-[12px]" : "text-[13px]"
-          }`}
-        >
-          {formatPrice(product.price, product.currency)}
-        </span>
+        {!compact && (
+          <span className="mt-1 block text-[13px] font-semibold text-neutral-800">
+            {formatPrice(product.price, product.currency)}
+          </span>
+        )}
       </Link>
     </div>
   );

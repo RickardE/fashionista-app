@@ -49,16 +49,6 @@ export function reasonFor(product: Product, affinity: AffinityMap): string {
   return product.reason;
 }
 
-export function tuningLabel(interactions: number): string {
-  if (interactions < 3) return "Getting to know you";
-  if (interactions < 6) return "Learning your taste";
-  return "Tuned to you";
-}
-
-export function accuracyFor(interactions: number): number {
-  return Math.min(94, 34 + interactions * 8);
-}
-
 export function mergeAffinity(...maps: AffinityMap[]): AffinityMap {
   const merged: AffinityMap = {};
   maps.forEach((map) => {

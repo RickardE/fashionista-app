@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import { GearIcon } from "@/components/icons";
-import { tuningLabel } from "@/lib/personalization";
-import { useStyleProfile } from "@/lib/store/style-profile-context";
 
 export function TopBar({
   title,
@@ -14,19 +12,17 @@ export function TopBar({
   meta?: string;
   metaSlot?: React.ReactNode;
 }) {
-  const { activeStyle } = useStyleProfile();
-
   return (
     <header className="z-20 flex-none bg-paper [padding-top:env(safe-area-inset-top)]">
       <div className="flex h-12 items-center justify-between px-[22px]">
         <span className="text-[11px] font-semibold tracking-[0.42em] uppercase">
-          STYLEAI
+          STYLE
         </span>
         <Link
           href="/profile"
-          className="flex items-center gap-[7px] text-[10px] font-semibold tracking-[0.1em] text-neutral-700 uppercase"
+          aria-label="Your styles"
+          className="flex h-8 w-8 items-center justify-end text-neutral-700"
         >
-          <span>{tuningLabel(activeStyle.interactions)}</span>
           <GearIcon />
         </Link>
       </div>
