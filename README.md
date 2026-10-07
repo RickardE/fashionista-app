@@ -48,3 +48,22 @@ extra configuration needed. Product photography is served from
   `/discover`, `/search`, `/saved`, `/profile`, `/product/[id]`. Opening a
   product from within the app shows it as a sliding sheet via a Next.js
   intercepting route; direct links/refreshes render it as a full page.
+
+## Backend (catalog)
+
+Postgres (+pgvector) via Drizzle; code lives in `src/server/`.
+
+```bash
+cp .env.example .env.local     # then set ADTRACTION_JOHNELLS_FEED_URL
+npm run db:up                  # local Postgres in Docker (port 5433)
+npm run db:migrate
+npm run products:import -- --limit 500   # subset run (never deactivates)
+npm run products:import                  # full sync (idempotent)
+npm test
+```
+
+Pipeline: `ProductSource` adapter (`catalog/sources/*`) → `RawProduct` →
+`MappingProfile` normalization → variant grouping by group id → canonical
+`products` / `offers` / `variants`. Source rows are kept verbatim in
+`raw_items`. Products missing from a full feed become `inactive`; nothing is
+deleted. Each run is recorded in `import_runs` with its stats.

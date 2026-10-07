@@ -1,0 +1,21 @@
+# Local development database. Postgres 17 with the pgvector extension, which
+# STYLEAI uses for product embeddings and similarity search.
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: styleai
+      POSTGRES_PASSWORD: styleai
+      POSTGRES_DB: styleai
+    ports:
+      - "5433:5432"
+    volumes:
+      - styleai-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U styleai"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  styleai-pg:
