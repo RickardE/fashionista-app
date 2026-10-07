@@ -36,6 +36,13 @@
       "when": 1791373034368,
       "tag": "0004_loungewear_type",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791375871267,
+      "tag": "0005_enrichment",
+      "breakpoints": true
     }
   ]
 }

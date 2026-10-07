@@ -169,3 +169,108 @@ export const variants = pgTable(
     index("variants_gtin_idx").on(t.gtin),
   ],
 );
+
+// ---------------------------------------------------------------------------
+// Semantic enrichment (see src/server/enrichment/).
+//
+//   enrichment_runs           one row per CLI/worker run (pilot, backfill, incremental)
+//   product_enrichments       append-only: every model attempt, never updated or deleted
+//   product_enrichment_state  one row per product: latest attempt + the active result
+//
+// Pilot/evaluation runs only append to product_enrichments; production runs
+// (backfill, incremental) also claim, lock and update product_enrichment_state.
+// ---------------------------------------------------------------------------
+
+export type EnrichmentRunKind = "pilot" | "backfill" | "incremental";
+export type EnrichmentRunStatus = "running" | "succeeded" | "failed";
+export type EnrichmentOutcome = "completed" | "needs_review" | "failed";
+export type EnrichmentStatus = "pending" | "processing" | EnrichmentOutcome;
+
+export const enrichmentRuns = pgTable(
+  "enrichment_runs",
+  {
+    id: serial("id").primaryKey(),
+    kind: text("kind").$type<EnrichmentRunKind>().notNull(),
+    taxonomyVersion: text("taxonomy_version").notNull(),
+    promptVersion: text("prompt_version").notNull(),
+    provider: text("provider").notNull(),
+    model: text("model").notNull(),
+    effort: text("effort"),
+    status: text("status").$type<EnrichmentRunStatus>().notNull().default("running"),
+    /** Run parameters: pilot seed, selected product ids, image mode, flags. */
+    params: jsonb("params").$type<Record<string, unknown>>().notNull().default({}),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    stats: jsonb("stats").$type<Record<string, unknown>>().notNull().default({}),
+    error: text("error"),
+  },
+  (t) => [index("enrichment_runs_started_idx").on(t.startedAt)],
+);
+
+export const productEnrichments = pgTable(
+  "product_enrichments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id),
+    runId: integer("run_id")
+      .notNull()
+      .references(() => enrichmentRuns.id),
+    taxonomyVersion: text("taxonomy_version").notNull(),
+    promptVersion: text("prompt_version").notNull(),
+    provider: text("provider").notNull(),
+    model: text("model").notNull(),
+    effort: text("effort"),
+    /** products.content_hash at the time of enrichment. */
+    inputContentHash: text("input_content_hash").notNull(),
+    imageUrl: text("image_url"),
+    outcome: text("outcome").$type<EnrichmentOutcome>().notNull(),
+    /** The exact provider-neutral input the model received. */
+    input: jsonb("input").$type<Record<string, unknown>>().notNull(),
+    /** Validated, normalized attributes (null when the attempt failed). */
+    attributes: jsonb("attributes").$type<Record<string, unknown>>(),
+    /** Three-level confidences (low | medium | high) per field / per label. */
+    confidences: jsonb("confidences").$type<Record<string, unknown>>(),
+    rawOutput: jsonb("raw_output"),
+    /** { schemaErrors, errors, warnings, dropped, gateReasons } */
+    validation: jsonb("validation").$type<Record<string, unknown>>().notNull().default({}),
+    error: text("error"),
+    inputTokens: integer("input_tokens").notNull().default(0),
+    outputTokens: integer("output_tokens").notNull().default(0),
+    cacheReadTokens: integer("cache_read_tokens").notNull().default(0),
+    cacheWriteTokens: integer("cache_write_tokens").notNull().default(0),
+    /** Null when no price is configured for the provider/model. */
+    costUsdMicros: bigint("cost_usd_micros", { mode: "number" }),
+    latencyMs: integer("latency_ms").notNull().default(0),
+    /** Model calls made for this attempt (2 after a schema retry). */
+    calls: integer("calls").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("product_enrichments_product_idx").on(t.productId, t.createdAt),
+    index("product_enrichments_run_idx").on(t.runId),
+  ],
+);
+
+export const productEnrichmentState = pgTable(
+  "product_enrichment_state",
+  {
+    productId: uuid("product_id")
+      .primaryKey()
+      .references(() => products.id),
+    /** Outcome of the latest production attempt; "pending" is also derived (see enrichment/state.ts). */
+    status: text("status").$type<EnrichmentStatus>().notNull().default("pending"),
+    /** The latest completed enrichment — what recommendation consumers read. */
+    activeEnrichmentId: uuid("active_enrichment_id").references(() => productEnrichments.id),
+    /** products.content_hash of the latest attempt (any outcome). */
+    enrichedContentHash: text("enriched_content_hash"),
+    taxonomyVersion: text("taxonomy_version"),
+    promptVersion: text("prompt_version"),
+    attempts: integer("attempts").notNull().default(0),
+    lastError: text("last_error"),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("product_enrichment_state_status_idx").on(t.status)],
+);

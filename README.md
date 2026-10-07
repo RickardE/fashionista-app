@@ -84,3 +84,31 @@ deleted. Each run is recorded in `import_runs` with its stats.
 Responses use the `Product` type in `src/lib/types.ts`; no source ids or
 offer internals are exposed.
 
+### Semantic enrichment
+
+`src/server/enrichment/` describes each catalogue product with a versioned
+taxonomy (garment type, fit, colour, pattern, materials, aesthetics, formality,
+occasions, seasons, plus QA fields), using a vision model behind a
+provider-neutral `ModelProvider` (Anthropic and OpenAI adapters). AI output is
+an interpretation layer: it never overwrites source facts or normalized
+categories.
+
+```bash
+npm run products:enrich-pilot -- --seed 123 --dry-run                     # show the seeded ~40-product sample
+npm run products:enrich-pilot -- --seed 123 --provider anthropic --model claude-opus-5-5 --effort low
+npm run products:enrich-pilot -- --from-run 1 --provider openai --model <model>   # same products (aborts if their content changed)
+npm run products:enrich-report -- --run 1 --run 2 --html --csv            # compare; review sheet in .data/enrichment/
+npm run products:enrich-report -- --eval reviewed.csv                     # accuracy + confidence calibration
+npm run products:enrich -- --provider … --model … --limit 50              # production: pending/stale products only
+npm run products:enrich-report                                            # catalogue status, readiness, recent runs
+```
+
+Every attempt is appended to `product_enrichments` (input, raw output,
+validation, tokens, cost, latency); `product_enrichment_state` tracks the latest
+attempt and the active result per product. A product needs enrichment when it
+is new, its `content_hash` changed, or the taxonomy/prompt version moved on.
+Pilot runs never change production state, and send images inline so every
+model receives byte-identical, SHA-256-fingerprinted images; the report checks
+that compared runs had identical input (content, prompt/schema, image). Recommendation-ready = eligible +
+an active completed enrichment matching current content (`enrichment/state.ts`).
+Model prices live in `enrichment/pricing.ts` (override with `ENRICHMENT_PRICING_JSON`).
