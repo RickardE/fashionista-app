@@ -24,7 +24,7 @@ export default function StyleProfileIntroPage() {
 
   function start() {
     completeOnboarding();
-    router.push("/discover");
+    router.push("/products");
   }
 
   return (

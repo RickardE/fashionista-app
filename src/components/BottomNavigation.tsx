@@ -2,18 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  FeedTabIcon,
-  ProfileTabIcon,
-  SavedTabIcon,
-  SearchIcon,
-} from "@/components/icons";
+import { FeedTabIcon, OutfitsTabIcon, SavedTabIcon } from "@/components/icons";
 
+/** The two swipe feeds are separate destinations; Saved holds both kinds. */
 const TABS = [
-  { href: "/discover", label: "For You", Icon: FeedTabIcon },
-  { href: "/search", label: "Search", Icon: SearchIcon },
+  { href: "/products", label: "Products", Icon: FeedTabIcon },
+  { href: "/outfits", label: "Outfits", Icon: OutfitsTabIcon },
   { href: "/saved", label: "Saved", Icon: SavedTabIcon },
-  { href: "/profile", label: "Profile", Icon: ProfileTabIcon },
 ] as const;
 
 export function BottomNavigation() {

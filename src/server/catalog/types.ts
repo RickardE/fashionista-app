@@ -72,6 +72,26 @@ export type Category = (typeof CATEGORIES)[number];
 
 export type Gender = "men" | "women" | "unisex";
 
+/** What kind of product something is — the level above category. */
+export const PRODUCT_TYPES = ["clothing", "underwear", "swimwear", "loungewear", "shoes", "bags", "accessories", "other"] as const;
+export type ProductType = (typeof PRODUCT_TYPES)[number];
+
+const TYPE_BY_CATEGORY: Partial<Record<Category, ProductType>> = {
+  underwear: "underwear",
+  swimwear: "swimwear",
+  loungewear: "loungewear",
+  shoes: "shoes",
+  bags: "bags",
+  // Jewellery, watches, sunglasses, hats, belts, wallets, scarves, ties, ...
+  accessories: "accessories",
+  other: "other",
+};
+
+/** Every category not listed above is a garment. */
+export function productTypeFor(category: Category): ProductType {
+  return TYPE_BY_CATEGORY[category] ?? "clothing";
+}
+
 export type Availability = "in_stock" | "out_of_stock" | "preorder" | "backorder" | "unknown";
 
 export type Condition = "new" | "used" | "refurbished";
@@ -235,6 +255,7 @@ export interface CanonicalProductDraft {
   name: string;
   description?: string;
   brand?: string;
+  productType: ProductType;
   category: Category;
   subcategory?: string;
   gender?: Gender;

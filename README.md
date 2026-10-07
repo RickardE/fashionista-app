@@ -34,16 +34,17 @@ extra configuration needed. Product photography is served from
 
 ## How it works
 
-- **State**: all personalization (likes, dismisses, tag affinities, feed
-  ranking, onboarding progress) lives in a single React Context
-  (`src/lib/store/style-profile-context.tsx`) and is persisted to
-  `localStorage` — there's no backend or database.
+- **State**: Styles, likes/saved items (by product id), tag affinities, feed
+  position and onboarding progress live in a single React Context
+  (`src/lib/store/style-profile-context.tsx`), persisted to `localStorage`.
 - **Personalization**: every like/dismiss nudges a set of style-tag scores
   (`src/lib/personalization.ts`). The feed re-sorts the *upcoming* cards by
   those scores after each reaction, and the same scores drive search
   ranking, the "why we picked this" copy, and the profile's affinity list.
-- **Mock catalog**: `src/lib/data/products.ts` — 12 products with real
-  (stock) photography, no live API.
+- **Catalog**: real products from Postgres via the product API (see
+  "Backend" below). The client caches products by id
+  (`src/lib/store/product-catalog.tsx`) and pages the feed in
+  (`src/lib/store/use-feed.ts`).
 - **Routing**: `/`, `/onboarding` (+ `upload`/`analysis`/`style`),
   `/discover`, `/search`, `/saved`, `/profile`, `/product/[id]`. Opening a
   product from within the app shows it as a sliding sheet via a Next.js
@@ -67,3 +68,19 @@ Pipeline: `ProductSource` adapter (`catalog/sources/*`) → `RawProduct` →
 `products` / `offers` / `variants`. Source rows are kept verbatim in
 `raw_items`. Products missing from a full feed become `inactive`; nothing is
 deleted. Each run is recorded in `import_runs` with its stats.
+
+### Product API
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/feed?cursor=&limit=` | For You feed — active, in-stock products, stable order, keyset-paginated |
+| `GET /api/products?ids=a,b` | Resolve products by id (incl. unavailable — for saved items) |
+| `GET /api/products?category=&gender=&exclude=&limit=` | Filter by canonical fields (Build the Look, "more like this") |
+| `GET /api/products/:id` | One product (404 if unknown) |
+| `GET /api/products/:id/shop` | 302 to the merchant/affiliate URL of the best offer |
+| `GET /api/search?q=&limit=` | Keyword search (Postgres full-text) |
+| `GET /api/inspiration` | Catalogue images for onboarding / new style |
+
+Responses use the `Product` type in `src/lib/types.ts`; no source ids or
+offer internals are exposed.
+

@@ -1,3 +1,4 @@
+import { productTypeFor } from "./types";
 import type {
   CanonicalColor,
   CanonicalProductDraft,
@@ -58,7 +59,7 @@ function headlinePrice(variants: NormalizedVariant[]): { price?: Money; salePric
 
 const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL", "3XL", "4XL"];
 
-function sizeRank(size: string | undefined): number {
+export function sizeRank(size: string | undefined): number {
   if (!size) return Number.MAX_SAFE_INTEGER;
   const i = SIZE_ORDER.indexOf(size.toUpperCase());
   if (i >= 0) return i;
@@ -113,6 +114,7 @@ export function groupVariants(rows: NormalizedVariant[], merchant: string): Grou
       name: mode(variants.map((v) => v.title)) ?? variants[0].title,
       description: longest(variants.map((v) => v.description)),
       brand: mode(variants.map((v) => v.brand)),
+      productType: productTypeFor(category),
       category,
       subcategory: categoryVariant?.subcategory,
       gender: mode(variants.map((v) => v.gender)),

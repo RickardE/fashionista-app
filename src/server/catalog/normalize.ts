@@ -43,6 +43,9 @@ function splitPath(path: string, mapping: ResolvedMapping): string[] {
     .filter(Boolean);
 }
 
+/** Catch-all categories that a more specific signal should override. */
+const WEAK_CATEGORIES = new Set<Category>(["tops"]);
+
 export interface CategoryMatch {
   category: Category;
   subcategory?: string;
@@ -51,31 +54,90 @@ export interface CategoryMatch {
 }
 
 /**
+ * The first two sentences of a description, without "■ Model wears…" style
+ * fit notes. Merchants usually name the garment type up front.
+ */
+export function descriptionLead(description: string | undefined): string | undefined {
+  if (!description) return undefined;
+  const text = description.replace(/■[^■]*■/g, " ").replace(/■/g, " ").trim();
+  return text.split(/(?<=[.!?])\s+/).slice(0, 2).join(" ") || undefined;
+}
+
+/**
+ * Removes a leading brand name from a category segment, so brand trees don't
+ * masquerade as categories: "Polo Ralph Lauren" → "" (skipped),
+ * "Polo Ralph Lauren Oxfordskjortor" → "Oxfordskjortor".
+ */
+function stripBrand(segment: string, brand: string | undefined): string {
+  if (!brand) return segment;
+  const b = normalizeKey(brand);
+  const s = normalizeKey(segment);
+  return s.startsWith(b) ? segment.slice(brand.trim().length).trim() : segment;
+}
+
+/**
  * Category resolution order: the source's own category paths (deepest segment
  * first, internal/campaign trees skipped) → the product title → a secondary
  * taxonomy. Source categories are treated as hints, never as the only truth.
  */
 export function resolveCategory(
-  input: { categoryPaths: string[]; title: string; taxonomyPath?: string },
+  input: {
+    categoryPaths: string[];
+    title: string;
+    description?: string;
+    taxonomyPath?: string;
+    brand?: string;
+  },
   mapping: ResolvedMapping,
 ): CategoryMatch {
   const testRules = (text: string) => mapping.categoryRules.find((r) => r.pattern.test(text));
 
+  const byBrand = input.brand ? mapping.brandCategories[normalizeKey(input.brand)] : undefined;
+  if (byBrand) return { ...byBrand, source: "brand" };
+
+  // Brand names are not garment words ("… från Polo Ralph Lauren" is no polo).
+  const withoutBrand = (text: string) => (input.brand ? text.split(input.brand).join(" ") : text);
+  const lead = descriptionLead(input.description && withoutBrand(input.description));
+
+  for (const [text, source] of [[withoutBrand(input.title), "title"], [lead, "description"]] as const) {
+    const decisive = text ? mapping.decisiveRules.find((r) => r.pattern.test(text)) : undefined;
+    if (decisive) return { category: decisive.category, subcategory: decisive.subcategory, source };
+  }
+
   const usablePaths = input.categoryPaths.filter(
     (p) => !mapping.ignoredCategoryPaths.some((re) => re.test(p)),
   );
+  // A path match on a catch-all category ("Tröjor" → tops) is kept only as a
+  // fallback: a specific answer from the title or description beats it.
+  let weakPathMatch: CategoryMatch | undefined;
   for (const path of usablePaths) {
     const segments = splitPath(path, mapping)
+      .filter((s, i, all) => !(i > 0 && mapping.brandIndexSegments.some((re) => re.test(all[i - 1]))))
       .filter((s) => !mapping.ignoredCategorySegments.some((re) => re.test(s)))
+      .map((s) => stripBrand(s, input.brand))
+      .filter(Boolean)
       .reverse();
     for (const segment of segments) {
       const rule = testRules(segment);
-      if (rule) return { category: rule.category, subcategory: rule.subcategory, source: path };
+      if (!rule) continue;
+      const match = { category: rule.category, subcategory: rule.subcategory, source: path };
+      if (!WEAK_CATEGORIES.has(rule.category)) return match;
+      weakPathMatch ??= match;
+      break;
     }
   }
 
-  const byTitle = testRules(input.title);
-  if (byTitle) return { category: byTitle.category, subcategory: byTitle.subcategory, source: "title" };
+  const byTitle = testRules(withoutBrand(input.title));
+  if (byTitle && !(weakPathMatch && WEAK_CATEGORIES.has(byTitle.category))) {
+    return { category: byTitle.category, subcategory: byTitle.subcategory, source: "title" };
+  }
+
+  const byDescription = lead ? testRules(lead) : undefined;
+  if (byDescription && !(weakPathMatch && WEAK_CATEGORIES.has(byDescription.category))) {
+    return { category: byDescription.category, subcategory: byDescription.subcategory, source: "description" };
+  }
+
+  if (weakPathMatch) return weakPathMatch;
 
   if (input.taxonomyPath) {
     for (const segment of splitPath(input.taxonomyPath, mapping).reverse()) {
@@ -120,8 +182,9 @@ function isHttpUrl(value: string): boolean {
 
 export function normalizeRawProduct(raw: RawProduct, mapping: ResolvedMapping): NormalizedVariant {
   const title = cleanText(raw.title) ?? raw.title;
+  const description = cleanText(raw.description);
   const category = resolveCategory(
-    { categoryPaths: raw.categoryPaths, title, taxonomyPath: raw.taxonomyPath },
+    { categoryPaths: raw.categoryPaths, title, description, taxonomyPath: raw.taxonomyPath, brand: raw.brand },
     mapping,
   );
 
@@ -138,7 +201,7 @@ export function normalizeRawProduct(raw: RawProduct, mapping: ResolvedMapping): 
     externalId: raw.externalId,
     groupKey: raw.externalGroupId || raw.externalId,
     title,
-    description: cleanText(raw.description),
+    description,
     brand: raw.brand?.trim() || undefined,
     gender: mapGender(raw.gender, mapping) ?? genderFromPaths(raw.categoryPaths, mapping),
     category: category.category,

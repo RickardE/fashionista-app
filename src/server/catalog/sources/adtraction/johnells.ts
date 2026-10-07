@@ -10,10 +10,14 @@ export const JOHNELLS_MAPPING: MappingProfile = {
   categorySeparator: ">",
   // Campaign / internal merchandising trees say nothing about what a product is.
   ignoredCategoryPaths: [/kampanj/i, /interna? kategori/i],
-  // Navigation-only segments; gender is read from the raw path separately.
+  // Navigation-only or mixed-bag segments; gender is read from the raw path
+  // separately. "Hoodies & Tröjor" mixes sweats and knits, so let the deeper
+  // segment or the title decide.
   ignoredCategorySegments: [
-    /^(man|dam|herr|kvinna|unisex|kläder|nyheter|rea|sale|outlet|varumärken|märken|alla .*|visa alla|bästsäljare)$/i,
+    /^(man|dam|herr|kvinna|unisex|kläder|nyheter|rea|sale|outlet|varumärken|märken|alla .*|visa alla|bästsäljare|activewear)$/i,
+    /^hoodies & tröjor$/i,
   ],
+  brandIndexSegments: [/^varumärken$/i],
 };
 
 export function createJohnellsSource(env: NodeJS.ProcessEnv = process.env) {

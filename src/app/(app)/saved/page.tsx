@@ -7,20 +7,22 @@ import { ProductTile } from "@/components/ProductTile";
 import { StyleSelector } from "@/components/StyleSelector";
 import { TopBar } from "@/components/TopBar";
 import { ArrowRightIcon } from "@/components/icons";
-import { PRODUCTS, PRODUCTS_BY_ID } from "@/lib/data/products";
+import { useProducts } from "@/lib/store/product-catalog";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
 
-type SavedTab = "products" | "looks";
+type SavedTab = "products" | "outfits";
 
 export default function SavedPage() {
   const router = useRouter();
   const { state, activeStyle } = useStyleProfile();
   const [tab, setTab] = useState<SavedTab>("products");
 
+  // Newest first; ids are canonical product ids, resolved through the API.
   const savedIds = useMemo(
-    () => PRODUCTS.map((p) => p.id).filter((id) => activeStyle.liked[id]),
+    () => Object.keys(activeStyle.liked).reverse(),
     [activeStyle.liked],
   );
+  const saved = useProducts(savedIds);
   const savedOutfits = useMemo(
     () => state.savedOutfits.filter((o) => o.styleId === activeStyle.id),
     [state.savedOutfits, activeStyle.id],
@@ -33,7 +35,7 @@ export default function SavedPage() {
           <StyleSelector placement="inline" />
         </div>
         <div className="flex items-center gap-6 px-[22px] pt-1.5 pb-4">
-          {(["products", "looks"] as const).map((t) => (
+          {(["products", "outfits"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -49,7 +51,20 @@ export default function SavedPage() {
         </div>
 
         {tab === "products" ? (
-          savedIds.length === 0 ? (
+          savedIds.length > 0 && saved.products.length === 0 ? (
+            <div className="px-[22px] py-10 text-[14px] text-neutral-700">
+              {saved.error ? (
+                <>
+                  We couldn&rsquo;t load your saved pieces.{" "}
+                  <button onClick={saved.retry} className="font-semibold underline">
+                    Try again
+                  </button>
+                </>
+              ) : saved.loading ? null : (
+                "Your saved pieces are no longer in the catalogue."
+              )}
+            </div>
+          ) : savedIds.length === 0 ? (
             <div className="flex h-[calc(100%-56px)] flex-col justify-center px-[22px] py-10">
               <div className="h-[2px] bg-divider" />
               <div className="mt-[22px] font-serif text-[30px] leading-[1.1]">
@@ -58,22 +73,22 @@ export default function SavedPage() {
                 just yet.
               </div>
               <p className="mt-3.5 mb-6 max-w-[27ch] text-[14px] leading-[1.6] text-neutral-700">
-                Love a piece in your feed and it lands here — your own
+                Love a piece in Products and it lands here — your own
                 moodboard, building as you browse.
               </p>
               <button
-                onClick={() => router.push("/discover")}
+                onClick={() => router.push("/products")}
                 className="flex h-[52px] items-center justify-between border border-neutral-400 px-5 text-[13px] font-semibold tracking-[0.1em] uppercase transition-colors hover:border-ink"
               >
-                <span>Back to discovery</span>
+                <span>Browse products</span>
                 <ArrowRightIcon />
               </button>
             </div>
           ) : (
             <div className="px-[22px] pb-10">
               <div className="grid grid-cols-2 gap-x-3 gap-y-5">
-                {savedIds.map((id) => (
-                  <ProductTile key={id} product={PRODUCTS_BY_ID[id]} compact />
+                {saved.products.map((product) => (
+                  <ProductTile key={product.id} product={product} compact />
                 ))}
               </div>
             </div>
@@ -82,19 +97,19 @@ export default function SavedPage() {
           <div className="flex h-[calc(100%-56px)] flex-col justify-center px-[22px] py-10">
             <div className="h-[2px] bg-divider" />
             <div className="mt-[22px] font-serif text-[30px] leading-[1.1]">
-              No looks
+              No outfits
               <br />
               just yet.
             </div>
             <p className="mt-3.5 mb-6 max-w-[27ch] text-[14px] leading-[1.6] text-neutral-700">
-              Open any product and build an outfit around it — save the ones
-              you&rsquo;d actually wear.
+              Love an outfit in Outfits, or build one from any product — save
+              the ones you&rsquo;d actually wear.
             </p>
             <button
-              onClick={() => router.push("/discover")}
+              onClick={() => router.push("/outfits")}
               className="flex h-[52px] items-center justify-between border border-neutral-400 px-5 text-[13px] font-semibold tracking-[0.1em] uppercase transition-colors hover:border-ink"
             >
-              <span>Back to discovery</span>
+              <span>Browse outfits</span>
               <ArrowRightIcon />
             </button>
           </div>

@@ -8,6 +8,34 @@
       "when": 1791363988347,
       "tag": "0000_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791365849241,
+      "tag": "0001_product_api",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791371320625,
+      "tag": "0002_product_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791372705329,
+      "tag": "0003_swimwear_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791373034368,
+      "tag": "0004_loungewear_type",
+      "breakpoints": true
     }
   ]
 }

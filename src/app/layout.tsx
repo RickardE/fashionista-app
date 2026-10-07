@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Instrument_Serif } from "next/font/google";
 import { StyleSwitchOverlay } from "@/components/StyleSwitchOverlay";
+import { ProductCatalogProvider } from "@/lib/store/product-catalog";
 import { StyleProfileProvider } from "@/lib/store/style-profile-context";
 import "./globals.css";
 
@@ -43,6 +44,7 @@ export default function RootLayout({
       <body
         className={`${archivo.variable} ${instrumentSerif.variable} font-sans antialiased bg-ink text-ink`}
       >
+        <ProductCatalogProvider>
         <StyleProfileProvider>
           <div className="mx-auto min-h-dvh w-full max-w-[480px] bg-paper text-ink shadow-[0_0_0_1px_rgba(0,0,0,0.04)] sm:my-0">
             {children}
@@ -50,6 +52,7 @@ export default function RootLayout({
           </div>
           <StyleSwitchOverlay />
         </StyleProfileProvider>
+        </ProductCatalogProvider>
       </body>
     </html>
   );

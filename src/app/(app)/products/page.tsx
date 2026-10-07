@@ -4,10 +4,10 @@ import { FeedDeck } from "@/components/FeedDeck";
 import { StyleSelector } from "@/components/StyleSelector";
 import { TopBar } from "@/components/TopBar";
 
-export default function DiscoverPage() {
+export default function ProductsPage() {
   return (
     <>
-      <TopBar title="" metaSlot={<StyleSelector />} />
+      <TopBar title="Products" metaSlot={<StyleSelector />} />
       <main className="relative min-h-0 flex-1 overflow-hidden">
         <FeedDeck />
       </main>

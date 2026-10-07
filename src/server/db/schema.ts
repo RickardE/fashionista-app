@@ -14,6 +14,7 @@
 import { sql } from "drizzle-orm";
 import {
   bigint,
+  customType,
   boolean,
   index,
   integer,
@@ -26,7 +27,10 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import type { ProductSourceAttributes } from "@/server/catalog/types";
+import type { ProductSourceAttributes, ProductType } from "@/server/catalog/types";
+
+/** Full-text search document; maintained by a DB trigger (see migration 0001). */
+const tsvector = customType<{ data: string }>({ dataType: () => "tsvector" });
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -76,6 +80,8 @@ export const products = pgTable(
     name: text("name").notNull(),
     description: text("description"),
     brand: text("brand"),
+    /** clothing | underwear | swimwear | loungewear | shoes | bags | accessories | other — see productTypeFor. */
+    productType: text("product_type").$type<ProductType>().notNull().default("other"),
     category: text("category").notNull(),
     subcategory: text("subcategory"),
     gender: text("gender"),
@@ -92,11 +98,18 @@ export const products = pgTable(
     salePriceMinor: bigint("sale_price_minor", { mode: "number" }),
     currency: text("currency"),
     deactivatedAt: timestamp("deactivated_at", { withTimezone: true }),
+    searchVector: tsvector("search_vector"),
     ...timestamps,
   },
   (t) => [
     index("products_status_available_idx").on(t.status, t.isAvailable),
-    index("products_category_idx").on(t.category),
+    index("products_category_gender_idx").on(t.category, t.gender),
+    index("products_search_idx").using("gin", t.searchVector),
+    // Stable, brand-mixed feed order with keyset pagination: ORDER BY md5(id), id,
+    // within the feed's product type and gender.
+    index("products_feed_idx")
+      .on(t.productType, t.gender, sql`md5(${t.id}::text)`, t.id)
+      .where(sql`${t.status} = 'active' and ${t.isAvailable}`),
   ],
 );
 

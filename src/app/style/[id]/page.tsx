@@ -3,16 +3,17 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
+import { GenderToggle } from "@/components/GenderChoice";
 import { StyleAvatar } from "@/components/StyleAvatar";
 import { PrimaryButton, SecondaryButton } from "@/components/ui/Button";
-import { TAG_LABELS } from "@/lib/data/products";
+import { TAG_LABELS } from "@/lib/style-tags";
 import { mergeAffinity, topTags } from "@/lib/personalization";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
 
 export default function StyleDetailPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const { styles, activeStyle, setActiveStyle, duplicateStyle, renameStyle } =
+  const { styles, activeStyle, setActiveStyle, duplicateStyle, renameStyle, setStyleGender } =
     useStyleProfile();
   const [panel, setPanel] = useState<"rename" | "duplicate" | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -118,6 +119,11 @@ export default function StyleDetailPage() {
             ))}
           </>
         )}
+
+        <div className="mt-10 mb-2.5 text-[10px] font-semibold tracking-[0.12em] text-neutral-500 uppercase">
+          Shopping for
+        </div>
+        <GenderToggle value={style.gender} onChange={(g) => setStyleGender(style!.id, g)} />
 
         <div className="mt-10 mb-0.5 text-[10px] font-semibold tracking-[0.12em] text-neutral-500 uppercase">
           Style settings

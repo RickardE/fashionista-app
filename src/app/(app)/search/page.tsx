@@ -1,26 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CloseIcon, SearchIcon } from "@/components/icons";
 import { ProductTile } from "@/components/ProductTile";
 import { TopBar } from "@/components/TopBar";
-import { PRODUCTS_BY_ID, RECENT_SEARCHES, SUGGESTED_SEARCHES } from "@/lib/data/products";
-import { rankedIds } from "@/lib/personalization";
+import { searchProducts } from "@/lib/api";
+import { RECENT_SEARCHES, SUGGESTED_SEARCHES } from "@/lib/data/search";
+import { useCatalog } from "@/lib/store/product-catalog";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
+import type { Product } from "@/lib/types";
+
+type SearchResult =
+  | { status: "loading" }
+  | { status: "done"; products: Product[] }
+  | { status: "error" };
+
+/** A response tagged with the request it answers, so stale ones read as "loading". */
+type Tagged = { key: string; result: SearchResult };
+
+const RESULT_LIMIT = 20;
 
 export default function SearchPage() {
-  const { effectiveAffinity } = useStyleProfile();
+  const { ingest } = useCatalog();
+  const gender = useStyleProfile().activeStyle.gender;
   const [query, setQuery] = useState("");
   const [submitted, setSubmitted] = useState("");
+  const [attempt, setAttempt] = useState(0);
+  const [response, setResponse] = useState<Tagged | null>(null);
+  const requestKey = `${submitted}\u0000${gender}\u0000${attempt}`;
+  const result: SearchResult =
+    response?.key === requestKey ? response.result : { status: "loading" };
 
   function run(q: string) {
     setQuery(q);
     setSubmitted(q);
   }
 
-  const results = rankedIds(effectiveAffinity)
-    .slice(0, 6)
-    .map((id) => PRODUCTS_BY_ID[id]);
+  useEffect(() => {
+    if (!submitted) return;
+    const controller = new AbortController();
+    const key = `${submitted}\u0000${gender}\u0000${attempt}`;
+    searchProducts(submitted, gender, RESULT_LIMIT, controller.signal)
+      .then(({ products }) => {
+        ingest(products);
+        setResponse({ key, result: { status: "done", products } });
+      })
+      .catch((err: Error) => {
+        if (err.name !== "AbortError") setResponse({ key, result: { status: "error" } });
+      });
+    return () => controller.abort();
+  }, [submitted, gender, attempt, ingest]);
 
   return (
     <>
@@ -100,11 +129,29 @@ export default function SearchPage() {
             <div className="border-b border-neutral-300 pb-3 text-[19px] leading-[1.2] font-semibold">
               &ldquo;{submitted}&rdquo;
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-5">
-              {results.map((product) => (
-                <ProductTile key={product.id} product={product} compact />
-              ))}
-            </div>
+            {result.status === "done" && result.products.length > 0 && (
+              <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-5">
+                {result.products.map((product) => (
+                  <ProductTile key={product.id} product={product} compact />
+                ))}
+              </div>
+            )}
+            {result.status === "done" && result.products.length === 0 && (
+              <p className="mt-4 max-w-[30ch] text-[14px] leading-[1.6] text-neutral-700">
+                Nothing matches that yet. Try a broader word — a colour, a piece or a brand.
+              </p>
+            )}
+            {result.status === "loading" && (
+              <p className="mt-4 text-[13px] text-neutral-700">Searching&hellip;</p>
+            )}
+            {result.status === "error" && (
+              <p className="mt-4 text-[14px] leading-[1.6] text-neutral-700">
+                Search isn&rsquo;t responding right now.{" "}
+                <button onClick={() => setAttempt((a) => a + 1)} className="font-semibold underline">
+                  Try again
+                </button>
+              </p>
+            )}
           </div>
         )}
       </main>

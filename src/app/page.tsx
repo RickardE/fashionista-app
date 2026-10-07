@@ -9,7 +9,7 @@ export default function SplashPage() {
   const { state } = useStyleProfile();
   const advancedRef = useRef(false);
 
-  const destination = state.hasOnboarded ? "/discover" : "/onboarding";
+  const destination = state.hasOnboarded ? "/products" : "/onboarding";
 
   useEffect(() => {
     const timer = setTimeout(() => {

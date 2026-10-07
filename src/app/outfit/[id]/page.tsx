@@ -1,18 +1,21 @@
 import { notFound } from "next/navigation";
-import { PRODUCTS, PRODUCTS_BY_ID } from "@/lib/data/products";
+import { parseOutfitItems } from "@/lib/outfits";
+import { getDb } from "@/server/db/client";
+import { getProduct } from "@/server/products/service";
 import { OutfitPageClient } from "./page-client";
-
-export function generateStaticParams() {
-  return PRODUCTS.map((p) => ({ id: p.id }));
-}
 
 export default async function OutfitPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ items?: string }>;
 }) {
   const { id } = await params;
-  if (!PRODUCTS_BY_ID[id]) notFound();
+  const { items } = await searchParams;
+  const anchor = await getProduct(getDb(), id);
+  if (!anchor) notFound();
+  const initialItems = parseOutfitItems(items);
 
-  return <OutfitPageClient key={id} anchorId={id} />;
+  return <OutfitPageClient key={`${id}:${items ?? ""}`} anchor={anchor} initialItems={initialItems} />;
 }

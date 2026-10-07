@@ -10,7 +10,7 @@ export default function OnboardingWelcomePage() {
 
   function startExploring() {
     completeOnboarding();
-    router.push("/discover");
+    router.push("/products");
   }
 
   return (

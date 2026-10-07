@@ -322,3 +322,22 @@ export function ProfileTabIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+export function OutfitsTabIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      width="19"
+      height="19"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      className={className}
+    >
+      <rect x="4" y="3" width="7" height="8" />
+      <rect x="13" y="3" width="7" height="8" />
+      <rect x="4" y="13" width="7" height="8" />
+      <rect x="13" y="13" width="7" height="8" />
+    </svg>
+  );
+}

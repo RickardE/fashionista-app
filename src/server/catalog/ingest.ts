@@ -93,6 +93,7 @@ function productContent(draft: CanonicalProductDraft) {
     name: draft.name,
     description: draft.description ?? null,
     brand: draft.brand ?? null,
+    productType: draft.productType,
     category: draft.category,
     subcategory: draft.subcategory ?? null,
     gender: draft.gender ?? null,

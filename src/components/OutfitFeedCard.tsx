@@ -5,14 +5,19 @@ import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import { ArrowUpRightIcon } from "@/components/icons";
 import { OutfitComposition } from "@/components/OutfitComposition";
 import { formatPrice } from "@/lib/format";
-import { outfitItemList, outfitTotal } from "@/lib/outfits";
-import type { OutfitItems } from "@/lib/types";
+import { outfitTotal } from "@/lib/outfits";
+import type { OutfitRole, Product } from "@/lib/types";
 
 const SNAP_BACK = { type: "spring", stiffness: 420, damping: 34 } as const;
 const EXIT_TRANSITION = { duration: 0.3, ease: [0.4, 0, 0.7, 0.2] as const };
+const REST_TRANSITION = { duration: 0.4, ease: [0.22, 0.61, 0.36, 1] as const };
+
 const MOVE_SLOP = 4;
 const DECISION_DISTANCE = 110;
 const EXIT_DISTANCE = 560;
+
+/** 0 = front card, draggable. 1 = the next card, peeking behind it. */
+type StackPosition = 0 | 1;
 
 interface DragState {
   startX: number;
@@ -20,22 +25,24 @@ interface DragState {
 }
 
 /**
- * A complete-look interstitial in the discovery feed. Mirrors ProductFeedCard's
- * drag mechanics (duplicated rather than shared, since it only ever appears as
- * the front card — no stackPosition/behind-state to reconcile with).
+ * One generated outfit in the Outfits feed. Same swipe mechanics as
+ * ProductFeedCard (duplicated rather than abstracted, matching how the
+ * prototype kept card types independent).
  */
-export function LookFeedCard({
-  items,
+export function OutfitFeedCard({
+  pieces,
+  stackPosition,
   onOpen,
   onDecide,
 }: {
-  items: OutfitItems;
+  pieces: { role: OutfitRole; product: Product }[];
+  stackPosition: StackPosition;
   onOpen: () => void;
   onDecide: (direction: 1 | -1) => void;
 }) {
-  const list = outfitItemList(items);
-  const total = outfitTotal(items);
-
+  const isFront = stackPosition === 0;
+  const total = outfitTotal(pieces);
+  const currency = pieces[0]?.product.currency ?? "SEK";
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-260, 260], [-10, 10]);
   const loveOpacity = useTransform(x, [16, DECISION_DISTANCE], [0, 1]);
@@ -45,7 +52,7 @@ export function LookFeedCard({
   const settled = useRef(false);
 
   function onPointerDown(e: React.PointerEvent) {
-    if (settled.current) return;
+    if (!isFront || settled.current) return;
     if ((e.target as HTMLElement).closest("button, a")) return;
     drag.current = { startX: e.clientX, moved: false };
     try {
@@ -91,51 +98,58 @@ export function LookFeedCard({
   return (
     <>
       <motion.div
-        className="absolute inset-0 z-[2] flex h-full w-full flex-col touch-none bg-paper select-none"
-        style={{ x, rotate }}
+        className={`absolute inset-0 flex h-full w-full flex-col touch-none bg-paper select-none ${
+          isFront ? "" : "pointer-events-none"
+        }`}
+        style={{ x, rotate, zIndex: isFront ? 2 : 1 }}
+        animate={{
+          scale: isFront ? 1 : 0.94,
+          opacity: isFront ? 1 : 0.92,
+          y: isFront ? 0 : 14,
+        }}
+        transition={REST_TRANSITION}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        data-active
+        aria-hidden={!isFront}
+        inert={!isFront}
+        data-active={isFront || undefined}
       >
         <OutfitComposition
-          products={list.map((i) => i.product)}
+          products={pieces.map((p) => p.product)}
           className="w-full flex-1 min-h-0"
           square={false}
-          priority
+          priority={isFront}
         />
 
         <div className="px-[22px] pt-5">
           <span className="block text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
-            STYLEAI&rsquo;s look
+            Outfit &middot; {pieces.length} pieces
           </span>
-          <span className="mt-[6px] block text-[21px] leading-[1.2] font-semibold tracking-[-0.01em]">
-            Complete the look
+          <span className="mt-[6px] block truncate text-[21px] leading-[1.2] font-semibold tracking-[-0.01em]">
+            {pieces.map((p) => p.product.brand).filter((b, i, all) => all.indexOf(b) === i).slice(0, 3).join(" · ")}
           </span>
-          <span className="mt-[9px] flex items-center gap-2.5">
-            <span className="text-[15px] font-semibold">
-              {formatPrice(total, "SEK")}
-            </span>
-            <span className="h-[11px] w-px bg-neutral-400" />
-            <span className="text-[13px] text-neutral-700">
-              {list.length} pieces
-            </span>
+          <span className="mt-[9px] block text-[15px] font-semibold">
+            {formatPrice(total, currency)}
           </span>
         </div>
         <button
           onClick={onOpen}
           className="mx-[22px] mt-3.5 flex items-center gap-2 self-start border-b border-neutral-400 pb-[3px] text-[10px] font-semibold tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:border-ink hover:text-ink"
         >
-          <span>View the look</span>
+          <span>Open outfit</span>
           <ArrowUpRightIcon />
         </button>
         <div className="h-5" />
       </motion.div>
 
+      {/* Fixed over the viewport (not the dragged card) so the label
+          stays legible and centered as the photo moves beneath it. A soft
+          tonal scrim (not a badge) keeps the type readable over any photo. */}
       <motion.div
-        style={{ opacity: loveOpacity }}
-        className="pointer-events-none absolute inset-0 flex items-center z-[2]"
+        style={{ opacity: loveOpacity, zIndex: isFront ? 2 : 1 }}
+        className="pointer-events-none absolute inset-0 flex items-center"
       >
         <div className="via-paper/85 h-44 w-full bg-gradient-to-b from-transparent to-transparent" />
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
@@ -147,8 +161,8 @@ export function LookFeedCard({
       </motion.div>
 
       <motion.div
-        style={{ opacity: passOpacity }}
-        className="pointer-events-none absolute inset-0 flex items-center z-[2]"
+        style={{ opacity: passOpacity, zIndex: isFront ? 2 : 1 }}
+        className="pointer-events-none absolute inset-0 flex items-center"
       >
         <div className="via-paper/85 h-44 w-full bg-gradient-to-b from-transparent to-transparent" />
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">

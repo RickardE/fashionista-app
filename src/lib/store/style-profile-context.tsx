@@ -9,30 +9,47 @@ import {
   useReducer,
   useState,
 } from "react";
-import { PRODUCTS_BY_ID } from "@/lib/data/products";
 import { BUILTIN_STYLE_PRESETS, DEFAULT_STYLE_ID } from "@/lib/data/styles";
-import { mergeAffinity, rankedIds, reorderTail } from "@/lib/personalization";
+import { mergeAffinity } from "@/lib/personalization";
 import type { AffinityMap } from "@/lib/personalization";
-import type { Outfit, OutfitItems, StylePreset, StyleProfile, StyleTag } from "@/lib/types";
+import {
+  LEGACY_STORAGE_KEYS,
+  STORAGE_KEY,
+  migratePersistedState,
+  type PersistedState,
+} from "@/lib/store/style-profile-migrate";
+import type {
+  Outfit,
+  OutfitItems,
+  Product,
+  ShopperGender,
+  StylePreset,
+  StyleProfile,
+  StyleTag,
+} from "@/lib/types";
 
-const STORAGE_KEY = "styleai:v2";
-
-interface StyleProfileState {
-  styles: Record<string, StyleProfile>;
-  styleOrder: string[];
-  activeStyleId: string;
-  hasOnboarded: boolean;
-  savedOutfits: Outfit[];
-}
+type StyleProfileState = PersistedState & {
+  /**
+   * False until persisted state has been loaded into the reducer. Nothing is
+   * written back to storage before then — otherwise the default state can
+   * overwrite what was saved (React re-runs mount effects in dev).
+   */
+  hydrated: boolean;
+};
 
 type Action =
   | { type: "hydrate"; state: StyleProfileState }
-  | { type: "react"; id: string; direction: 1 | -1 }
+  | { type: "react"; id: string; tags: StyleTag[]; direction: 1 | -1 }
+  | { type: "appendFeed"; styleId: string; gender: ShopperGender; ids: string[]; exhausted: boolean }
+  | { type: "setStyleGender"; styleId: string; gender: ShopperGender }
+  | { type: "chooseGender"; gender: ShopperGender }
+  | { type: "reactOutfit"; tags: StyleTag[]; direction: 1 | -1 }
+  | { type: "setOutfitCursor"; styleId: string; cursor: string | undefined }
   | { type: "next" }
   | { type: "prev" }
   | { type: "setFeedIndex"; index: number }
   | { type: "resetFeed" }
-  | { type: "toggleDetailLike"; id: string }
+  | { type: "toggleDetailLike"; id: string; tags: StyleTag[] }
   | { type: "completeOnboarding" }
   | { type: "setActiveStyle"; styleId: string }
   | {
@@ -40,6 +57,7 @@ type Action =
       name: string;
       seedAffinity: AffinityMap;
       description: string;
+      gender?: ShopperGender;
     }
   | { type: "duplicateStyle"; sourceId: string; name: string }
   | { type: "renameStyle"; id: string; name: string }
@@ -62,14 +80,18 @@ function makeStyleProfile(preset: {
     disliked: {},
     affinity: {},
     interactions: 0,
-    feedOrder: rankedIds(preset.seedAffinity),
+    feedOrder: [],
     feedIndex: 0,
+    feedExhausted: false,
+    outfitAffinity: {},
+    likedOutfits: 0,
+    dislikedOutfits: 0,
     showSwipeHint: true,
     createdAt: Date.now(),
   };
 }
 
-function initialState(): StyleProfileState {
+export function initialState(): StyleProfileState {
   const styles: Record<string, StyleProfile> = {};
   BUILTIN_STYLE_PRESETS.forEach((preset) => {
     styles[preset.id] = makeStyleProfile(preset);
@@ -80,6 +102,7 @@ function initialState(): StyleProfileState {
     activeStyleId: DEFAULT_STYLE_ID,
     hasOnboarded: false,
     savedOutfits: [],
+    hydrated: false,
   };
 }
 
@@ -98,17 +121,31 @@ function updateStyle(
   return { ...state, styles: { ...state.styles, [id]: fn(current) } };
 }
 
-function reducer(state: StyleProfileState, action: Action): StyleProfileState {
+/**
+ * Sets a style's gender. A different gender means a different catalogue, so
+ * that style's feed positions restart; its saved items and taste are kept.
+ */
+function withGender(style: StyleProfile, gender: ShopperGender): StyleProfile {
+  if (style.gender === gender) return style;
+  return {
+    ...style,
+    gender,
+    feedOrder: [],
+    feedIndex: 0,
+    feedExhausted: false,
+    outfitCursor: undefined,
+  };
+}
+
+export function reducer(state: StyleProfileState, action: Action): StyleProfileState {
   switch (action.type) {
     case "hydrate":
-      return action.state;
+      return { ...action.state, hydrated: true };
 
     case "react": {
-      const product = PRODUCTS_BY_ID[action.id];
-      if (!product) return state;
       return updateStyle(state, state.activeStyleId, (style) => {
         const affinity = { ...style.affinity };
-        product.tags.forEach((tag) => {
+        action.tags.forEach((tag) => {
           affinity[tag] = (affinity[tag] ?? 0) + action.direction;
         });
         const liked = { ...style.liked };
@@ -120,18 +157,61 @@ function reducer(state: StyleProfileState, action: Action): StyleProfileState {
           disliked[action.id] = true;
           delete liked[action.id];
         }
-        const effective = mergeAffinity(style.seedAffinity, affinity);
+        // The feed is served in catalogue order for now; ranking by taste
+        // moves server-side with the recommendation milestone.
         return {
           ...style,
           affinity,
           liked,
           disliked,
           interactions: style.interactions + 1,
-          feedOrder: reorderTail(style.feedOrder, style.feedIndex, effective),
           showSwipeHint: false,
         };
       });
     }
+
+    case "reactOutfit":
+      return updateStyle(state, state.activeStyleId, (style) => {
+        const outfitAffinity = { ...style.outfitAffinity };
+        action.tags.forEach((tag) => {
+          outfitAffinity[tag] = (outfitAffinity[tag] ?? 0) + action.direction;
+        });
+        return {
+          ...style,
+          outfitAffinity,
+          likedOutfits: style.likedOutfits + (action.direction > 0 ? 1 : 0),
+          dislikedOutfits: style.dislikedOutfits + (action.direction < 0 ? 1 : 0),
+        };
+      });
+
+    case "setOutfitCursor":
+      return updateStyle(state, action.styleId, (style) => ({ ...style, outfitCursor: action.cursor }));
+
+    case "setStyleGender":
+      return updateStyle(state, action.styleId, (style) => withGender(style, action.gender));
+
+    // First-time choice: applies to the active style and every style that
+    // doesn't have a gender yet, so the user answers once.
+    case "chooseGender": {
+      const styles = { ...state.styles };
+      for (const [id, style] of Object.entries(styles)) {
+        if (id === state.activeStyleId || !style.gender) styles[id] = withGender(style, action.gender);
+      }
+      return { ...state, styles };
+    }
+
+    case "appendFeed":
+      return updateStyle(state, action.styleId, (style) => {
+        // A page requested for another gender (changed mid-flight) is stale.
+        if (style.gender !== action.gender) return style;
+        const known = new Set(style.feedOrder);
+        const fresh = action.ids.filter((id) => !known.has(id));
+        return {
+          ...style,
+          feedOrder: fresh.length ? [...style.feedOrder, ...fresh] : style.feedOrder,
+          feedExhausted: action.exhausted,
+        };
+      });
 
     case "next":
       return updateStyle(state, state.activeStyleId, (style) => ({
@@ -159,8 +239,6 @@ function reducer(state: StyleProfileState, action: Action): StyleProfileState {
       }));
 
     case "toggleDetailLike": {
-      const product = PRODUCTS_BY_ID[action.id];
-      if (!product) return state;
       return updateStyle(state, state.activeStyleId, (style) => {
         if (style.liked[action.id]) {
           const liked = { ...style.liked };
@@ -168,7 +246,7 @@ function reducer(state: StyleProfileState, action: Action): StyleProfileState {
           return { ...style, liked };
         }
         const affinity = { ...style.affinity };
-        product.tags.forEach((tag) => {
+        action.tags.forEach((tag) => {
           affinity[tag] = (affinity[tag] ?? 0) + 1;
         });
         return {
@@ -189,12 +267,15 @@ function reducer(state: StyleProfileState, action: Action): StyleProfileState {
 
     case "createStyle": {
       const id = `style-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      const style = makeStyleProfile({
-        id,
-        name: action.name,
-        description: action.description,
-        seedAffinity: action.seedAffinity,
-      });
+      const style = {
+        ...makeStyleProfile({
+          id,
+          name: action.name,
+          description: action.description,
+          seedAffinity: action.seedAffinity,
+        }),
+        gender: action.gender,
+      };
       return {
         ...state,
         styles: { ...state.styles, [id]: style },
@@ -245,7 +326,7 @@ function reducer(state: StyleProfileState, action: Action): StyleProfileState {
       };
 
     case "restart":
-      return initialState();
+      return { ...initialState(), hydrated: true };
 
     default:
       return state;
@@ -258,18 +339,28 @@ interface StyleProfileContextValue {
   styles: StyleProfile[];
   /** The currently active style — the one driving the feed, builder and saved views. */
   activeStyle: StyleProfile;
-  react: (id: string, direction: 1 | -1) => void;
+  react: (product: Product, direction: 1 | -1) => void;
+  /** Adds a loaded feed page to a style's feed. */
+  appendFeed: (styleId: string, gender: ShopperGender, ids: string[], exhausted: boolean) => void;
+  /** Changes one style's gender (resets that style's feed positions only). */
+  setStyleGender: (styleId: string, gender: ShopperGender) => void;
+  /** First-time pick: active style plus every style without a gender. */
+  chooseGender: (gender: ShopperGender) => void;
+  /** Records a love / not-for-me on a whole outfit, given all its pieces' tags. */
+  reactOutfit: (tags: StyleTag[], direction: 1 | -1) => void;
+  setOutfitCursor: (styleId: string, cursor: string | undefined) => void;
   next: () => void;
   prev: () => void;
   setFeedIndex: (index: number) => void;
   resetFeed: () => void;
-  toggleDetailLike: (id: string) => void;
+  toggleDetailLike: (product: Product) => void;
   completeOnboarding: () => void;
   setActiveStyle: (styleId: string) => void;
   createStyle: (input: {
     name: string;
     description?: string;
     seedAffinity?: AffinityMap;
+    gender?: ShopperGender;
   }) => void;
   duplicateStyle: (sourceId: string, name: string) => void;
   renameStyle: (id: string, name: string) => void;
@@ -309,23 +400,29 @@ export function StyleProfileProvider({
   const [styleSwitch, setStyleSwitch] = useState<{ id: string; at: number } | null>(null);
 
   useEffect(() => {
+    let restored: Partial<PersistedState> | null = null;
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<StyleProfileState>;
-        // Merge over fresh defaults so state saved before a schema change
-        // still hydrates safely.
-        dispatch({ type: "hydrate", state: { ...initialState(), ...parsed } });
+      for (const key of [STORAGE_KEY, ...LEGACY_STORAGE_KEYS]) {
+        const raw = window.localStorage.getItem(key);
+        if (!raw) continue;
+        restored = migratePersistedState(JSON.parse(raw), key);
+        break;
       }
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
-      // localStorage unavailable — start fresh
+      // localStorage unavailable or corrupt — start fresh
     }
+    // Merge over fresh defaults so state saved before a schema change still
+    // hydrates safely. Always dispatch, so persistence starts either way.
+    dispatch({ type: "hydrate", state: { ...initialState(), ...restored } });
   }, []);
 
   useEffect(() => {
+    if (!state.hydrated) return;
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { hydrated, ...persisted } = state;
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       // storage full or unavailable — ignore, state still works in memory
@@ -333,7 +430,30 @@ export function StyleProfileProvider({
   }, [state]);
 
   const react = useCallback(
-    (id: string, direction: 1 | -1) => dispatch({ type: "react", id, direction }),
+    (product: Product, direction: 1 | -1) =>
+      dispatch({ type: "react", id: product.id, tags: product.tags, direction }),
+    [],
+  );
+  const appendFeed = useCallback(
+    (styleId: string, gender: ShopperGender, ids: string[], exhausted: boolean) =>
+      dispatch({ type: "appendFeed", styleId, gender, ids, exhausted }),
+    [],
+  );
+  const setStyleGender = useCallback(
+    (styleId: string, gender: ShopperGender) => dispatch({ type: "setStyleGender", styleId, gender }),
+    [],
+  );
+  const chooseGender = useCallback(
+    (gender: ShopperGender) => dispatch({ type: "chooseGender", gender }),
+    [],
+  );
+  const reactOutfit = useCallback(
+    (tags: StyleTag[], direction: 1 | -1) => dispatch({ type: "reactOutfit", tags, direction }),
+    [],
+  );
+  const setOutfitCursor = useCallback(
+    (styleId: string, cursor: string | undefined) =>
+      dispatch({ type: "setOutfitCursor", styleId, cursor }),
     [],
   );
   const next = useCallback(() => dispatch({ type: "next" }), []);
@@ -344,7 +464,7 @@ export function StyleProfileProvider({
   );
   const resetFeed = useCallback(() => dispatch({ type: "resetFeed" }), []);
   const toggleDetailLike = useCallback(
-    (id: string) => dispatch({ type: "toggleDetailLike", id }),
+    (product: Product) => dispatch({ type: "toggleDetailLike", id: product.id, tags: product.tags }),
     [],
   );
   const completeOnboarding = useCallback(
@@ -359,9 +479,10 @@ export function StyleProfileProvider({
     [],
   );
   const createStyle = useCallback(
-    (input: { name: string; description?: string; seedAffinity?: AffinityMap }) =>
+    (input: { name: string; description?: string; seedAffinity?: AffinityMap; gender?: ShopperGender }) =>
       dispatch({
         type: "createStyle",
+        gender: input.gender,
         name: input.name,
         seedAffinity: input.seedAffinity ?? {},
         description: input.description ?? describeFromTags(input.seedAffinity ?? {}),
@@ -388,7 +509,7 @@ export function StyleProfileProvider({
   );
   const restart = useCallback(() => {
     try {
-      window.localStorage.removeItem(STORAGE_KEY);
+      [STORAGE_KEY, ...LEGACY_STORAGE_KEYS].forEach((key) => window.localStorage.removeItem(key));
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       // ignore
@@ -415,6 +536,11 @@ export function StyleProfileProvider({
       styles,
       activeStyle,
       react,
+      appendFeed,
+      setStyleGender,
+      chooseGender,
+      reactOutfit,
+      setOutfitCursor,
       next,
       prev,
       setFeedIndex,
@@ -437,6 +563,11 @@ export function StyleProfileProvider({
       styles,
       activeStyle,
       react,
+      appendFeed,
+      setStyleGender,
+      chooseGender,
+      reactOutfit,
+      setOutfitCursor,
       next,
       prev,
       setFeedIndex,

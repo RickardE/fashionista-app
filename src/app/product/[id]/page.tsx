@@ -1,10 +1,7 @@
 import { notFound } from "next/navigation";
-import { PRODUCTS, PRODUCTS_BY_ID } from "@/lib/data/products";
+import { getDb } from "@/server/db/client";
+import { getProduct } from "@/server/products/service";
 import { ProductPageClient } from "./page-client";
-
-export function generateStaticParams() {
-  return PRODUCTS.map((p) => ({ id: p.id }));
-}
 
 export default async function ProductPage({
   params,
@@ -12,7 +9,8 @@ export default async function ProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  if (!PRODUCTS_BY_ID[id]) notFound();
+  const product = await getProduct(getDb(), id);
+  if (!product) notFound();
 
-  return <ProductPageClient id={id} />;
+  return <ProductPageClient product={product} />;
 }

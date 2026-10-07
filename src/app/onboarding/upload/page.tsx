@@ -5,11 +5,12 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ChevronLeftIcon, PlusIcon } from "@/components/icons";
 import { PrimaryButton } from "@/components/ui/Button";
-import { INSPIRATION_TILES } from "@/lib/data/products";
-import { PRODUCTS_BY_ID } from "@/lib/data/products";
+import { useStyleProfile } from "@/lib/store/style-profile-context";
+import { useInspiration } from "@/lib/use-inspiration";
 
 export default function UploadInspirationPage() {
   const router = useRouter();
+  const inspiration = useInspiration(useStyleProfile().activeStyle.gender);
   const [picks, setPicks] = useState<number[]>([]);
 
   function toggle(i: number) {
@@ -48,10 +49,14 @@ export default function UploadInspirationPage() {
 
       <div className="flex-1 overflow-y-auto px-[22px] pb-5">
         <div className="grid grid-cols-3 gap-1.5">
-          {INSPIRATION_TILES.map((tile, i) => {
+          {inspiration.status === "loading" &&
+            Array.from({ length: 9 }, (_, i) => (
+              <div key={i} className="aspect-[3/4] w-full bg-neutral-200" />
+            ))}
+          {inspiration.tiles.map((tile, i) => {
             const on = picks.includes(i);
             const num = picks.indexOf(i) + 1;
-            const product = PRODUCTS_BY_ID[tile.productId];
+            const product = tile.product;
             return (
               <div
                 key={tile.label}
@@ -78,6 +83,14 @@ export default function UploadInspirationPage() {
             );
           })}
         </div>
+        {inspiration.status === "error" && (
+          <p className="mt-3.5 text-[13px] leading-[1.6] text-neutral-700">
+            We couldn&rsquo;t load inspiration images.{" "}
+            <button onClick={inspiration.retry} className="font-semibold underline">
+              Try again
+            </button>
+          </p>
+        )}
         <div className="mt-3.5 text-[12px] leading-[1.6] text-neutral-700">
           Tap a frame to drop in your own photo. Tap the corner to select it.
         </div>

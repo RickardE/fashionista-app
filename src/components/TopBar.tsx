@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { GearIcon } from "@/components/icons";
+import { GearIcon, SearchIcon } from "@/components/icons";
 
 export function TopBar({
   title,
@@ -18,13 +18,22 @@ export function TopBar({
         <span className="text-[11px] font-semibold tracking-[0.42em] uppercase">
           STYLE
         </span>
-        <Link
-          href="/profile"
-          aria-label="Your styles"
-          className="flex h-8 w-8 items-center justify-end text-neutral-700"
-        >
-          <GearIcon />
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link
+            href="/search"
+            aria-label="Search products"
+            className="flex h-8 w-8 items-center justify-center text-neutral-700"
+          >
+            <SearchIcon />
+          </Link>
+          <Link
+            href="/profile"
+            aria-label="Your styles"
+            className="flex h-8 w-8 items-center justify-end text-neutral-700"
+          >
+            <GearIcon />
+          </Link>
+        </div>
       </div>
       <div className="flex h-11 items-start justify-between px-[22px]">
         <span className="font-serif text-[26px] leading-none">{title}</span>

@@ -4,16 +4,22 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ChevronLeftIcon, PlusIcon } from "@/components/icons";
+import { GenderToggle } from "@/components/GenderChoice";
 import { PrimaryButton } from "@/components/ui/Button";
-import { INSPIRATION_TILES, PRODUCTS_BY_ID } from "@/lib/data/products";
+import { useInspiration } from "@/lib/use-inspiration";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
-import type { StyleTag } from "@/lib/types";
+import type { ShopperGender, StyleTag } from "@/lib/types";
 
 type Phase = "name" | "inspiration" | "creating";
 
 export default function NewStylePage() {
   const router = useRouter();
-  const { createStyle } = useStyleProfile();
+  const { createStyle, activeStyle } = useStyleProfile();
+  // New styles start from the current style's gender (derived, so it's right
+  // even before saved state has loaded); the user can change it here.
+  const [pickedGender, setGender] = useState<ShopperGender | undefined>();
+  const gender = pickedGender ?? activeStyle.gender;
+  const inspiration = useInspiration(gender);
   const [phase, setPhase] = useState<Phase>("name");
   const [name, setName] = useState("");
   const [picks, setPicks] = useState<number[]>([]);
@@ -31,19 +37,19 @@ export default function NewStylePage() {
   function finish() {
     const seedAffinity: Partial<Record<StyleTag, number>> = {};
     picks.forEach((i) => {
-      const product = PRODUCTS_BY_ID[INSPIRATION_TILES[i].productId];
+      const product = inspiration.tiles[i]?.product;
       product?.tags.forEach((tag) => {
         seedAffinity[tag] = (seedAffinity[tag] ?? 0) + 1;
       });
     });
-    createStyle({ name: name.trim(), seedAffinity });
+    createStyle({ name: name.trim(), seedAffinity, gender });
     setPhase("creating");
   }
 
   useEffect(() => {
     if (phase !== "creating") return;
     const t1 = setTimeout(() => setReady(true), 1400);
-    const t2 = setTimeout(() => router.push("/discover"), 2300);
+    const t2 = setTimeout(() => router.push("/products"), 2300);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -105,15 +111,19 @@ export default function NewStylePage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && name.trim()) setPhase("inspiration");
+              if (e.key === "Enter" && name.trim() && gender) setPhase("inspiration");
             }}
             placeholder="My summer style"
             autoFocus
             className="mt-6 w-full border-b-2 border-ink bg-transparent pb-2.5 text-[18px] outline-none placeholder:text-neutral-400"
           />
+          <div className="mt-8 mb-2.5 text-[10px] font-semibold tracking-[0.14em] text-neutral-700 uppercase">
+            Shopping for
+          </div>
+          <GenderToggle value={gender} onChange={setGender} />
         </div>
         <PrimaryButton
-          disabled={!name.trim()}
+          disabled={!name.trim() || !gender}
           onClick={() => setPhase("inspiration")}
         >
           Continue
@@ -145,10 +155,14 @@ export default function NewStylePage() {
 
       <div className="flex-1 overflow-y-auto px-[22px] pb-5">
         <div className="grid grid-cols-3 gap-1.5">
-          {INSPIRATION_TILES.map((tile, i) => {
+          {inspiration.status === "loading" &&
+            Array.from({ length: 9 }, (_, i) => (
+              <div key={i} className="aspect-[3/4] w-full bg-neutral-200" />
+            ))}
+          {inspiration.tiles.map((tile, i) => {
             const on = picks.includes(i);
             const num = picks.indexOf(i) + 1;
-            const product = PRODUCTS_BY_ID[tile.productId];
+            const product = tile.product;
             return (
               <div
                 key={tile.label}
@@ -175,6 +189,14 @@ export default function NewStylePage() {
             );
           })}
         </div>
+        {inspiration.status === "error" && (
+          <p className="mt-3.5 text-[13px] leading-[1.6] text-neutral-700">
+            We couldn&rsquo;t load inspiration images.{" "}
+            <button onClick={inspiration.retry} className="font-semibold underline">
+              Try again
+            </button>
+          </p>
+        )}
       </div>
 
       <div className="px-[22px] pb-8">

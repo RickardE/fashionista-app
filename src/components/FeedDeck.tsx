@@ -1,25 +1,33 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
-import { LookFeedCard } from "@/components/LookFeedCard";
+import { FeedStatusCard } from "@/components/FeedStatusCard";
+import { GenderChoiceCard } from "@/components/GenderChoice";
 import { ProductFeedCard } from "@/components/ProductFeedCard";
-import { PRODUCTS_BY_ID } from "@/lib/data/products";
-import { generateOutfit } from "@/lib/outfits";
+import { useCatalog } from "@/lib/store/product-catalog";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
-
-/** Show a complete-look interstitial every Nth card, purely as a local UI beat —
- * it never consumes a feedIndex slot, so the underlying product order/ranking
- * is untouched. */
-const LOOK_INTERVAL = 4;
+import { useFeed } from "@/lib/store/use-feed";
+import type { Product } from "@/lib/types";
 
 export function FeedDeck() {
   const router = useRouter();
   const pathname = usePathname();
-  const { activeStyle, next, react, resetFeed, effectiveAffinity, saveOutfit } =
-    useStyleProfile();
-  const { feedOrder, feedIndex } = activeStyle;
+  const { activeStyle, next, react, resetFeed, chooseGender } = useStyleProfile();
+  const { feedOrder, feedIndex, feedExhausted } = activeStyle;
+  const catalog = useCatalog();
+  const feed = useFeed();
+
+  const productAt = (i: number): Product | undefined =>
+    feedOrder[i] ? catalog.get(feedOrder[i]) : undefined;
+  const current = productAt(feedIndex);
+  const currentState = feedOrder[feedIndex] ? catalog.stateOf(feedOrder[feedIndex]) : "idle";
+
+  // Products that went out of stock (or vanished) since they were queued are skipped.
+  useEffect(() => {
+    if ((current && !current.available) || currentState === "missing") next();
+  }, [current, currentState, next]);
 
   const [notice, setNotice] = useState("");
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -31,20 +39,8 @@ export function FeedDeck() {
     noticeTimer.current = setTimeout(() => setNotice(""), 2400);
   }, []);
 
-  const [dismissedLookAt, setDismissedLookAt] = useState<number | null>(null);
-  const showLook =
-    feedIndex > 0 &&
-    feedIndex % LOOK_INTERVAL === 0 &&
-    feedIndex !== dismissedLookAt &&
-    feedIndex < feedOrder.length;
-  const lookAnchorId = showLook ? feedOrder[feedIndex] : null;
-  const lookItems = useMemo(
-    () => (lookAnchorId ? generateOutfit(lookAnchorId, effectiveAffinity) : null),
-    [lookAnchorId, effectiveAffinity],
-  );
-
   useEffect(() => {
-    if (pathname !== "/discover") return;
+    if (pathname !== "/products") return;
     function onKey(e: KeyboardEvent) {
       if (e.key === "ArrowRight") {
         e.preventDefault();
@@ -58,22 +54,13 @@ export function FeedDeck() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, feedIndex, feedOrder]);
+  }, [pathname, feedIndex, feedOrder, current]);
 
   function decide(direction: 1 | -1) {
-    const id = feedOrder[feedIndex];
-    if (!id) return;
-    react(id, direction);
+    if (!current) return;
+    react(current, direction);
     if (direction > 0) flash("Saved to your collection");
     next();
-  }
-
-  function decideLook(direction: 1 | -1) {
-    if (direction > 0 && lookAnchorId && lookItems) {
-      saveOutfit(lookAnchorId, lookItems);
-      flash("Look saved to your collection");
-    }
-    setDismissedLookAt(feedIndex);
   }
 
   const visibleRange = [feedIndex, feedIndex + 1].filter(
@@ -82,74 +69,58 @@ export function FeedDeck() {
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      {showLook && lookAnchorId && lookItems ? (
-        <>
-          <LookFeedCard
-            key={`look-${feedIndex}`}
-            items={lookItems}
-            onOpen={() => router.push(`/outfit/${lookAnchorId}`)}
-            onDecide={decideLook}
-          />
-          <ProductFeedCard
-            key={feedOrder[feedIndex]}
-            product={PRODUCTS_BY_ID[feedOrder[feedIndex]]}
-            stackPosition={1}
-            onOpen={() => router.push(`/product/${feedOrder[feedIndex]}`)}
-            onDecide={(direction) => decide(direction)}
-          />
-        </>
-      ) : (
-        visibleRange.map((i) => {
-          const isEnd = i === feedOrder.length;
-          const key = isEnd ? "__end__" : feedOrder[i];
-          const stackPosition = (i - feedIndex) as 0 | 1;
-
-          return isEnd ? (
-            <div
-              key={key}
-              className="absolute inset-0 flex h-full w-full flex-col justify-center bg-paper px-[22px]"
-              style={{
-                transform:
-                  stackPosition === 0
-                    ? undefined
-                    : "scale(0.94) translateY(14px)",
-                opacity: stackPosition === 0 ? 1 : 0.92,
-                pointerEvents: stackPosition === 0 ? undefined : "none",
-              }}
-              aria-hidden={stackPosition !== 0}
-            >
-              <div className="text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
-                That&rsquo;s today&rsquo;s edit
-              </div>
-              <div className="mt-4 font-serif text-[34px] leading-[1.08]">
-                You&rsquo;ve seen
-                <br />
-                everything new.
-              </div>
-              <p className="mt-3.5 max-w-[28ch] text-[14px] leading-[1.6] text-neutral-700">
-                A fresh selection arrives each morning, shaped by what you
-                liked today.
-              </p>
-              <div className="mt-[26px] mb-[22px] h-[2px] bg-divider" />
-              <button
-                onClick={resetFeed}
-                className="flex h-[52px] items-center justify-between border border-neutral-400 px-5 text-[13px] font-semibold tracking-[0.1em] uppercase transition-colors hover:border-ink"
-              >
-                <span>Look again</span>
-                <ChevronRightIcon />
-              </button>
-            </div>
-          ) : (
+      {feed.status === "needs_gender" && <GenderChoiceCard onChoose={chooseGender} />}
+      {feed.status !== "needs_gender" && visibleRange.map((i) => {
+        const stackPosition = (i - feedIndex) as 0 | 1;
+        const product = productAt(i);
+        if (product) {
+          return (
             <ProductFeedCard
-              key={key}
-              product={PRODUCTS_BY_ID[feedOrder[i]]}
+              key={product.id}
+              product={product}
               stackPosition={stackPosition}
-              onOpen={() => router.push(`/product/${feedOrder[i]}`)}
+              onOpen={() => router.push(`/product/${product.id}`)}
               onDecide={(direction) => decide(direction)}
             />
           );
-        })
-      )}
+        }
+        const atEnd = i === feedOrder.length;
+        // Behind the last card, the end card peeks through; otherwise only
+        // the front position shows end/loading/error states.
+        if (stackPosition !== 0 && !(atEnd && feedExhausted)) return null;
+        const failed =
+          (atEnd && feed.status === "error") || currentState === "error";
+        if (atEnd && feedExhausted) {
+          return (
+            <FeedStatusCard
+              key="__end__"
+              behind={stackPosition !== 0}
+              kicker="That’s today’s edit"
+              title={<>You&rsquo;ve seen<br />everything new.</>}
+              body="A fresh selection arrives each morning, shaped by what you liked today."
+              action={{ label: "Look again", onClick: resetFeed }}
+            />
+          );
+        }
+        if (failed) {
+          return (
+            <FeedStatusCard
+              key="__error__"
+              kicker="Something went wrong"
+              title={<>We couldn&rsquo;t load<br />your edit.</>}
+              body="The product service didn’t respond. Check your connection and try again."
+              action={{ label: "Try again", onClick: feed.retry }}
+            />
+          );
+        }
+        return (
+          <FeedStatusCard
+            key="__loading__"
+            kicker="One moment"
+            title={<>Pulling your<br />edit together&hellip;</>}
+          />
+        );
+      })}
 
       <div
         className="pointer-events-none absolute top-0 right-0 left-0 z-10 bg-ink px-[22px] py-[10px] text-[10px] font-semibold tracking-[0.1em] text-paper uppercase transition-opacity duration-[400ms]"
@@ -160,7 +131,7 @@ export function FeedDeck() {
 
       <div
         className="pointer-events-none absolute right-0 bottom-2.5 left-0 flex items-center justify-center gap-[7px] text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase transition-opacity duration-500"
-        style={{ opacity: activeStyle.showSwipeHint ? 1 : 0 }}
+        style={{ opacity: activeStyle.showSwipeHint && feed.status !== "needs_gender" ? 1 : 0 }}
       >
         <ChevronLeftIcon />
         <span>Swipe to explore</span>
@@ -169,3 +140,4 @@ export function FeedDeck() {
     </div>
   );
 }
+
