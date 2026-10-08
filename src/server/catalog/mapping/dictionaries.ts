@@ -92,6 +92,12 @@ export interface CategoryRule {
   pattern: RegExp;
   category: Category;
   subcategory?: string;
+  /**
+   * The word is also used in style names ("Kara Boot" jeans, "Boot Cut"), so
+   * a title match is only a hint: if the description's opening names a
+   * different garment and never this one, the description wins.
+   */
+  ambiguousInTitle?: boolean;
 }
 
 /**
@@ -213,7 +219,8 @@ export const BASE_CATEGORY_RULES: CategoryRule[] = [
 
   // Shoes
   rule(sv("sneakers?", "sneakern", "tygskor"), "shoes", "sneakers"),
-  rule(sv("kängor", "känga", "boots?", "chelseaboots?"), "shoes", "boots"),
+  rule(sv("kängor", "känga", "boots", "chelseaboots?"), "shoes", "boots"),
+  { ...rule(sv("boot"), "shoes", "boots"), ambiguousInTitle: true },
   rule(sv("loafers?", "mockasiner"), "shoes", "loafers"),
   rule(sv("sandal(er|s|en)?", "slides?", "tofflor", "flip-?flops?"), "shoes", "sandals"),
   rule(sv("skor(na)?", "sko(n)?"), "shoes"),

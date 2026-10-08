@@ -137,6 +137,13 @@ describe("mapping", () => {
     ["Velvetfish", "Man  >  Varumärken  >  BOSS Black  >  BOSS BLACK  >  Accessoarer", "Randiga badbyxor från Boss Black.", "BOSS Black", "swimwear"],
     ["Landon Pant Robertson", "Kampanjer  >  2609 Medlemshelg 20%", "Landon Pant är tillverkad i ett kraftigt jeanstyg.", "Carhartt WIP", "trousers"],
     ["2p rs uni cc", "Kampanjer  >  2511 25% Black Friday Weekend Allmän", "2-pack mörkblåa strumpor från BOSS Black.", "BOSS", "underwear"],
+    // "Boot" in a title is also a jeans style name; the description decides then.
+    ["Kara boot prudence", "Kampanjer  >  2511 25% Black Friday Weekend Allmän", "■ Slim, bootcut Mörkblå jeans från Neuw. Jeansen är en femficksmodell med bälteshällor.", "Neuw", "jeans"],
+    ["Bidford Chelsea Boot", "Kampanjer  >  2609 Medlemshelg 20%", "Bruna Chelsea boots från GANT. Bidford Chelsea Boot har en klassisk siluett.", "Gant Footwear", "shoes"],
+    ["Tall Boot", "Kampanjer  >  interna kategorier  >  Temp", "Beigea gummistövlar från Hunter i modellen Women's Original Tall Wellington Boots.", "Hunter", "shoes"],
+    ["Classic Boot", "Kampanjer  >  interna kategorier  >  berikning2509", "■ Skorna är lite små i storleken. Svarta, varmfodrade skor från Inuikii.", "Inuikii", "shoes"],
+    // A boot whose description mentions what to wear it with stays a boot.
+    ["Ankle Boot", "Kampanjer  >  Temp", "Snygg boot att bära till jeans. Läder och gummisula.", "Example", "shoes"],
   ])("categorizes %s", (title, path, description, brand, expected) => {
     expect(resolveCategory({ categoryPaths: [path], title, description, brand }, mapping).category).toBe(expected);
   });

@@ -128,6 +128,13 @@ export function resolveCategory(
   }
 
   const byTitle = testRules(withoutBrand(input.title));
+  if (byTitle?.ambiguousInTitle && lead) {
+    const byLead = testRules(lead);
+    const leadNamesTitleCategory = mapping.categoryRules.some((r) => r.category === byTitle.category && r.pattern.test(lead));
+    if (byLead && byLead.category !== byTitle.category && !leadNamesTitleCategory) {
+      return { category: byLead.category, subcategory: byLead.subcategory, source: "description" };
+    }
+  }
   if (byTitle && !(weakPathMatch && WEAK_CATEGORIES.has(byTitle.category))) {
     return { category: byTitle.category, subcategory: byTitle.subcategory, source: "title" };
   }
