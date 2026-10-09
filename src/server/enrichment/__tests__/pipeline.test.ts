@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { createTestDb, silentLogger } from "@/server/catalog/__tests__/helpers";
 import type { Db } from "@/server/db/client";
 import { enrichmentRuns, productEnrichments, productEnrichmentState, products } from "@/server/db/schema";
+import { GATE_VERSION } from "../gate";
 import { runEnrichment } from "../pipeline";
 import { computeRunStats } from "../report";
 import { inputConsistency, loadReviewData, parseCsv, reviewCsv, reviewHtml } from "../review";
@@ -108,15 +109,60 @@ describe("production run", () => {
     expect(await selectProductsToEnrich(db)).toEqual([]);
   });
 
+  it("activates a low-confidence fit, storing its confidence, the gate note and the gate version", async () => {
+    const id = await insertProduct(db);
+    const { runId } = await run(mockProvider(() => ok(modelOutput({ fit: { value: "slim", confidence: "low" } }))), [id]);
+    const [row] = await db.select().from(productEnrichments).where(eq(productEnrichments.runId, runId));
+    expect(row.outcome).toBe("completed");
+    expect(row.confidences).toMatchObject({ fit: "low" });
+    expect(row.validation).toMatchObject({ gateReasons: [], gateNotes: ["low_confidence:fit"], gateVersion: GATE_VERSION });
+    const [runRow] = await db.select().from(enrichmentRuns).where(eq(enrichmentRuns.id, runId));
+    expect(runRow.params).toMatchObject({ gateVersion: GATE_VERSION });
+    expect((await stateOf(id)).activeEnrichmentId).toBe(row.id);
+  });
+
   it("keeps the previous active enrichment when a re-run needs review", async () => {
     const id = await insertProduct(db);
     await run(mockProvider(() => ok(modelOutput())), [id]);
     const firstActive = (await stateOf(id)).activeEnrichmentId;
-    await run(mockProvider(() => ok(modelOutput({ fit: { value: "slim", confidence: "low" } }))), [id]);
+    await run(mockProvider(() => ok(modelOutput({ pattern: { value: "solid", confidence: "low" } }))), [id]);
     const state = await stateOf(id);
     expect(state.status).toBe("needs_review");
     expect(state.activeEnrichmentId).toBe(firstActive);
     expect(await db.$count(productEnrichments, eq(productEnrichments.productId, id))).toBe(2);
+  });
+});
+
+describe("protecting good enrichments", () => {
+  it("keeps the active enrichment and recommendation readiness when a re-run fails or needs review", async () => {
+    const id = await insertProduct(db);
+    await run(mockProvider(() => ok(modelOutput())), [id]);
+    const active = (await stateOf(id)).activeEnrichmentId;
+    expect(await countRecommendationReady(db)).toBe(1);
+
+    await run(mockProvider(() => ({ ok: false, reason: "provider_error", message: "down", usage, latencyMs: 1 })), [id]);
+    expect(await stateOf(id)).toMatchObject({ status: "failed", activeEnrichmentId: active });
+    expect(await countRecommendationReady(db)).toBe(1);
+
+    await run(mockProvider(() => ok(modelOutput({ pattern: { value: "solid", confidence: "low" } }))), [id]);
+    expect(await stateOf(id)).toMatchObject({ status: "needs_review", activeEnrichmentId: active });
+    expect(await countRecommendationReady(db)).toBe(1);
+  });
+
+  it("selects only new or changed products for a backfill, so a resumed run does not redo finished work", async () => {
+    const done = await insertProduct(db);
+    const review = await insertProduct(db);
+    const failed = await insertProduct(db);
+    const changed = await insertProduct(db);
+    const fresh = await insertProduct(db);
+    await run(mockProvider(() => ok(modelOutput())), [done, changed]);
+    await run(mockProvider(() => ok(modelOutput({ pattern: { value: "solid", confidence: "low" } }))), [review]);
+    await run(mockProvider(() => ({ ok: false, reason: "provider_error", message: "down", usage, latencyMs: 1 })), [failed]);
+    await db.update(products).set({ contentHash: "edited" }).where(eq(products.id, changed));
+
+    expect((await selectProductsToEnrich(db)).sort()).toEqual([changed, fresh].sort());
+    // Review and failed products are only taken when asked for.
+    expect((await selectProductsToEnrich(db, { includeReview: true, retryFailed: true })).sort()).toEqual([changed, fresh, review, failed].sort());
   });
 });
 
@@ -256,7 +302,7 @@ describe("pilot isolation", () => {
     });
     const before = await snapshot();
     // A pilot whose output would demote the products if it were applied.
-    await run(mockProvider(() => ok(modelOutput({ fit: { value: "slim", confidence: "low" } }))), ids, "pilot");
+    await run(mockProvider(() => ok(modelOutput({ pattern: { value: "solid", confidence: "low" } }))), ids, "pilot");
     await run(mockProvider(() => ({ ok: false, reason: "refusal", message: "x", usage, latencyMs: 1 })), ids, "pilot");
     expect(await snapshot()).toEqual(before);
   });

@@ -233,7 +233,7 @@ export const productEnrichments = pgTable(
     /** Three-level confidences (low | medium | high) per field / per label. */
     confidences: jsonb("confidences").$type<Record<string, unknown>>(),
     rawOutput: jsonb("raw_output"),
-    /** { schemaErrors, errors, warnings, dropped, gateReasons } */
+    /** { schemaErrors, errors, warnings, dropped, gateReasons, gateNotes, gateVersion } */
     validation: jsonb("validation").$type<Record<string, unknown>>().notNull().default({}),
     error: text("error"),
     inputTokens: integer("input_tokens").notNull().default(0),

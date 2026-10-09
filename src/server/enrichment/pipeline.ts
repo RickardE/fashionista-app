@@ -29,7 +29,7 @@ import { ZERO_USAGE, type ModelProvider, type ModelRequest, type ModelResult, ty
 import { computeRunStats } from "./report";
 import { claimProducts, recordOutcome, releaseClaims } from "./state";
 import { OUTPUT_SCHEMA_NAME, outputJsonSchema, TAXONOMY_VERSION } from "./taxonomy";
-import { applyGate } from "./gate";
+import { applyGate, GATE_VERSION } from "./gate";
 import { validateOutput } from "./validate";
 
 const DEFAULT_CONCURRENCY = 4;
@@ -94,6 +94,7 @@ export async function runEnrichment(db: Db, opts: RunOptions): Promise<RunResult
       params: {
         ...opts.params,
         activate,
+        gateVersion: GATE_VERSION,
         imageMode,
         concurrency: opts.concurrency ?? DEFAULT_CONCURRENCY,
         maxOutputTokens: provider.config.maxOutputTokens ?? null,
@@ -331,6 +332,8 @@ async function callAndValidate(provider: ModelProvider, request: ModelRequest, p
       warnings: validated.warnings,
       dropped: validated.dropped,
       gateReasons: gate.reasons,
+      gateNotes: gate.notes,
+      gateVersion: GATE_VERSION,
       ...(round > 0 ? { retriedAfter: schemaErrors } : {}),
     };
     return {

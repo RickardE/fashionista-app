@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyGate } from "../gate";
+import { applyGate, applyGateAs } from "../gate";
 import { coloursAgree, validateOutput, type ValidationContext } from "../validate";
 import { modelOutput } from "./fixtures";
 
@@ -133,13 +133,47 @@ describe("coloursAgree", () => {
 
 describe("applyGate", () => {
   it("completes a confident, consistent enrichment", () => {
-    expect(applyGate(validated())).toEqual({ outcome: "completed", reasons: [] });
+    expect(applyGate(validated())).toEqual({ outcome: "completed", reasons: [], notes: [] });
+  });
+
+  it("completes with low-confidence fit alone, keeping the confidence and a note", () => {
+    const input = validated({ fit: { value: "relaxed", confidence: "low" } });
+    expect(applyGate(input)).toEqual({ outcome: "completed", reasons: [], notes: ["low_confidence:fit"] });
+    expect(input.confidences.fit).toBe("low");
+    expect(input.attributes.fit).toBe("relaxed");
   });
 
   it.each([
-    ["low-confidence required field", { fit: { value: "relaxed" as const, confidence: "low" as const } }, "low_confidence:fit"],
+    ["garment_type", { garment_type: { value: "oxford_shirt" as const, confidence: "low" as const } }],
+    ["colour_primary", { colour_primary: { value: "navy" as const, confidence: "low" as const } }],
+    ["pattern", { pattern: { value: "solid" as const, confidence: "low" as const } }],
+    ["formality", { formality: { value: 3 as const, confidence: "low" as const } }],
+  ])("still blocks on low-confidence %s", (field, override) => {
+    expect(applyGate(validated(override)).reasons).toEqual([`low_confidence:${field}`]);
+  });
+
+  it.each([
+    ["a low-confidence colour", { colour_primary: { value: "navy" as const, confidence: "low" as const } }, "low_confidence:colour_primary"],
+    ["a blocking issue", { issues: ["image_unclear" as const] }, "issue:image_unclear"],
+    [
+      "a category disagreement",
+      { category_check: { verdict: "disagrees" as const, suggested_category: "polos" as const, confidence: "high" as const } },
+      "category_disagrees",
+    ],
+    ["a rule violation", { garment_type: { value: "hoodie" as const, confidence: "high" as const } }, "rule:category_mismatch"],
+    ["a missing aesthetic", { aesthetics: [] }, "missing_required:aesthetics"],
+  ])("low-confidence fit with %s still goes to review", (_label, override, reason) => {
+    const gate = applyGate(validated({ fit: { value: "relaxed", confidence: "low" }, ...override }));
+    expect(gate.outcome).toBe("needs_review");
+    expect(gate.reasons).toContain(reason);
+    expect(gate.reasons).not.toContain("low_confidence:fit");
+    expect(gate.notes).toEqual(["low_confidence:fit"]);
+  });
+
+  it.each([
+    ["low-confidence required field", { pattern: { value: "solid" as const, confidence: "low" as const } }, "low_confidence:pattern"],
     ["low-confidence seasons", { seasons: { values: ["summer" as const], confidence: "low" as const } }, "low_confidence:seasons"],
-    ["no aesthetic left after dropping", { aesthetics: [{ value: "edgy" as const, confidence: "low" as const }] }, "missing_required:aesthetics"],
+    ["no aesthetic returned", { aesthetics: [] }, "missing_required:aesthetics"],
     ["no occasion", { occasions: [] }, "missing_required:occasions"],
     ["no season", { seasons: { values: [], confidence: "high" as const } }, "missing_required:seasons"],
     [
@@ -162,7 +196,68 @@ describe("applyGate", () => {
         issues: ["low_information"],
       }),
     );
-    expect(gate).toEqual({ outcome: "completed", reasons: [] });
+    expect(gate).toEqual({ outcome: "completed", reasons: [], notes: [] });
+  });
+
+  it("replays gate 1.0.0, where low-confidence fit still blocked", () => {
+    const input = validated({ fit: { value: "relaxed", confidence: "low" } });
+    expect(applyGateAs("1.0.0", input)).toEqual({ outcome: "needs_review", reasons: ["low_confidence:fit"], notes: [] });
+    expect(applyGateAs("1.2.0", input)).toEqual(applyGate(input));
+    expect(applyGateAs("1.1.0", input)).toEqual(applyGate(input));
+    expect(applyGateAs("1.0.0", validated())).toMatchObject({ outcome: "completed" });
+  });
+
+  describe("low-confidence aesthetics (gate 1.2.0)", () => {
+    const weak = { aesthetics: [{ value: "streetwear" as const, confidence: "low" as const }, { value: "edgy" as const, confidence: "low" as const }] };
+
+    it("keeps the best label with its low confidence instead of dropping it", () => {
+      const r = validated(weak);
+      expect(r.attributes.aesthetics).toEqual(["streetwear"]);
+      expect(r.confidences.aesthetics).toEqual({ streetwear: "low" });
+      expect(r.dropped).toEqual(["aesthetics:edgy(low)"]);
+    });
+
+    it("completes on low confidence alone, with a note", () => {
+      expect(applyGate(validated(weak))).toEqual({ outcome: "completed", reasons: [], notes: ["low_confidence:aesthetics"] });
+    });
+
+    it("still drops low labels when a confident one exists", () => {
+      const r = validated({ aesthetics: [{ value: "edgy", confidence: "low" }, { value: "minimal", confidence: "medium" }] });
+      expect(r.attributes.aesthetics).toEqual(["minimal"]);
+      expect(r.dropped).toEqual(["aesthetics:edgy(low)"]);
+      expect(applyGate(r).notes).toEqual([]);
+    });
+
+    it.each([
+      ["no aesthetics at all", { aesthetics: [] }, "missing_required:aesthetics"],
+      ["no occasion", { ...weak, occasions: [] }, "missing_required:occasions"],
+      ["a low-confidence pattern", { ...weak, pattern: { value: "solid" as const, confidence: "low" as const } }, "low_confidence:pattern"],
+      ["a blocking issue", { ...weak, issues: ["image_unclear" as const] }, "issue:image_unclear"],
+      ["a rule violation", { ...weak, garment_type: { value: "hoodie" as const, confidence: "high" as const } }, "rule:category_mismatch"],
+    ])("still goes to review with %s", (_label, override, reason) => {
+      const gate = applyGate(validated(override));
+      expect(gate.outcome).toBe("needs_review");
+      expect(gate.reasons).toContain(reason);
+      expect(gate.reasons).not.toContain("low_confidence:aesthetics");
+    });
+
+    it("low fit and low aesthetics together are both advisory", () => {
+      expect(applyGate(validated({ ...weak, fit: { value: "regular", confidence: "low" } }))).toEqual({
+        outcome: "completed",
+        reasons: [],
+        notes: ["low_confidence:fit", "low_confidence:aesthetics"],
+      });
+    });
+
+    it("replays earlier gates as they behaved", () => {
+      const input = validated({ ...weak, fit: { value: "regular", confidence: "low" } });
+      expect(applyGateAs("1.1.0", input)).toEqual({ outcome: "needs_review", reasons: ["missing_required:aesthetics"], notes: ["low_confidence:fit"] });
+      expect(applyGateAs("1.0.0", input)).toEqual({
+        outcome: "needs_review",
+        reasons: ["low_confidence:fit", "missing_required:aesthetics"],
+        notes: [],
+      });
+    });
   });
 
   it("never blocks on optional fields", () => {

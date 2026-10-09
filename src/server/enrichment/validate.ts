@@ -101,9 +101,12 @@ export function validateOutput(output: unknown, ctx: ValidationContext): Validat
   const dropped: string[] = [];
   const warnings: Finding[] = [];
   const errors: Finding[] = [];
-  const keep = <T extends { value: string; confidence: Confidence }>(field: string, items: T[], max = Infinity) => {
-    const kept = dedupe(items).filter((i) => {
-      if (i.confidence !== "low") return true;
+  /** `keepBestLow`: when every label is low, keep the first (the model's best) instead of none. */
+  const keep = <T extends { value: string; confidence: Confidence }>(field: string, items: T[], max = Infinity, keepBestLow = false) => {
+    const unique = dedupe(items);
+    const best = keepBestLow && unique.length && unique.every((i) => i.confidence === "low") ? unique[0] : undefined;
+    const kept = unique.filter((i) => {
+      if (i.confidence !== "low" || i === best) return true;
       dropped.push(`${field}:${i.value}(low)`);
       return false;
     });
@@ -114,7 +117,8 @@ export function validateOutput(output: unknown, ctx: ValidationContext): Validat
 
   // --- normalize -----------------------------------------------------------
   const materials = keep("materials", o.materials);
-  const aesthetics = keep("aesthetics", o.aesthetics, MAX_AESTHETICS);
+  // Since gate 1.2.0 a weak style signal is kept (and noted by the gate) rather than erased.
+  const aesthetics = keep("aesthetics", o.aesthetics, MAX_AESTHETICS, true);
   if (o.aesthetics.length > MAX_AESTHETICS) {
     warnings.push({ code: "aesthetics_over_limit", message: `${o.aesthetics.length} aesthetics returned; kept ${MAX_AESTHETICS}` });
   }
