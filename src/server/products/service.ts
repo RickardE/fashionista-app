@@ -11,6 +11,7 @@ import type { Db } from "@/server/db/client";
 import { offers, products, variants } from "@/server/db/schema";
 import type { Product } from "@/lib/types";
 import { eligibleFor, type FeedKind, type ShopperGender } from "./eligibility";
+import { activeEnrichmentColumn, parseActiveEnrichment } from "./enrichment";
 import { deriveTags } from "./tags";
 import { testCatalogueScope } from "./test-catalogue";
 
@@ -53,6 +54,7 @@ const columns = {
   currency: products.currency,
   merchant: bestOffer("merchant"),
   sizes: activeSizes,
+  enrichment: activeEnrichmentColumn,
 };
 
 const selectProducts = (db: Db) => db.select(columns).from(products);
@@ -75,6 +77,7 @@ function capitalize(s: string) {
 
 export function toProductDto(row: Row): Product {
   const minor = row.salePriceMinor ?? row.priceMinor ?? 0;
+  const enrichment = parseActiveEnrichment(row.enrichment);
   return {
     id: row.id,
     brand: row.brand ?? "",
@@ -93,7 +96,8 @@ export function toProductDto(row: Row): Product {
     sizes: [...row.sizes].sort((a, b) => sizeRank(a) - sizeRank(b)),
     available: row.status === "active" && row.isAvailable,
     shopUrl: `/api/products/${row.id}/shop`,
-    tags: deriveTags(row),
+    tags: deriveTags(row, enrichment),
+    ...(enrichment ? { enrichment: enrichment.summary } : {}),
   };
 }
 

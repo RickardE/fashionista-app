@@ -14,6 +14,37 @@ export type StyleTag =
 
 export type { Category as ProductCategory, CanonicalColor, Gender, ProductType } from "@/server/catalog/types";
 import type { Category, CanonicalColor, Gender, ProductType } from "@/server/catalog/types";
+import type {
+  Aesthetic,
+  ColourProfile,
+  Fit,
+  Formality,
+  GarmentType,
+  LegShape,
+  Pattern,
+  Season,
+} from "@/server/enrichment/taxonomy";
+
+/**
+ * AI-inferred attributes from StyleAI enrichment — what the product looks like
+ * and when it's worn. Kept apart from the catalogue facts on Product, and only
+ * present while a completed enrichment describes the product's current content.
+ * Values follow the taxonomy version that produced them.
+ */
+export interface ProductEnrichment {
+  taxonomyVersion: string;
+  garmentType: GarmentType;
+  fit: Fit;
+  /** Trousers, jeans and jumpsuits only (taxonomy 1.1+). */
+  legShape?: Exclude<LegShape, "not_applicable">;
+  colourPrimary: CanonicalColor;
+  colourProfile: ColourProfile;
+  pattern: Pattern;
+  /** 1 lounge/sport · 2 casual · 3 smart casual · 4 business · 5 formal. */
+  formality: Formality;
+  seasons: Season[];
+  aesthetics: Aesthetic[];
+}
 
 /** Who a Style shops for. Only these two are offered to users; unisex products show for both. */
 export type ShopperGender = "men" | "women";
@@ -48,8 +79,10 @@ export interface Product {
   available: boolean;
   /** STYLEAI redirect to the merchant's product page; the backend owns the real URL. */
   shopUrl: string;
-  /** Coarse style tags derived from catalogue facts (pre-enrichment heuristic). */
+  /** Coarse style tags: from the enrichment when there is one, else from catalogue facts. */
   tags: StyleTag[];
+  /** AI-inferred attributes; absent when the product has no current enrichment. */
+  enrichment?: ProductEnrichment;
 }
 
 /** The role a piece plays in an outfit, independent of its catalog category. */
