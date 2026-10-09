@@ -109,6 +109,12 @@ deleted. Each run is recorded in `import_runs` with its stats.
 Responses use the `Product` type in `src/lib/types.ts`; no source ids or
 offer internals are exposed.
 
+**Test catalogue.** For a controlled user test, `TEST_CATALOGUE=<name>`
+restricts every endpoint above (except the shop redirect) to the products
+listed in `src/server/products/test-catalogues/<name>.json` that have a
+current, completed enrichment; anything else resolves as not found. It is
+off unless set, and an unknown name fails closed.
+
 ### Semantic enrichment
 
 `src/server/enrichment/` describes each catalogue product with a versioned

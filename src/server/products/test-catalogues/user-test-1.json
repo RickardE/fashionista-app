@@ -1,0 +1,1007 @@
+{
+  "name": "user-test-1",
+  "description": "First controlled user test: 125 approved products (64 men, 61 women) across top, bottom, outerwear and footwear slots. Selected with seed \"user-test-1\"; see the proposal of 2026-10-09.",
+  "approved": "2026-10-09",
+  "products": [
+    {
+      "id": "3d2a754a-4e8d-4189-8ba0-5b4038ecc728",
+      "brand": "Oscar Jacobson",
+      "name": "Reg Fit Cut Away",
+      "cohort": "men",
+      "role": "top",
+      "category": "shirts"
+    },
+    {
+      "id": "532bd02f-651d-4390-b687-745aae43c06c",
+      "brand": "Les Deux",
+      "name": "Jasper Flower Jaquard",
+      "cohort": "men",
+      "role": "top",
+      "category": "shirts"
+    },
+    {
+      "id": "6937a9d1-3f6c-4d48-92ea-fddd79b71098",
+      "brand": "Stenströms.",
+      "name": "Superslim",
+      "cohort": "men",
+      "role": "top",
+      "category": "shirts"
+    },
+    {
+      "id": "357f8d3d-ab5a-4b75-8e28-5e12f5844c45",
+      "brand": "1797",
+      "name": "Highgate Linen Shirt Jkt",
+      "cohort": "men",
+      "role": "top",
+      "category": "shirts"
+    },
+    {
+      "id": "aae97bdc-a1fe-42e4-8868-42d6596761ac",
+      "brand": "Morris.",
+      "name": "Douglas oxford stripe",
+      "cohort": "men",
+      "role": "top",
+      "category": "shirts"
+    },
+    {
+      "id": "73ca1743-5111-4d84-b5be-32bb35de57aa",
+      "brand": "Eton",
+      "name": "Signature Flannel Shirt",
+      "cohort": "men",
+      "role": "top",
+      "category": "shirts"
+    },
+    {
+      "id": "d8a8f1cf-8a4b-47e1-b01a-0365afc40836",
+      "brand": "Polo Ralph Lauren",
+      "name": "Linen Strip Shirt",
+      "cohort": "men",
+      "role": "top",
+      "category": "shirts"
+    },
+    {
+      "id": "6e3784fc-fa79-45da-ad56-32d498692f28",
+      "brand": "Sail Racing",
+      "name": "Bowman logo tee",
+      "cohort": "men",
+      "role": "top",
+      "category": "t-shirts"
+    },
+    {
+      "id": "8e12cbed-54d7-46e3-a626-1ca5e73b619f",
+      "brand": "Sail Racing",
+      "name": "Bowman logo tee",
+      "cohort": "men",
+      "role": "top",
+      "category": "t-shirts"
+    },
+    {
+      "id": "3c41a4f7-1a67-4a70-a144-81bb9916a9b3",
+      "brand": "Moose Knuckles",
+      "name": "Yul Classic T-Shirt",
+      "cohort": "men",
+      "role": "top",
+      "category": "t-shirts"
+    },
+    {
+      "id": "f0b5eeee-c3f7-4558-8929-2813f4920cad",
+      "brand": "Moose Knuckles",
+      "name": "Icebreak Logo T-Shirt",
+      "cohort": "men",
+      "role": "top",
+      "category": "t-shirts"
+    },
+    {
+      "id": "4f955125-6fb5-4d87-9631-9dce97475340",
+      "brand": "Eton",
+      "name": "Self Rib Cotton T-shirt",
+      "cohort": "men",
+      "role": "top",
+      "category": "t-shirts"
+    },
+    {
+      "id": "aa29aeb1-bddc-4e36-be87-45cc6a9f9a40",
+      "brand": "J Lindeberg",
+      "name": "Alexis Full Zip Cardigan",
+      "cohort": "men",
+      "role": "top",
+      "category": "knitwear"
+    },
+    {
+      "id": "f6377026-5f5b-4169-af3d-7afa63194738",
+      "brand": "WOODBIRD",
+      "name": "Kang 1/2 Zip Polo",
+      "cohort": "men",
+      "role": "top",
+      "category": "knitwear"
+    },
+    {
+      "id": "71231552-9d66-42ba-8e2b-b97b3af98b9a",
+      "brand": "1797",
+      "name": "Ando SS Vertical Stripe",
+      "cohort": "men",
+      "role": "top",
+      "category": "knitwear"
+    },
+    {
+      "id": "49ebe015-fc53-456d-bfb6-488702396529",
+      "brand": "WOODBIRD",
+      "name": "Oni Multi Cardigan",
+      "cohort": "men",
+      "role": "top",
+      "category": "knitwear"
+    },
+    {
+      "id": "691b4b10-fbf6-4fd1-a235-2a25dd4cf980",
+      "brand": "Gant",
+      "name": "Sacker Rib Half Zip",
+      "cohort": "men",
+      "role": "top",
+      "category": "knitwear"
+    },
+    {
+      "id": "c4182755-fb1d-4f6b-b2aa-e9f4cddeebf1",
+      "brand": "Polo Ralph Lauren",
+      "name": "Merino crewneck",
+      "cohort": "men",
+      "role": "top",
+      "category": "knitwear"
+    },
+    {
+      "id": "43c04c39-d01a-41f6-b6df-06afc0c41e1b",
+      "brand": "Emporio Armani",
+      "name": "Trackjacket Full Zip",
+      "cohort": "men",
+      "role": "top",
+      "category": "sweatshirts"
+    },
+    {
+      "id": "cfad5b93-f79d-4f01-98ca-709fe4d89351",
+      "brand": "Fred Perry",
+      "name": "Half Zip Collared Sweat",
+      "cohort": "men",
+      "role": "top",
+      "category": "sweatshirts"
+    },
+    {
+      "id": "7a917082-c793-435a-9fb7-08a6b4c52f8b",
+      "brand": "Gant",
+      "name": "Classic Heavy Rugger",
+      "cohort": "men",
+      "role": "top",
+      "category": "sweatshirts"
+    },
+    {
+      "id": "76c1c466-9413-4f7e-9efd-86a3303f1e27",
+      "brand": "Replay",
+      "name": "Denim Wash Polo",
+      "cohort": "men",
+      "role": "top",
+      "category": "polos"
+    },
+    {
+      "id": "442df066-34fb-4ead-b768-4a21e8ba5660",
+      "brand": "J Lindeberg",
+      "name": "30Y Matt Relaxed Polo",
+      "cohort": "men",
+      "role": "top",
+      "category": "polos"
+    },
+    {
+      "id": "326765d3-56eb-48df-b6b0-cc51840f294e",
+      "brand": "Gant",
+      "name": "Cotton Merino Rugger",
+      "cohort": "men",
+      "role": "top",
+      "category": "polos"
+    },
+    {
+      "id": "8b094277-1ae8-4e29-8496-b6a5db30db92",
+      "brand": "1797",
+      "name": "Cedric Satin Chino",
+      "cohort": "men",
+      "role": "bottom",
+      "category": "trousers"
+    },
+    {
+      "id": "7bbb8e73-6468-4ef9-b658-3434de20e0b1",
+      "brand": "BOSS Black",
+      "name": "H-Kaiton1",
+      "cohort": "men",
+      "role": "bottom",
+      "category": "trousers"
+    },
+    {
+      "id": "fd213580-efea-4dbe-9165-0352ebd22823",
+      "brand": "Morris",
+      "name": "Jeffrey brushed chino",
+      "cohort": "men",
+      "role": "bottom",
+      "category": "trousers"
+    },
+    {
+      "id": "22d799cb-0ab4-4e12-96c4-5a2b20858f73",
+      "brand": "BOSS Black",
+      "name": "Genius-b1",
+      "cohort": "men",
+      "role": "bottom",
+      "category": "trousers"
+    },
+    {
+      "id": "c1cec066-c175-4315-a34c-61064fb2d6da",
+      "brand": "WOODBIRD",
+      "name": "Eik Linen Pant",
+      "cohort": "men",
+      "role": "bottom",
+      "category": "trousers"
+    },
+    {
+      "id": "384cd08c-f008-4ebf-9f06-ad9286964fd9",
+      "brand": "Gant",
+      "name": "Classic Regular Chinos",
+      "cohort": "men",
+      "role": "bottom",
+      "category": "trousers"
+    },
+    {
+      "id": "e4cfd5de-f544-44e9-a357-8eb7f3d90624",
+      "brand": "Oscar Jacobson",
+      "name": "Dandy Trousers",
+      "cohort": "men",
+      "role": "bottom",
+      "category": "trousers"
+    },
+    {
+      "id": "65d591a2-67f9-4220-a757-ed5d4f4f25f1",
+      "brand": "BOSS Green",
+      "name": "T_Commuter-Slim",
+      "cohort": "men",
+      "role": "bottom",
+      "category": "trousers"
+    },
+    {
+      "id": "684d4678-d50a-4706-9f14-50d92760f7f2",
+      "brand": "Jacob Cohen",
+      "name": "Bard",
+      "cohort": "men",
+      "role": "bottom",
+      "category": "jeans"
+    },
+    {
+      "id": "570356c0-708f-4ce1-b147-919ea26b60eb",
+      "brand": "Neuw",
+      "name": "Liam Relaxed Chalk",
+      "cohort": "men",
+      "role": "bottom",
+      "category": "jeans"
+    },
+    {
+      "id": "efbcc013-7117-4939-adb0-62b381eac5a4",
+      "brand": "Neuw",
+      "name": "Liam Relaxed Saturnalia",
+      "cohort": "men",
+      "role": "bottom",
+      "category": "jeans"
+    },
+    {
+      "id": "b4fb0198-5ce2-4061-a0c7-c83a5589f21f",
+      "brand": "Replay",
+      "name": "Anbass",
+      "cohort": "men",
+      "role": "bottom",
+      "category": "jeans"
+    },
+    {
+      "id": "4267916b-4e9a-4598-9ea7-5eb9c705eae6",
+      "brand": "Jacob Cohen",
+      "name": "Bard Slim Fit",
+      "cohort": "men",
+      "role": "bottom",
+      "category": "jeans"
+    },
+    {
+      "id": "be6aec35-69f9-4ba4-ba3b-d08675d885c0",
+      "brand": "Replay",
+      "name": "Grover",
+      "cohort": "men",
+      "role": "bottom",
+      "category": "jeans"
+    },
+    {
+      "id": "1f233642-3177-4c40-ba28-f1cf7e72ae41",
+      "brand": "Polo Ralph Lauren",
+      "name": "Custom fit denim",
+      "cohort": "men",
+      "role": "bottom",
+      "category": "jeans"
+    },
+    {
+      "id": "76b6731c-2ad5-4d08-867e-85de0d851327",
+      "brand": "Moose Knuckles.",
+      "name": "Saglek jacket",
+      "cohort": "men",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "be156683-3854-4479-b05a-306b16e5a8ef",
+      "brand": "Parajumpers",
+      "name": "Nolan",
+      "cohort": "men",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "fe4c6cb0-a125-45aa-b66b-4a39a016077c",
+      "brand": "Neuw",
+      "name": "Worwear Coat",
+      "cohort": "men",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "cf925d0f-7d64-486c-9b4a-c8f95cb67b23",
+      "brand": "Eton",
+      "name": "Wool Padded Vest",
+      "cohort": "men",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "253fdbb1-75e7-49e8-a8d6-7db68ecad9bd",
+      "brand": "Snoot",
+      "name": "Collodi Coat",
+      "cohort": "men",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "a478916e-a9e6-4146-8b53-cd36d0c09e5f",
+      "brand": "Sail Racing",
+      "name": "Challenge Pile Hood",
+      "cohort": "men",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "1df7ba94-a7c2-4c20-be3e-08c9eeb97584",
+      "brand": "Sail Racing",
+      "name": "Spray hybrid down hood",
+      "cohort": "men",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "3cfd65cc-b9a9-4d79-a0c7-e14fe5e3643d",
+      "brand": "Fred Perry",
+      "name": "Cable Taped Track Jacket",
+      "cohort": "men",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "4519e58f-800b-4e25-98f4-537fea9912c9",
+      "brand": "Snoot",
+      "name": "Como Freddo Jkt",
+      "cohort": "men",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "a4ce6808-fa18-41ca-bd52-20a7374a508f",
+      "brand": "NN 07",
+      "name": "Gael Jacket",
+      "cohort": "men",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "5c918c13-f32c-4c2a-9c70-c1cd2d9ceb71",
+      "brand": "J Lindeberg",
+      "name": "Boen Knit Hybrid Jkt",
+      "cohort": "men",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "2d5a9d1b-6522-4e85-9f01-481c28d0a53e",
+      "brand": "Eton",
+      "name": "DB Hopsack Soft Blazer",
+      "cohort": "men",
+      "role": "outerwear",
+      "category": "blazers"
+    },
+    {
+      "id": "d3e63d65-8270-49cb-9ef8-485a15f6a37c",
+      "brand": "1797",
+      "name": "Ellington SB Linen Blazer",
+      "cohort": "men",
+      "role": "outerwear",
+      "category": "blazers"
+    },
+    {
+      "id": "843c285b-c8ae-428c-851b-de27d0995d3d",
+      "brand": "NN 07",
+      "name": "Lucas Boiled Wool Blazer",
+      "cohort": "men",
+      "role": "outerwear",
+      "category": "blazers"
+    },
+    {
+      "id": "80dbb4b7-8479-4b12-a8c2-b7c54d081c35",
+      "brand": "Gant Footwear",
+      "name": "Kinzoon low lace shoe",
+      "cohort": "men",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "3fac1b8a-3275-4005-84f8-83ec57d5f2cb",
+      "brand": "UGG",
+      "name": "M classic mini",
+      "cohort": "men",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "ecce1d47-55e3-4d93-9762-e5ff323729e2",
+      "brand": "Fred Perry",
+      "name": "B722 Leather",
+      "cohort": "men",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "b0d76a9c-1a8f-4a91-b6de-2548d616a7b8",
+      "brand": "BOSS Black",
+      "name": "Sienne_Boat_sd",
+      "cohort": "men",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "78570dad-9a24-44fc-912a-b96eb1ccbda5",
+      "brand": "Fred Perry",
+      "name": "Hawley Suede",
+      "cohort": "men",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "d6904bf0-b19f-43ed-9fc6-6fd1e7b7afc9",
+      "brand": "Gant Footwear",
+      "name": "Blistown Mid Boot",
+      "cohort": "men",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "8a3078c7-c284-41ef-8db9-108446404652",
+      "brand": "Polo Ralph Lauren",
+      "name": "Merton Boat Shoe",
+      "cohort": "men",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "12b2b003-4e5f-4de8-85b3-d7bd328c1af9",
+      "brand": "Playboy",
+      "name": "Austin",
+      "cohort": "men",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "3e1282e3-55dd-4704-aafb-b239a557f7a2",
+      "brand": "Playboy",
+      "name": "Austin",
+      "cohort": "men",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "61fc5270-44e2-4e00-8371-9fa6c758c9fd",
+      "brand": "BOSS Black",
+      "name": "Kieran Tenn",
+      "cohort": "men",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "ae5cddca-b0dd-4cf0-a0f1-b56a10a1c69e",
+      "brand": "J Lindeberg",
+      "name": "Vent 500 Sport Sneaker",
+      "cohort": "men",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "4347dd1d-423e-41aa-829d-7542c550fd55",
+      "brand": "Sand",
+      "name": "Nova shirt",
+      "cohort": "women",
+      "role": "top",
+      "category": "shirts"
+    },
+    {
+      "id": "b8d9ec1c-4971-44c4-b306-4671b182f985",
+      "brand": "By Malene Birger",
+      "name": "Derris",
+      "cohort": "women",
+      "role": "top",
+      "category": "shirts"
+    },
+    {
+      "id": "7e72709f-2d46-4637-a9a3-27c8b335572c",
+      "brand": "Polo Ralph Lauren",
+      "name": "Woven Sport Shirt",
+      "cohort": "women",
+      "role": "top",
+      "category": "shirts"
+    },
+    {
+      "id": "bf969f97-a21b-4046-b2bd-bef7a208fe52",
+      "brand": "Filippa K",
+      "name": "Stand Collar Blouse",
+      "cohort": "women",
+      "role": "top",
+      "category": "shirts"
+    },
+    {
+      "id": "58891e94-32e4-4963-bcc2-e6eca4900128",
+      "brand": "Lois",
+      "name": "Pia Stripe",
+      "cohort": "women",
+      "role": "top",
+      "category": "shirts"
+    },
+    {
+      "id": "55a9ed95-d727-46c3-9df6-15cbcbefe2d8",
+      "brand": "Rodebjer",
+      "name": "Otta Body",
+      "cohort": "women",
+      "role": "top",
+      "category": "t-shirts"
+    },
+    {
+      "id": "38de68dc-2b3f-4432-8922-59d550485d94",
+      "brand": "Rodebjer",
+      "name": "Rodebjer Dory",
+      "cohort": "women",
+      "role": "top",
+      "category": "t-shirts"
+    },
+    {
+      "id": "802c89e9-d30e-4bdf-b56c-9896d2ed027e",
+      "brand": "Ganni",
+      "name": "Jersey Cherry Relaxed Tee",
+      "cohort": "women",
+      "role": "top",
+      "category": "t-shirts"
+    },
+    {
+      "id": "9d7b71d7-5d4c-4a8d-86e5-9cd0e6f1796a",
+      "brand": "Ganni",
+      "name": "Jersey Cherry Caviar Tee",
+      "cohort": "women",
+      "role": "top",
+      "category": "t-shirts"
+    },
+    {
+      "id": "5a8a795c-c553-4794-96d7-ee2efb44de28",
+      "brand": "Barbour",
+      "name": "Barbour Shae Knit",
+      "cohort": "women",
+      "role": "top",
+      "category": "knitwear"
+    },
+    {
+      "id": "f534111c-9703-45e9-a46e-a531ab0585ab",
+      "brand": "Neo Noir",
+      "name": "Roeme Knit Stitch Blouse",
+      "cohort": "women",
+      "role": "top",
+      "category": "knitwear"
+    },
+    {
+      "id": "12f4e1b2-665b-432b-8a1c-355eb362f2b2",
+      "brand": "My Aurora",
+      "name": "Andrine B Cashmere Cardi",
+      "cohort": "women",
+      "role": "top",
+      "category": "knitwear"
+    },
+    {
+      "id": "3571e936-3f7c-41d4-a735-c16242cbe3f1",
+      "brand": "My Aurora",
+      "name": "Helena Cashmere Top",
+      "cohort": "women",
+      "role": "top",
+      "category": "knitwear"
+    },
+    {
+      "id": "437221ac-aee0-4fd3-8c4d-6ca3182eec0f",
+      "brand": "Busnel",
+      "name": "Gertrude",
+      "cohort": "women",
+      "role": "top",
+      "category": "knitwear"
+    },
+    {
+      "id": "bab59fd3-d6c3-4f1b-a94a-8b84a8c517fc",
+      "brand": "By Malene Birger",
+      "name": "Lunai",
+      "cohort": "women",
+      "role": "top",
+      "category": "knitwear"
+    },
+    {
+      "id": "7d85006b-9066-4ebb-8480-76f12e59a384",
+      "brand": "Filippa K",
+      "name": "Twisted Neck Top",
+      "cohort": "women",
+      "role": "top",
+      "category": "tops"
+    },
+    {
+      "id": "ac2e586e-4303-447c-b70b-3297a45686e9",
+      "brand": "Lauren Ralph Lauren",
+      "name": "Knit Pullover",
+      "cohort": "women",
+      "role": "top",
+      "category": "tops"
+    },
+    {
+      "id": "9777f69f-977e-4fbc-a467-2a670f4165a5",
+      "brand": "Filippa K",
+      "name": "Rib Mock Neck Top",
+      "cohort": "women",
+      "role": "top",
+      "category": "tops"
+    },
+    {
+      "id": "76a99461-069e-427c-a08f-13f37e7f280f",
+      "brand": "Sand",
+      "name": "Nova",
+      "cohort": "women",
+      "role": "top",
+      "category": "tops"
+    },
+    {
+      "id": "f95835a0-ccd3-42f5-94af-337373cc0903",
+      "brand": "Polo Ralph Lauren",
+      "name": "Knit Pullover Sweatshirt",
+      "cohort": "women",
+      "role": "top",
+      "category": "sweatshirts"
+    },
+    {
+      "id": "dcafffcf-a248-4f46-98ce-888afb27033d",
+      "brand": "Parajumpers",
+      "name": "Edita Hoodie",
+      "cohort": "women",
+      "role": "top",
+      "category": "sweatshirts"
+    },
+    {
+      "id": "726a0e56-73bc-4631-bc64-fcd09c5e6e35",
+      "brand": "Zadig Voltaire",
+      "name": "Georgy Mo Tour Lips Strass",
+      "cohort": "women",
+      "role": "top",
+      "category": "sweatshirts"
+    },
+    {
+      "id": "daf236f1-9ff1-4d78-a044-e2029feb7d3d",
+      "brand": "Zadig Voltaire",
+      "name": "Panny Strass Dots",
+      "cohort": "women",
+      "role": "bottom",
+      "category": "trousers"
+    },
+    {
+      "id": "44f55a05-11e4-42d3-a437-ec5cbf455c69",
+      "brand": "Neo Noir",
+      "name": "Eddina Woven Pants",
+      "cohort": "women",
+      "role": "bottom",
+      "category": "trousers"
+    },
+    {
+      "id": "cca01929-fb6c-476c-9a45-362a90a5e877",
+      "brand": "Lois",
+      "name": "Silvia Suple",
+      "cohort": "women",
+      "role": "bottom",
+      "category": "trousers"
+    },
+    {
+      "id": "8e5c0046-354f-44c1-9874-2086bd33e3d2",
+      "brand": "By Malene Birger",
+      "name": "Letita",
+      "cohort": "women",
+      "role": "bottom",
+      "category": "trousers"
+    },
+    {
+      "id": "20fea777-fae1-41ac-b086-c5b1f0cb65c9",
+      "brand": "Twist&Tango",
+      "name": "Maelle Trousers",
+      "cohort": "women",
+      "role": "bottom",
+      "category": "trousers"
+    },
+    {
+      "id": "20d0ba15-9c8a-4b75-ad04-16eb5a04ecbf",
+      "brand": "By Malene Birger",
+      "name": "Carlien",
+      "cohort": "women",
+      "role": "bottom",
+      "category": "trousers"
+    },
+    {
+      "id": "63871b64-cf20-498b-899f-31f0edb82479",
+      "brand": "Ganni",
+      "name": "Print Denim Lari Jeans",
+      "cohort": "women",
+      "role": "bottom",
+      "category": "jeans"
+    },
+    {
+      "id": "657fa7ad-9abb-4751-a84f-ccbf2531e8d0",
+      "brand": "Gant",
+      "name": "Slim Jeans",
+      "cohort": "women",
+      "role": "bottom",
+      "category": "jeans"
+    },
+    {
+      "id": "2feffcda-5d2f-4522-83d3-9ad3be625fc9",
+      "brand": "Neuw",
+      "name": "Hanne Bell Evoke",
+      "cohort": "women",
+      "role": "bottom",
+      "category": "jeans"
+    },
+    {
+      "id": "3d80cd42-6cee-48cb-9e6b-2947df52e67f",
+      "brand": "Replay",
+      "name": "New Luz Bootcut",
+      "cohort": "women",
+      "role": "bottom",
+      "category": "jeans"
+    },
+    {
+      "id": "72085760-c8d0-4593-8a36-d3c5b5eeccdc",
+      "brand": "True Religion",
+      "name": "Joey Flare Ridge Mist",
+      "cohort": "women",
+      "role": "bottom",
+      "category": "jeans"
+    },
+    {
+      "id": "56dabe77-9164-496e-930e-c237626d384b",
+      "brand": "Replay",
+      "name": "Zolie",
+      "cohort": "women",
+      "role": "bottom",
+      "category": "jeans"
+    },
+    {
+      "id": "3040a4fd-9646-48ac-a434-6651867fbce2",
+      "brand": "My Aurora",
+      "name": "Beate Linen Skirt",
+      "cohort": "women",
+      "role": "bottom",
+      "category": "skirts"
+    },
+    {
+      "id": "bb4c9780-ae4c-4e37-8556-e8219fbe45cc",
+      "brand": "Neo Noir",
+      "name": "Bovary skirt",
+      "cohort": "women",
+      "role": "bottom",
+      "category": "skirts"
+    },
+    {
+      "id": "82437ffa-36e8-40d9-96ab-b36a45fac60a",
+      "brand": "True Religion",
+      "name": "Sadie Crystal Mini Skirt",
+      "cohort": "women",
+      "role": "bottom",
+      "category": "skirts"
+    },
+    {
+      "id": "1a9d0f08-f66c-4b59-bde6-021c4e68dce4",
+      "brand": "Twist&Tango",
+      "name": "Yara Suede Skirt",
+      "cohort": "women",
+      "role": "bottom",
+      "category": "skirts"
+    },
+    {
+      "id": "321efe75-e263-4136-8e9a-1e6429effb8a",
+      "brand": "Cedrico",
+      "name": "Stella",
+      "cohort": "women",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "11a05f63-ce16-4ae3-82b4-966d074caf02",
+      "brand": "Rockandblue",
+      "name": "Solange Jacket",
+      "cohort": "women",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "9abf8368-b6c4-4145-9262-b6fb8290a5a3",
+      "brand": "Rockandblue",
+      "name": "Diddi coat",
+      "cohort": "women",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "878c683c-9b33-4aff-93d4-16291972bff0",
+      "brand": "Cedrico",
+      "name": "Venus",
+      "cohort": "women",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "0ba56a18-ebc8-470c-a1f1-d171bbf1139b",
+      "brand": "Moose Knuckles.",
+      "name": "Watershed parka",
+      "cohort": "women",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "bf276bcf-61d8-4fad-aa6c-db2ff2094ece",
+      "brand": "My Aurora",
+      "name": "Nelly Merino Jacket",
+      "cohort": "women",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "fafe6780-096a-48dc-9b3b-c7fb9651fd12",
+      "brand": "Moose Knuckles",
+      "name": "Jocada parka",
+      "cohort": "women",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "a15e780a-8b49-4b0f-955c-dc202adc6061",
+      "brand": "Barbour",
+      "name": "Barbour Icons Mod Spey",
+      "cohort": "women",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "ea8188be-3945-4adf-bed2-51fc35fca033",
+      "brand": "BA&SH",
+      "name": "Jacket Milas",
+      "cohort": "women",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "9ea25ca7-6a38-4fea-add6-cb5470adbe60",
+      "brand": "Neuw",
+      "name": "Scene Leather Jacket",
+      "cohort": "women",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "3b808c24-4596-4c83-8ddb-bbe8520414a6",
+      "brand": "Neo Noir",
+      "name": "Rivora Denim Peplum Jacket",
+      "cohort": "women",
+      "role": "outerwear",
+      "category": "outerwear"
+    },
+    {
+      "id": "593b821a-2b1a-40b0-b410-37320a4c5570",
+      "brand": "Filippa K",
+      "name": "Sasha Cool Wool Blazer",
+      "cohort": "women",
+      "role": "outerwear",
+      "category": "blazers"
+    },
+    {
+      "id": "ab20f364-c734-4e3d-8b5c-788eab783683",
+      "brand": "Gant",
+      "name": "Reg Club Blazer",
+      "cohort": "women",
+      "role": "outerwear",
+      "category": "blazers"
+    },
+    {
+      "id": "988491c9-ea85-4443-ac53-6c87c7e74ed3",
+      "brand": "Inuikii",
+      "name": "Shearling Velcro High",
+      "cohort": "women",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "385cfbe5-a7c1-4c86-baa1-6449c019c2e7",
+      "brand": "Hunter",
+      "name": "Tall Gloss Boot",
+      "cohort": "women",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "c51e599b-06d3-4771-aa04-5f47215306b2",
+      "brand": "Lauren Ralph Lauren",
+      "name": "Adrienne Pumps",
+      "cohort": "women",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "6d1bd6f3-5317-498e-93de-23b1e4247a40",
+      "brand": "Hunter",
+      "name": "Tall Boot",
+      "cohort": "women",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "d25e19d1-f42b-472e-a4b0-ac66c786b2d4",
+      "brand": "Inuikii",
+      "name": "Shearling Low Velcro",
+      "cohort": "women",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "2f58e44d-2fe6-499e-8bb6-cda7dea96aaf",
+      "brand": "UGG",
+      "name": "W Otzo Clog",
+      "cohort": "women",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "f7a109e1-10a6-4673-99fb-ea9b13ce0863",
+      "brand": "Gant Footwear",
+      "name": "Cuzima Sneaker",
+      "cohort": "women",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "34cb3d8b-b6c0-46e6-b69b-b4d58ca3b79b",
+      "brand": "UGG",
+      "name": "W Classic Ultra Tall",
+      "cohort": "women",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "bb9e2bdb-1bf2-4241-8221-74eb10ea5672",
+      "brand": "Gant Footwear",
+      "name": "Sperly Low Lace Shoe",
+      "cohort": "women",
+      "role": "footwear",
+      "category": "shoes"
+    },
+    {
+      "id": "28df1f61-d5d8-47d1-8b5d-5102ddf01fc2",
+      "brand": "Zadig Voltaire",
+      "name": "Joe Fast Smooth Cowskin",
+      "cohort": "women",
+      "role": "footwear",
+      "category": "shoes"
+    }
+  ]
+}

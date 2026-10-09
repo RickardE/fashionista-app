@@ -12,6 +12,7 @@ import { offers, products, variants } from "@/server/db/schema";
 import type { Product } from "@/lib/types";
 import { eligibleFor, type FeedKind, type ShopperGender } from "./eligibility";
 import { deriveTags } from "./tags";
+import { testCatalogueScope } from "./test-catalogue";
 
 export const MAX_LIMIT = 50;
 
@@ -63,6 +64,10 @@ const showable = and(
   eq(products.isAvailable, true),
   sql`cardinality(${products.images}) > 0`,
 );
+
+// Every product query below adds testCatalogueScope(): a no-op unless
+// TEST_CATALOGUE restricts the app to an approved test catalogue. It is
+// evaluated per query, so the restriction can never be cached in or out.
 
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -116,7 +121,7 @@ export async function getFeedPage(
     ? sql`(md5(${products.id}::text), ${products.id}) > (md5(${opts.cursor}::text), ${opts.cursor}::uuid)`
     : undefined;
   const rows = await selectProducts(db)
-    .where(and(showable, eligibleFor(opts.kind ?? "products", opts.gender), after))
+    .where(and(showable, eligibleFor(opts.kind ?? "products", opts.gender), testCatalogueScope(), after))
     .orderBy(sql`md5(${products.id}::text)`, products.id)
     .limit(opts.limit + 1);
   const page = rows.slice(0, opts.limit);
@@ -126,11 +131,15 @@ export async function getFeedPage(
   };
 }
 
-/** Any products by id, including inactive/sold-out ones (saved items must still resolve). */
+/**
+ * Any products by id, including inactive/sold-out ones (saved items must still
+ * resolve). In test-catalogue mode, ids outside the catalogue resolve as not
+ * found, so no page can show or build an outfit around them.
+ */
 export async function getProductsByIds(db: Db, ids: string[]): Promise<Product[]> {
   const valid = [...new Set(ids.filter(isProductId))];
   if (!valid.length) return [];
-  const rows = await selectProducts(db).where(inArray(products.id, valid));
+  const rows = await selectProducts(db).where(and(inArray(products.id, valid), testCatalogueScope()));
   const byId = new Map(rows.map((r) => [r.id, toProductDto(r)]));
   return valid.flatMap((id) => byId.get(id) ?? []);
 }
@@ -155,6 +164,7 @@ export async function listProducts(
       and(
         showable,
         eligibleFor("outfits", opts.gender),
+        testCatalogueScope(),
         opts.categories?.length ? inArray(products.category, opts.categories) : undefined,
         ...exclude.map((id) => ne(products.id, id)),
       ),
@@ -184,7 +194,7 @@ export async function searchProducts(
   const tsquery = sql`to_tsquery('simple', ${tokens.map((t) => `${t}:*`).join(" | ")})`;
   const rows = await selectProducts(db)
     // Same eligibility as the Products feed.
-    .where(and(showable, eligibleFor("products", opts.gender), sql`${products.searchVector} @@ ${tsquery}`))
+    .where(and(showable, eligibleFor("products", opts.gender), testCatalogueScope(), sql`${products.searchVector} @@ ${tsquery}`))
     .orderBy(sql`ts_rank(${products.searchVector}, ${tsquery}) desc`, products.id)
     .limit(opts.limit);
   return rows.map(toProductDto);
