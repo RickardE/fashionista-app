@@ -144,8 +144,55 @@ describe("mapping", () => {
     ["Classic Boot", "Kampanjer  >  interna kategorier  >  berikning2509", "■ Skorna är lite små i storleken. Svarta, varmfodrade skor från Inuikii.", "Inuikii", "shoes"],
     // A boot whose description mentions what to wear it with stays a boot.
     ["Ankle Boot", "Kampanjer  >  Temp", "Snygg boot att bära till jeans. Läder och gummisula.", "Example", "shoes"],
+    // "Pullover" is a shape: the description decides what kind.
+    ["Knit Pullover", "Kvinna  >  Varumärken  >  Lauren Ralph Lauren", "Kortärmad top från Lauren Ralph Lauren med brodyr på ärmarna.", "Lauren Ralph Lauren", "tops"],
+    ["Knit Pullover Sweatshirt", "Kvinna  >  Varumärken  >  Polo Ralph Lauren", "Vit hoodie med tryck från Polo Ralph Lauren. Tillverkad av mjuk fransk frotté.", "Polo Ralph Lauren", "sweatshirts"],
+    ["Knit Pullover", "Man  >  Kläder  >  Skjortor  >  Kortärmade skjortor", "Vit kortärmadskjorta från Polo Ralph Lauren, tillverkad i linne och bomull.", "Polo Ralph Lauren", "shirts"],
+    ["Cable Pullover", "Kampanjer  >  Temp", "Kabelstickad tröja i ull. Stickad tröja med rund hals.", "Example", "knitwear"],
+    ["Merino Pullover", "Kampanjer  >  Temp", "", "Example", "knitwear"],
+    // "Half-Zip" paths hold knits and sweatshirts: a description naming a sweatshirt decides.
+    ["Hartsfield zip", "Man  >  Kläder  >  Hoodies & Tröjor  >  Half-Zip", "Brun sweatshirt från Moose Knuckles i modellen Hartsfield. En premium sweatshirt i mjuk bomull med modern halvzip-design.", "Moose Knuckles", "sweatshirts"],
+    ["Hartsfield zip", "Man  >  Kläder  >  Hoodies & Tröjor  >  Half-Zip", "Beige stickad tröja från Moose Knuckles. Hartsfield 1/4 Zip har en regular fit med hög ribbad krage.", "Moose Knuckles.", "knitwear"],
+    // …but a title's collar or model name does not ("HZ Polo" is a knit with a polo collar).
+    ["Kang 1/2 Zip Polo", "Man  >  Kläder  >  Hoodies & Tröjor  >  Half-Zip", "Grå half-zip tröja från Woodbird. Kang 1/2 Zip Polo har en klassisk polokrage.", "WOODBIRD", "knitwear"],
+    ["Half Zip Knit", "Man  >  Kläder  >  Hoodies & Tröjor  >  Half-Zip", "Brun hal-zip tröja från Polo Ralph Lauren.", "Polo Ralph Lauren", "knitwear"],
+    ["Jack Half Zip Sweater", "Man  >  Kläder  >  Hoodies & Tröjor  >  Half-Zip", "Produktbeskrivning kommer snart", "1797", "knitwear"],
+    // A bare "Hood" is a feature as well as a hoodie; the description decides,
+    // ignoring its own repetition of the product name.
+    ["Frost Down Hood Jacket", "Man  >  Varumärken  >  Peak Performance", "Lätt och packbar dunjacka för låg- till medelintensiva aktiviteter.", "Peak Performance", "outerwear"],
+    ["Spray Down Hood", "Kampanjer  >  2511 25% Black Friday Weekend Allmän", "Spray Down Hood är en lättviktsdunjacka konstruerad i nylon.", "Sail Racing", "outerwear"],
+    ["W Spray Polartec Hood", "Kampanjer  >  2606 30% Johnellsale start", "Women’s Spray Polartec Hood från Sail Racing är en varm och flexibel fleecejacka.", "Sail Racing", "outerwear"],
+    ["Varek Hybrid Zip Hood", "Kampanjer  >  Temp", "Varek Hybrid Zip Hood från J.Lindeberg är en varm och funktionell hybridhoodie.", "J Lindeberg", "sweatshirts"],
+    ["Bowman zip hood", "Kampanjer  >  Temp", "", "Sail Racing", "sweatshirts"],
+    ["Alpha Hood", "Man  >  Kläder  >  Hoodies & Tröjor  >  Hoodies", "", "J Lindeberg", "sweatshirts"],
+    ["Helium down hybrid hood", "Man  >  Varumärken  >  Peak Performance", "Vår lättaste och mest packbara dunvaddering tillsammans med stretchig fleece.", "Peak Performance", "sweatshirts"],
+    // Mittens, gloves and jewellery are accessories, whatever garments their descriptions mention.
+    ["Mitten Acrylic", "Kampanjer  >  2609 Medlemshelg 20%", "Carhartt Mitten från Carhartt WIP är en varm och bekväm vante i stretchigt, sju gauge-stickat akrylgarn.", "Carhartt WIP", "accessories"],
+    ["Pixie Brooch Gold Plated", "Kampanjer  >  2609 Medlemshelg 20%", "Guldfärgad brosch från Twist & Tango. En dekorativ accessoar som enkelt lyfter jackor, halsdukar och blusar.", "Twist&Tango", "accessories"],
+    ["Broche", "Kvinna  >  Varumärken  >  By Malene Birger", "Brosch från By Malene Birger. Broche-broschen har en skulptural design.", "By Malene Birger", "accessories"],
+    ["Deanna Glove", "Kampanjer  >  Temp", "", "Barbour", "accessories"],
+    // …but knits and blouses stay what they are.
+    ["Wool Cardigan", "Kampanjer  >  Temp", "Stickad kofta i ull med pärlemorknappar.", "Example", "knitwear"],
+    ["Lambswool Crew", "Kampanjer  >  Temp", "Stickad tröja i lammull. Matcha med vantar och mössa.", "Example", "knitwear"],
+    ["Silk Blouse", "Kampanjer  >  Temp", "Blus i siden med broschdetalj vid halsen.", "Example", "shirts"],
   ])("categorizes %s", (title, path, description, brand, expected) => {
     expect(resolveCategory({ categoryPaths: [path], title, description, brand }, mapping).category).toBe(expected);
+  });
+
+  it("keeps a Half-Zip path's subcategory when the description doesn't contradict it", () => {
+    const halfZip = "Man  >  Kläder  >  Hoodies & Tröjor  >  Half-Zip";
+    expect(
+      resolveCategory({ categoryPaths: [halfZip], title: "Merino john zip", description: "Finstickad tröja från Morris. Tröjan har en hög krage med half zip." }, mapping),
+    ).toMatchObject({ category: "knitwear", subcategory: "half-zip", source: halfZip });
+    expect(
+      resolveCategory({ categoryPaths: [halfZip], title: "Hartsfield zip", description: "Svart sweatshirt i mjuk bomull." }, mapping),
+    ).toMatchObject({ category: "sweatshirts", source: "description" });
+  });
+
+  it("gives gloves and jewellery their subcategory", () => {
+    expect(resolveCategory({ categoryPaths: [], title: "Mitten Acrylic" }, mapping)).toMatchObject({ category: "accessories", subcategory: "gloves" });
+    expect(resolveCategory({ categoryPaths: [], title: "Pixie Brooch Gold Plated" }, mapping)).toMatchObject({ category: "accessories", subcategory: "jewellery" });
+    expect(resolveCategory({ categoryPaths: [], title: "Frost Down Hood Jacket", description: "Lätt och packbar dunjacka." }, mapping)).toMatchObject({ category: "outerwear", subcategory: "down jacket" });
   });
 
   it("strips a source's fit-note markers from the description lead", () => {

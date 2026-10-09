@@ -98,6 +98,14 @@ export interface CategoryRule {
    * different garment and never this one, the description wins.
    */
   ambiguousInTitle?: boolean;
+  /**
+   * The word names a construction, not a garment ("Half-Zip" covers both
+   * knits and sweatshirts). A category-path match stands unless the
+   * description's opening names a different, specific garment and never this
+   * category. Titles don't override it: they carry collar and model names
+   * ("Kang 1/2 Zip Polo" is a knit).
+   */
+  weakInPath?: boolean;
 }
 
 /**
@@ -185,12 +193,17 @@ export const BASE_CATEGORY_RULES: CategoryRule[] = [
   rule(sv("polotröj(a|or)"), "knitwear", "rollneck"),
   rule(word("turtlenecks?", "rollnecks?", "roll ?necks?"), "knitwear", "rollneck"),
   rule(sv("stickade? tröj(a|or)", "ulltröj(a|or)", "kashmirtröj(a|or)"), "knitwear"),
-  rule(word("pullovers?", "pull", "jumpers?", "sweaters?", "knitwear", "c-neck", "v-neck"), "knitwear"),
+  rule(word("pull", "jumpers?", "sweaters?", "knitwear", "c-neck", "v-neck"), "knitwear"),
+  // "Pullover" is a shape: "Knit Pullover" tops and "Pullover" hoodies exist.
+  { ...rule(word("pullovers?"), "knitwear"), ambiguousInTitle: true },
   rule(sv("rugbytröj(a|or|an)"), "sweatshirts", "rugby shirt"),
   rule(word("ruggers?", "rugby( shirt)?"), "sweatshirts", "rugby shirt"),
   rule(sv("hoodies?", "huvtröj(a|or)", "collegetröj(a|or)", "sweatshirts?", "sweattröj(a|or)"), "sweatshirts"),
-  rule(word("hoodies?", "hood", "zip hood", "sweatshirts?", "crewneck sweat"), "sweatshirts"),
-  rule(word("half[- ]?zip", "quarter[- ]?zip"), "knitwear", "half-zip"),
+  rule(word("hoodies?", "zip hood", "sweatshirts?", "crewneck sweat"), "sweatshirts"),
+  // A bare "Hood" is a hoodie ("Logo Hood") or a feature ("Down Hood Jacket").
+  { ...rule(word("hood"), "sweatshirts"), ambiguousInTitle: true },
+  // Half-zips are knitted or sweat: the garment word elsewhere decides.
+  { ...rule(word("half[- ]?zip", "quarter[- ]?zip"), "knitwear", "half-zip"), weakInPath: true },
 
   // Outerwear
   rule(sv("dunjack(a|or|an|orna)", "dunväst(ar|en)?"), "outerwear", "down jacket"),
@@ -231,10 +244,14 @@ export const BASE_CATEGORY_RULES: CategoryRule[] = [
   rule(word("underwear", "boxers?", "boxer briefs?", "briefs", "trunks?", "socks?", "bh"), "underwear"),
 
   // Bags & accessories
+  rule(sv("brosch(er|en)?", "örhäng(e|en|ena)", "halsband", "armband", "smycke(n|na)?"), "accessories", "jewellery"),
+  rule(word("brooch(es)?", "earrings?", "necklaces?", "bracelets?", "jewel(le)?ry"), "accessories", "jewellery"),
+  rule(sv("vant(e|ar|arna)", "handsk(e|ar|arna)"), "accessories", "gloves"),
+  rule(word("mittens?", "gloves?"), "accessories", "gloves"),
   rule(
     sv(
       "accessoarer", "bälte", "bälten", "slips", "fluga", "flugor", "mössa", "mössor", "keps", "kepsar",
-      "hatt", "hattar", "halsduk(ar)?", "handskar", "plånbok", "plånböcker", "solglasögon", "smycken",
+      "hatt", "hattar", "halsduk(ar)?", "plånbok", "plånböcker", "solglasögon",
       "klock(a|or)", "näsduk(ar)?", "manschettknappar", "parfym(er)?", "doft(er)?", "hängslen",
       "sjal(ar)?", "korthållare", "bandana",
     ),
@@ -243,7 +260,7 @@ export const BASE_CATEGORY_RULES: CategoryRule[] = [
   rule(
     word(
       "accessories", "belts?", "ties?", "bow ?ties?", "beanies?", "caps?", "hats?", "scarf", "scarves",
-      "gloves", "wallets?", "sunglasses", "jewel(le)?ry", "watch(es)?", "pocket squares?", "cufflinks",
+      "wallets?", "sunglasses", "watch(es)?", "pocket squares?", "cufflinks",
       "suspenders", "card ?holders?", "bandanas?", "cuff ?links",
     ),
     "accessories",

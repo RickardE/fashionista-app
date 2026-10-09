@@ -63,6 +63,17 @@ export function descriptionLead(description: string | undefined): string | undef
   return text.split(/(?<=[.!?])\s+/).slice(0, 2).join(" ") || undefined;
 }
 
+/** Removes the product's own name (and its gender-prefixed or unprefixed variant) from a text. */
+function withoutName(text: string, name: string): string {
+  const bare = name.trim().replace(/^(w|m|women'?s|wmns|men'?s)\s+/i, "");
+  let out = text;
+  for (const n of new Set([name.trim(), bare]).values()) {
+    if (n.length < 3) continue;
+    out = out.replace(new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi"), " ");
+  }
+  return out;
+}
+
 /**
  * Removes a leading brand name from a category segment, so brand trees don't
  * masquerade as categories: "Polo Ralph Lauren" → "" (skipped),
@@ -91,6 +102,8 @@ export function resolveCategory(
   mapping: ResolvedMapping,
 ): CategoryMatch {
   const testRules = (text: string) => mapping.categoryRules.find((r) => r.pattern.test(text));
+  const namesCategory = (text: string, category: Category) =>
+    mapping.categoryRules.some((r) => r.category === category && r.pattern.test(text));
 
   const byBrand = input.brand ? mapping.brandCategories[normalizeKey(input.brand)] : undefined;
   if (byBrand) return { ...byBrand, source: "brand" };
@@ -121,6 +134,14 @@ export function resolveCategory(
       const rule = testRules(segment);
       if (!rule) continue;
       const match = { category: rule.category, subcategory: rule.subcategory, source: path };
+      if (rule.weakInPath) {
+        const byLead = lead ? testRules(lead) : undefined;
+        const specific = byLead && !WEAK_CATEGORIES.has(byLead.category) && !byLead.weakInPath;
+        if (specific && byLead.category !== rule.category && !namesCategory(lead!, rule.category)) {
+          return { category: byLead.category, subcategory: byLead.subcategory, source: "description" };
+        }
+        return match;
+      }
       if (!WEAK_CATEGORIES.has(rule.category)) return match;
       weakPathMatch ??= match;
       break;
@@ -129,9 +150,11 @@ export function resolveCategory(
 
   const byTitle = testRules(withoutBrand(input.title));
   if (byTitle?.ambiguousInTitle && lead) {
-    const byLead = testRules(lead);
-    const leadNamesTitleCategory = mapping.categoryRules.some((r) => r.category === byTitle.category && r.pattern.test(lead));
-    if (byLead && byLead.category !== byTitle.category && !leadNamesTitleCategory) {
+    // The lead often repeats the product name ("Spray Down Hood är en
+    // dunjacka…"); that repetition is not independent evidence.
+    const evidence = withoutName(lead, withoutBrand(input.title));
+    const byLead = testRules(evidence);
+    if (byLead && byLead.category !== byTitle.category && !namesCategory(evidence, byTitle.category)) {
       return { category: byLead.category, subcategory: byLead.subcategory, source: "description" };
     }
   }
