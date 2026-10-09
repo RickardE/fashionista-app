@@ -5,6 +5,7 @@
  *   npm run products:enrich-report -- --run 7 --run 8               # side-by-side run comparison + problem products
  *   npm run products:enrich-report -- --run 7 --run 8 --html --csv  # review artifacts in .data/enrichment/
  *   npm run products:enrich-report -- --eval reviewed.csv           # accuracy + calibration from a marked CSV
+ *   npm run products:enrich-report -- --run 4 --run 5 --attention   # review queue: only what needs a human
  */
 
 import "./env";
@@ -13,6 +14,7 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import { connect } from "@/server/db/client";
 import { catalogueOverview, computeRunStats, getRuns, listRuns, problemProducts } from "@/server/enrichment/report";
+import { attentionHtml, attentionReport } from "@/server/enrichment/attention";
 import { evaluateMarkedCsv, inputConsistency, loadReviewData, reviewCsv, reviewHtml } from "@/server/enrichment/review";
 import { createLogger } from "@/server/log";
 import { positiveInt, printReasons, statsRows } from "./enrichment-cli";
@@ -28,6 +30,7 @@ async function main() {
       csv: { type: "boolean", default: false },
       out: { type: "string", default: OUT_DIR },
       eval: { type: "string" },
+      attention: { type: "boolean", default: false },
     },
   });
 
@@ -70,6 +73,21 @@ async function main() {
           started: r.startedAt.toISOString().slice(0, 16).replace("T", " "),
         })),
       );
+      return;
+    }
+
+    if (values.attention) {
+      if (runIds.length !== 2) throw new Error("--attention compares exactly two runs: --run A --run B");
+      const data = await loadReviewData(db, runIds);
+      const report = attentionReport(data, runIds[0], runIds[1]);
+      await mkdir(values.out, { recursive: true });
+      const file = path.join(values.out, `attention-runs-${runIds.join("-")}.html`);
+      await writeFile(file, attentionHtml(data, runIds[0], runIds[1]));
+      const items = report.products.flatMap((p) => p.items);
+      console.log(`${report.products.length} of ${report.compared} products need attention (${items.length} items: ` +
+        `${items.filter((i) => i.severity === "high").length} high, ${items.filter((i) => i.severity === "medium").length} medium, ${items.filter((i) => i.severity === "low").length} low)`);
+      console.table(report.fields.map((f) => ({ field: f.field, identical: `${f.identical}/${f.compared}`, flagged: f.flagged, note: f.note })));
+      console.log(`Review queue: ${file}`);
       return;
     }
 
