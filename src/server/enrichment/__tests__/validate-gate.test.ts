@@ -119,6 +119,93 @@ describe("validateOutput", () => {
   });
 });
 
+describe("taxonomy 1.1 rules", () => {
+  const jeans = { category: "jeans", productType: "clothing", sourceColours: ["blue"] };
+  const legs = (leg: "bootcut" | "not_applicable", confidence: "low" | "medium" = "medium") => ({
+    garment_type: { value: "jeans" as const, confidence: "high" as const },
+    colour_primary: { value: "blue" as const, confidence: "high" as const },
+    colour_profile: { value: "muted" as const, confidence: "medium" as const },
+    leg_shape: { value: leg, confidence },
+  });
+
+  it("stores a leg shape with its confidence for legwear", () => {
+    const r = validated(legs("bootcut"), jeans);
+    expect(r.attributes.leg_shape).toBe("bootcut");
+    expect(r.confidences.leg_shape).toBe("medium");
+    expect(r.warnings).toEqual([]);
+  });
+
+  it("resets a leg shape on non-legwear and records it, without blocking", () => {
+    const r = validated({ leg_shape: { value: "wide", confidence: "high" } });
+    expect(r.attributes.leg_shape).toBe("not_applicable");
+    expect(r.dropped).toContain("leg_shape:wide(not legwear)");
+    expect(r.errors).toEqual([]);
+  });
+
+  it("warns, but does not block, when legwear has no leg shape", () => {
+    const r = validated(legs("not_applicable"), jeans);
+    expect(codes(r.warnings)).toEqual(["leg_shape_missing"]);
+    expect(applyGate(r).outcome).toBe("completed");
+  });
+
+  it("never gates on leg shape confidence", () => {
+    expect(applyGate(validated(legs("bootcut", "low"), jeans))).toMatchObject({ outcome: "completed", reasons: [] });
+  });
+
+  it.each([
+    ["grey", "muted"],
+    ["grey", "earth"],
+    ["navy", "muted"],
+    ["pink", "neutral_light"],
+  ] as const)("warns on %s with a %s colour profile", (colour, profile) => {
+    const r = validated({ colour_primary: { value: colour, confidence: "high" }, colour_profile: { value: profile, confidence: "medium" } }, {
+      ...shirt,
+      sourceColours: [colour],
+    });
+    expect(codes(r.warnings)).toContain("colour_profile_inconsistent");
+    expect(r.errors).toEqual([]);
+  });
+
+  it.each([
+    ["grey", "neutral_light"],
+    ["brown", "earth"],
+    ["blue", "neutral_dark"],
+    ["pink", "pastel"],
+  ] as const)("accepts %s with a %s colour profile", (colour, profile) => {
+    const r = validated({ colour_primary: { value: colour, confidence: "high" }, colour_profile: { value: profile, confidence: "medium" } }, {
+      ...shirt,
+      sourceColours: [colour],
+    });
+    expect(codes(r.warnings)).not.toContain("colour_profile_inconsistent");
+  });
+});
+
+describe("denim colour (taxonomy 1.2)", () => {
+  const denim = (overrides: Parameters<typeof modelOutput>[0]) =>
+    validated({ materials: [{ value: "denim", evidence: "stated", confidence: "high" }], ...overrides });
+
+  it.each([
+    // Runs 4–6: "Gant Reg denim shirt", dark washed cotton denim, source colour "Mörkblå".
+    ["a dark denim shirt called navy", { garment_type: { value: "casual_shirt" as const, confidence: "high" as const } }],
+    ["dark jeans called navy", { garment_type: { value: "jeans" as const, confidence: "high" as const }, materials: [] }],
+  ])("warns on %s, without blocking", (_label, override) => {
+    const r = denim({ ...override, colour_primary: { value: "navy", confidence: "medium" } }, );
+    expect(codes(r.warnings)).toContain("denim_navy");
+    expect(applyGate(r).reasons).not.toContain("rule:denim_navy");
+  });
+
+  it("accepts dark denim as blue with a neutral_dark profile", () => {
+    const r = denim({ garment_type: { value: "casual_shirt", confidence: "high" }, colour_primary: { value: "blue", confidence: "high" }, colour_profile: { value: "neutral_dark", confidence: "medium" } });
+    expect(codes(r.warnings)).toEqual([]);
+  });
+
+  it("leaves a navy wool or cotton garment alone", () => {
+    const r = validated({ materials: [{ value: "wool", evidence: "stated", confidence: "high" }] });
+    expect(codes(r.warnings)).not.toContain("denim_navy");
+    expect(codes(validated().warnings)).not.toContain("denim_navy"); // navy cotton oxford
+  });
+});
+
 describe("coloursAgree", () => {
   it("accepts identical, near and unknown source colours", () => {
     expect(coloursAgree("navy", ["navy"])).toBe(true);

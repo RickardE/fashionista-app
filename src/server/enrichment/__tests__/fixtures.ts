@@ -13,6 +13,7 @@ export function modelOutput(overrides: Partial<ModelOutput> = {}): ModelOutput {
     colour_secondary: [],
     colour_profile: { value: "neutral_dark", confidence: "high" },
     pattern: { value: "solid", confidence: "high" },
+    leg_shape: { value: "not_applicable", confidence: "high" },
     materials: [{ value: "cotton", evidence: "stated", confidence: "high" }],
     aesthetics: [
       { value: "classic", confidence: "high" },

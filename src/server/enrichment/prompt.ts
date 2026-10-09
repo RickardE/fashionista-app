@@ -2,22 +2,37 @@
  * The versioned enrichment prompt. Provider-neutral: adapters receive the
  * system text, the user text and the image, and decide how to send them.
  * Bump PROMPT_VERSION on any wording change — it marks enrichments stale.
+ *   1.0.0  initial prompt
+ *   1.1.0  taxonomy 1.1.0 glossary: aesthetic, pattern, colour-profile and
+ *          leg-shape definitions; shearling and faux-material guidance
+ *   1.2.0  taxonomy 1.2.0 primary-colour rules (denim is blue, not navy)
  */
 
 import type { EnrichmentInput } from "./input";
 import {
+  AESTHETIC_DEFINITIONS,
+  COLOUR_PRIMARY_GUIDE,
+  COLOUR_PROFILE_DEFINITIONS,
   GARMENT_TYPES_BY_CATEGORY,
+  LEG_SHAPE_DEFINITIONS,
+  LEG_SHAPE_GARMENT_TYPES,
   MAX_AESTHETICS,
   MAX_SECONDARY_COLOURS,
   MAX_SUMMARY_LENGTH,
   MAX_TAXONOMY_GAPS,
+  PATTERN_DEFINITIONS,
 } from "./taxonomy";
 
-export const PROMPT_VERSION = "1.0.0";
+export const PROMPT_VERSION = "1.2.0";
 
 const garmentTypeGuide = Object.entries(GARMENT_TYPES_BY_CATEGORY)
   .map(([category, types]) => `  - ${category}: ${types!.join(", ")}`)
   .join("\n");
+
+const glossary = (definitions: Record<string, string>) =>
+  Object.entries(definitions)
+    .map(([value, meaning]) => `  - ${value}: ${meaning}`)
+    .join("\n");
 
 export const SYSTEM_PROMPT = `You describe fashion products for StyleAI, a styling and recommendation app. For each product you receive catalogue data and one product image, and you return structured attributes that describe what the product is, how it looks, and when it is worn. Your output is stored and reused across many users, so accuracy matters more than completeness.
 
@@ -32,11 +47,18 @@ Field guide:
 ${garmentTypeGuide}
   Use "other" only when nothing fits.
 - fit: slim | regular | relaxed | oversized for garments; not_applicable for shoes and non-garments.
-- colour_primary: the dominant visible colour. colour_secondary: up to ${MAX_SECONDARY_COLOURS} other clearly visible colours (none for solid single-colour items). The catalogue's own colour stays on record separately; report what you see.
-- colour_profile: the overall colour impression — neutral_dark (black, navy, charcoal), neutral_light (white, cream, light grey, beige), earth (brown, olive, rust, camel), muted (dusty or greyed colours), bright (saturated colours), pastel (soft light colours).
-- pattern: solid | stripe | check (incl. plaid, gingham, houndstooth) | print (floral, abstract, all-over motifs) | graphic (large logos, text, placed artwork) | texture (visible knit, cable, waffle, bouclé, quilting on a single colour). A small embroidered logo on a plain garment is still solid.
-- materials: main fabrics. evidence "stated" only when the text names the material; "inferred" when judged from the image or general knowledge.
-- aesthetics: 1-${MAX_AESTHETICS} style labels describing the product itself, most fitting first.
+- colour_primary: the dominant visible colour.
+${COLOUR_PRIMARY_GUIDE.map((rule) => `  - ${rule}`).join("\n")}
+- colour_secondary: up to ${MAX_SECONDARY_COLOURS} other clearly visible colours (none for solid single-colour items). The catalogue's own colour stays on record separately; report what you see.
+- colour_profile: the tone of colour_primary. Neutral colours (black, navy, grey, white, off-white, beige) take a neutral profile and chromatic colours a chromatic one; the profile says how light the neutral is or how saturated the colour is.
+${glossary(COLOUR_PROFILE_DEFINITIONS)}
+- pattern, judged as seen at outfit distance:
+${glossary(PATTERN_DEFINITIONS)}
+- leg_shape: for ${LEG_SHAPE_GARMENT_TYPES.join(", ")}; not_applicable for everything else. Independent of fit.
+${glossary(LEG_SHAPE_DEFINITIONS)}
+- materials: main fabrics, including a lining or filling that defines the product (down filling, shearling lining). evidence "stated" only when the text names the material; "inferred" when judged from the image or general knowledge. shearling is real sheepskin with the wool left on (sheepskin, lambskin with fleece); faux shearling, teddy and sherpa pile are synthetic (or the stated fibre). Faux or vegan leather and suede are synthetic, never leather or suede. Materials never change garment_type: a shearling aviator is a leather_jacket or casual_jacket with shearling among its materials.
+- aesthetics: 1-${MAX_AESTHETICS} style labels describing the product itself, most fitting first. Use a label only when the product clearly shows its codes; prefer one well-supported label over three loose ones.
+${glossary(AESTHETIC_DEFINITIONS)}
 - formality: 1 lounge/sport, 2 casual, 3 smart casual, 4 business, 5 formal.
 - occasions: every occasion the product is generally appropriate for.
 - seasons: every season the product suits; list all four for year-round items.

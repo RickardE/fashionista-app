@@ -20,6 +20,7 @@ export function embeddingText(product: { name: string; brand: string | null }, a
     `fit: ${words(a.fit)}`,
     `colour: ${words(a.colour_primary)}${a.colour_secondary.length ? ` with ${list(a.colour_secondary)}` : ""} (${words(a.colour_profile)})`,
     `pattern: ${a.pattern}`,
+    a.leg_shape && a.leg_shape !== "not_applicable" ? `leg shape: ${a.leg_shape}` : "",
     a.materials.length ? `materials: ${a.materials.map((m) => m.value).join(", ")}` : "",
     `aesthetics: ${list(a.aesthetics)}`,
     `formality: ${FORMALITY_LABEL[a.formality]}`,

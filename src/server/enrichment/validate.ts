@@ -10,7 +10,9 @@
 
 import type { CanonicalColor, Category } from "@/server/catalog/types";
 import {
+  COLOUR_PROFILES_BY_COLOUR,
   garmentTypeFitsCategory,
+  LEG_SHAPE_GARMENT_TYPES,
   MAX_AESTHETICS,
   MAX_SECONDARY_COLOURS,
   MAX_SUMMARY_LENGTH,
@@ -19,6 +21,7 @@ import {
   type Confidence,
   type EnrichmentAttributes,
   type EnrichmentConfidences,
+  type GarmentType,
   type ModelOutput,
 } from "./taxonomy";
 
@@ -140,6 +143,14 @@ export function validateOutput(output: unknown, ctx: ValidationContext): Validat
 
   const suggested = o.category_check.verdict === "disagrees" ? o.category_check.suggested_category : null;
 
+  // A leg shape on a shirt is noise, not a product concern: reset and record it.
+  const hasLegs = (LEG_SHAPE_GARMENT_TYPES as readonly GarmentType[]).includes(o.garment_type.value);
+  let legShape = o.leg_shape;
+  if (!hasLegs && legShape.value !== "not_applicable") {
+    dropped.push(`leg_shape:${legShape.value}(not legwear)`);
+    legShape = { value: "not_applicable", confidence: "high" };
+  }
+
   const attributes: EnrichmentAttributes = {
     garment_type: o.garment_type.value,
     fit: o.fit.value,
@@ -147,6 +158,7 @@ export function validateOutput(output: unknown, ctx: ValidationContext): Validat
     colour_secondary: secondary.slice(0, MAX_SECONDARY_COLOURS),
     colour_profile: o.colour_profile.value,
     pattern: o.pattern.value,
+    leg_shape: legShape.value,
     materials: materials.map(({ value, evidence }) => ({ value, evidence })),
     aesthetics: aesthetics.map((a) => a.value),
     formality: o.formality.value,
@@ -163,6 +175,7 @@ export function validateOutput(output: unknown, ctx: ValidationContext): Validat
     colour_primary: o.colour_primary.confidence,
     colour_profile: o.colour_profile.confidence,
     pattern: o.pattern.confidence,
+    leg_shape: legShape.confidence,
     formality: o.formality.confidence,
     seasons: o.seasons.confidence,
     category_check: o.category_check.confidence,
@@ -209,6 +222,20 @@ export function validateOutput(output: unknown, ctx: ValidationContext): Validat
   }
   if (summerOnly && attributes.materials.some((m) => m.value === "down" || m.value === "cashmere")) {
     warnings.push({ code: "warm_material_summer_only", message: "down/cashmere tagged summer-only" });
+  }
+  if (hasLegs && legShape.value === "not_applicable" && o.garment_type.value !== "jumpsuit") {
+    warnings.push({ code: "leg_shape_missing", message: `${attributes.garment_type} without a leg shape` });
+  }
+  const isDenim =
+    ["jeans", "denim_jacket"].includes(attributes.garment_type) || attributes.materials.some((m) => m.value === "denim");
+  if (isDenim && attributes.colour_primary === "navy") {
+    warnings.push({ code: "denim_navy", message: "indigo denim is blue (dark wash: neutral_dark profile), not navy" });
+  }
+  if (!COLOUR_PROFILES_BY_COLOUR[attributes.colour_primary].includes(attributes.colour_profile)) {
+    warnings.push({
+      code: "colour_profile_inconsistent",
+      message: `colour profile ${attributes.colour_profile} does not fit primary colour ${attributes.colour_primary}`,
+    });
   }
   if (!coloursAgree(attributes.colour_primary, ctx.sourceColours)) {
     warnings.push({
