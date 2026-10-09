@@ -54,6 +54,28 @@ export const DEFAULT_PILOT_TARGETS: PilotTargets = {
   minStratumSize: 10,
 };
 
+/**
+ * Scales the segment and flag targets to a sample of about `size` products,
+ * keeping their proportions (largest-remainder rounding, so segments sum to
+ * `size`). Brand and stratum thresholds are unchanged.
+ */
+export function scalePilotTargets(base: PilotTargets, size: number): PilotTargets {
+  const scale = <K extends string>(counts: Record<K, number>, total: number): Record<K, number> => {
+    const keys = Object.keys(counts) as K[];
+    const sum = keys.reduce((n, k) => n + counts[k], 0);
+    const exact = keys.map((k) => ({ k, v: (counts[k] * total) / sum }));
+    const out = Object.fromEntries(exact.map(({ k, v }) => [k, Math.floor(v)])) as Record<K, number>;
+    let left = total - keys.reduce((n, k) => n + out[k], 0);
+    for (const { k } of [...exact].sort((a, b) => (b.v % 1) - (a.v % 1))) if (left-- > 0) out[k]++;
+    return out;
+  };
+  const baseTotal = Object.values<number>(base.segments).reduce((a, b) => a + b, 0);
+  const flags = Object.fromEntries(
+    (Object.keys(base.flags) as PilotFlag[]).map((f) => [f, Math.round((base.flags[f] * size) / baseTotal)]),
+  ) as Record<PilotFlag, number>;
+  return { ...base, segments: scale(base.segments, size), flags };
+}
+
 export interface PilotStratum {
   segment: PilotSegment;
   stratum: string;

@@ -7,6 +7,7 @@
  *   npm run products:enrich-pilot -- --seed 123 --provider anthropic --model claude-opus-5-5 --effort low
  *   npm run products:enrich-pilot -- --seed 123 --provider anthropic --model claude-sonnet-5-5 --effort low
  *   npm run products:enrich-pilot -- --from-run 7 --provider openai --model <model>   # exact products of run 7
+ *   npm run products:enrich-pilot -- --seed 9071 --exclude-run 4 --exclude-run 5 ...   # fresh, held-out sample
  *
  * Then: npm run products:enrich-report -- --run 7 --run 8 --run 9 --html --csv
  */
@@ -19,7 +20,7 @@ import type { Db } from "@/server/db/client";
 import { enrichmentRuns, productEnrichments, products } from "@/server/db/schema";
 import { PROMPT_VERSION } from "@/server/enrichment/prompt";
 import { TAXONOMY_VERSION } from "@/server/enrichment/taxonomy";
-import { loadPilotCandidates, selectPilot } from "@/server/enrichment/pilot";
+import { DEFAULT_PILOT_TARGETS, loadPilotCandidates, scalePilotTargets, selectPilot } from "@/server/enrichment/pilot";
 import { runEnrichment } from "@/server/enrichment/pipeline";
 import { createModelProvider } from "@/server/enrichment/providers/registry";
 import { createLogger } from "@/server/log";
@@ -49,6 +50,9 @@ async function main() {
       seed: { type: "string", default: "123" },
       "allow-changed": { type: "boolean", default: false },
       "from-run": { type: "string" },
+      // Held-out validation: products attempted in these runs are not eligible.
+      "exclude-run": { type: "string", multiple: true },
+      size: { type: "string" },
       "dry-run": { type: "boolean", default: false },
     },
   });
@@ -58,6 +62,9 @@ async function main() {
     let productIds: string[];
     let selectionSummary: unknown;
     let seed = values.seed;
+    let excludedCount = 0;
+    const excludeRuns = (values["exclude-run"] ?? []).map((r) => positiveInt(r, "--exclude-run"));
+    if (excludeRuns.length && values["from-run"]) throw new Error("--exclude-run selects a new sample; it cannot be combined with --from-run");
 
     if (values["from-run"]) {
       const runId = positiveInt(values["from-run"], "--from-run");
@@ -83,7 +90,31 @@ async function main() {
         );
       }
     } else {
-      const selection = selectPilot(await loadPilotCandidates(db), seed);
+      // Excluded: every product attempted in those runs, and its same-style
+      // siblings (same brand and name, e.g. another colour of the same model).
+      const used = excludeRuns.length
+        ? await db
+            .selectDistinct({ id: productEnrichments.productId, brand: products.brand, name: products.name })
+            .from(productEnrichments)
+            .innerJoin(products, eq(products.id, productEnrichments.productId))
+            .where(inArray(productEnrichments.runId, excludeRuns))
+        : [];
+      const styleKey = (brand: string | null, name: string) => `${(brand ?? "").toLowerCase().replace(/[^a-z0-9]/g, "")}|${name.toLowerCase().trim()}`;
+      const usedStyles = new Set(used.map((u) => styleKey(u.brand, u.name)));
+      const all = await loadPilotCandidates(db);
+      const styleRows = await db.select({ id: products.id, brand: products.brand, name: products.name }).from(products).where(inArray(products.id, all.map((c) => c.id)));
+      const excluded = new Set([
+        ...used.map((u) => u.id),
+        ...styleRows.filter((r) => usedStyles.has(styleKey(r.brand, r.name))).map((r) => r.id),
+      ]);
+      excludedCount = excluded.size;
+      const candidates = all.filter((c) => !excluded.has(c.id));
+      if (excluded.size) {
+        console.log(`Excluding ${excluded.size} product(s): ${used.length} attempted in run(s) ${excludeRuns.map((r) => `#${r}`).join(", ")} and their same-style siblings`);
+      }
+      const targets = values.size ? scalePilotTargets(DEFAULT_PILOT_TARGETS, positiveInt(values.size, "--size")) : DEFAULT_PILOT_TARGETS;
+      const selection = selectPilot(candidates, seed, targets);
+      if (selection.productIds.some((id) => excluded.has(id))) throw new Error("selection contains an excluded product");
       productIds = selection.productIds;
       selectionSummary = selection.summary;
       console.log(`Pilot sample — seed ${seed}: ${selection.summary.total} products`);
@@ -121,7 +152,15 @@ async function main() {
       productIds,
       concurrency: positiveInt(values.concurrency, "--concurrency"),
       imageMode: imageModeFrom(values["image-mode"]),
-      params: { seed, productIds, fromRun: values["from-run"] ?? null, selection: selectionSummary ?? null },
+      params: {
+        seed,
+        productIds,
+        fromRun: values["from-run"] ?? null,
+        excludedRuns: excludeRuns,
+        excludedProducts: excludedCount,
+        size: values.size ? Number(values.size) : null,
+        selection: selectionSummary ?? null,
+      },
       logger: log,
     });
     console.log(`\nPilot run #${runId} — ${config.provider}:${config.model}${config.effort ? ` (effort ${config.effort})` : ""}`);

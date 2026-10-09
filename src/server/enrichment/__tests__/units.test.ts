@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { embeddingInputHash, embeddingText } from "../embedding-input";
-import { DEFAULT_PILOT_TARGETS, selectPilot, type PilotCandidate } from "../pilot";
+import { DEFAULT_PILOT_TARGETS, scalePilotTargets, selectPilot, type PilotCandidate } from "../pilot";
 import { costUsdMicros, priceFor } from "../pricing";
 import { percentile } from "../report";
 import { confidenceBucket, evaluateMarkedCsv, parseCsv } from "../review";
@@ -168,5 +168,18 @@ describe("embeddingText", () => {
     expect(text).toContain("type: oxford shirt");
     expect(text).toContain("formality: smart casual");
     expect(embeddingInputHash(text)).toBe(embeddingInputHash(embeddingText({ name: "Oxford Shirt", brand: "Example" }, v.attributes)));
+  });
+});
+
+describe("scalePilotTargets", () => {
+  it("scales segments to the requested size, keeping proportions", () => {
+    const t = scalePilotTargets(DEFAULT_PILOT_TARGETS, 46);
+    expect(t.segments).toEqual({ men_clothing: 20, women_clothing: 17, unisex_clothing: 1, shoes: 8 });
+    expect(t.flags.ambiguous).toBe(6);
+    expect(t.minStratumSize).toBe(DEFAULT_PILOT_TARGETS.minStratumSize);
+  });
+
+  it("is the identity at the default size", () => {
+    expect(scalePilotTargets(DEFAULT_PILOT_TARGETS, 37)).toEqual(DEFAULT_PILOT_TARGETS);
   });
 });
