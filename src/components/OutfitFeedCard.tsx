@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import { ArrowUpRightIcon } from "@/components/icons";
+import { SwipeStamps } from "@/components/SwipeStamps";
 import { OutfitComposition } from "@/components/OutfitComposition";
 import { formatPrice } from "@/lib/format";
 import { outfitTotal } from "@/lib/outfits";
@@ -45,8 +46,6 @@ export function OutfitFeedCard({
   const currency = pieces[0]?.product.currency ?? "SEK";
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-260, 260], [-10, 10]);
-  const loveOpacity = useTransform(x, [16, DECISION_DISTANCE], [0, 1]);
-  const passOpacity = useTransform(x, [-DECISION_DISTANCE, -16], [1, 0]);
 
   const drag = useRef<DragState | null>(null);
   const settled = useRef(false);
@@ -142,36 +141,9 @@ export function OutfitFeedCard({
           <ArrowUpRightIcon />
         </button>
         <div className="h-5" />
+        {isFront && <SwipeStamps x={x} decisionDistance={DECISION_DISTANCE} />}
       </motion.div>
 
-      {/* Fixed over the viewport (not the dragged card) so the label
-          stays legible and centered as the photo moves beneath it. A soft
-          tonal scrim (not a badge) keeps the type readable over any photo. */}
-      <motion.div
-        style={{ opacity: loveOpacity, zIndex: isFront ? 2 : 1 }}
-        className="pointer-events-none absolute inset-0 flex items-center"
-      >
-        <div className="via-paper/85 h-44 w-full bg-gradient-to-b from-transparent to-transparent" />
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-          <span className="font-serif text-[36px] leading-none text-accent-700 italic">
-            Love
-          </span>
-          <span className="h-px w-10 bg-accent-700" />
-        </div>
-      </motion.div>
-
-      <motion.div
-        style={{ opacity: passOpacity, zIndex: isFront ? 2 : 1 }}
-        className="pointer-events-none absolute inset-0 flex items-center"
-      >
-        <div className="via-paper/85 h-44 w-full bg-gradient-to-b from-transparent to-transparent" />
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-          <span className="font-serif text-[36px] leading-none text-ink italic">
-            Not for me
-          </span>
-          <span className="bg-ink h-px w-10" />
-        </div>
-      </motion.div>
     </>
   );
 }
