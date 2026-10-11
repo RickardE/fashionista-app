@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CATEGORIES } from "@/server/catalog/types";
+import { requireUser } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
 import { jsonError, limitParam, listParam, parseQuery, withErrors } from "@/server/http";
 import { SHOPPER_GENDERS } from "@/server/products/eligibility";
@@ -20,6 +21,8 @@ const query = z.object({
  * GET /api/products?category=trousers,jeans&gender=men&exclude=<id>&limit=12
  */
 export const GET = withErrors("products", async (request: Request) => {
+  const auth = await requireUser(request);
+  if (!auth.ok) return auth.response;
   const parsed = parseQuery(request, query);
   if (!parsed.ok) return parsed.response;
   const { ids, category, gender, exclude, limit } = parsed.data;

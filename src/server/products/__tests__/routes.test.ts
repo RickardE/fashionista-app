@@ -5,10 +5,13 @@ import { createTestDb, memorySource, silentLogger } from "@/server/catalog/__tes
 import { FULL_FEED } from "@/server/catalog/__tests__/fixtures/feed";
 import type { Db } from "@/server/db/client";
 import { products } from "@/server/db/schema";
+import { testAuth } from "@/server/users/__tests__/helpers";
 
 // Route handlers read the app's DB singleton; point it at the test database.
 let db: Db;
 vi.mock("@/server/db/client", () => ({ getDb: () => db }));
+// A request is signed in when it carries the test user header (see req()).
+vi.mock("@/server/auth/auth", () => ({ getAuth: () => testAuth }));
 
 const { GET: feed } = await import("@/app/api/feed/route");
 const { GET: list } = await import("@/app/api/products/route");
@@ -19,7 +22,8 @@ const { GET: search } = await import("@/app/api/search/route");
 let close: () => Promise<void>;
 let shirtId: string;
 
-const req = (path: string) => new Request(`http://localhost${path}`);
+const req = (path: string) => new Request(`http://localhost${path}`, { headers: { "x-test-user": "u1" } });
+const anon = (path: string) => new Request(`http://localhost${path}`);
 const ctx = (id: string) => ({ params: Promise.resolve({ id }) });
 
 beforeAll(async () => {
@@ -117,6 +121,22 @@ describe("failures", () => {
       expect(await res.json()).toEqual({ error: "internal_error" });
     } finally {
       db = realDb;
+    }
+  });
+});
+
+describe("authentication", () => {
+  it("answers 401 to every catalogue route without a session", async () => {
+    const responses = [
+      await feed(anon("/api/feed")),
+      await list(anon(`/api/products?ids=${shirtId}`)),
+      await one(anon(`/api/products/${shirtId}`), ctx(shirtId)),
+      await shop(anon(`/api/products/${shirtId}/shop`), ctx(shirtId)),
+      await search(anon("/api/search?q=skjorta")),
+    ];
+    for (const res of responses) {
+      expect(res.status).toBe(401);
+      expect((await res.json()).error).toBe("unauthorized");
     }
   });
 });

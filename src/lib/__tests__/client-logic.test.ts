@@ -9,7 +9,7 @@ import {
   roleFor,
 } from "@/lib/outfits";
 import { initialState, reducer } from "@/lib/store/style-profile-context";
-import { migratePersistedState, STORAGE_KEY } from "@/lib/store/style-profile-migrate";
+import { diffState, EMPTY_SYNCED, fromSynced, styleFields } from "@/lib/store/state-sync";
 import type { Product } from "@/lib/types";
 
 let n = 0;
@@ -76,71 +76,75 @@ describe("Build the Look on real products", () => {
   });
 });
 
-describe("persisted style state migration (v2 mock ids → v3)", () => {
-  const realId = "11111111-1111-4111-8111-111111111111";
-  const v2 = {
-    activeStyleId: "work",
-    hasOnboarded: true,
-    styleOrder: ["everyday", "work", "style-1"],
-    styles: {
-      work: {
-        id: "work",
-        name: "Work",
-        description: "Tailored",
-        seedAffinity: { tailoring: 3 },
-        affinity: { tailoring: 2, black: 1 },
-        liked: { "nn07-overshirt": true, [realId]: true },
-        disliked: { "arket-coat": true },
-        interactions: 4,
-        feedOrder: ["nn07-overshirt", "arket-coat"],
-        feedIndex: 1,
-        showSwipeHint: false,
-        createdAt: 1,
-      },
-    },
-    savedOutfits: [
-      { id: "look-1", anchorId: "arket-coat", items: { outerwear: "arket-coat" }, styleId: "work", createdAt: 1 },
-      { id: "look-2", anchorId: realId, items: { top: realId }, styleId: "work", createdAt: 2 },
-    ],
-  };
+describe("server sync diff", () => {
+  const p1 = "11111111-1111-4111-8111-111111111111";
+  const p2 = "22222222-2222-4222-8222-222222222222";
+  const fresh = () => ({ ...initialState(), hydrated: true });
+  const shirt = product({ id: p1, tags: ["relaxed"] });
 
-  it("keeps every style and its learned taste", () => {
-    const state = migratePersistedState(v2, "styleai:v2")!;
-    expect(state.activeStyleId).toBe("work");
-    expect(state.styleOrder).toEqual(["everyday", "work", "style-1"]);
-    expect(state.styles!.work).toMatchObject({ name: "Work", affinity: { tailoring: 2, black: 1 }, interactions: 4 });
+  it("uploads every style and the preferences for a new account", () => {
+    const ops = diffState(EMPTY_SYNCED, fresh());
+    expect(ops.filter((o) => o.op === "upsertStyle")).toHaveLength(Object.keys(fresh().styles).length);
+    expect(ops.at(-1)).toMatchObject({ op: "prefs", hasOnboarded: false });
   });
 
-  it("drops references to the removed mock products and resets the feed", () => {
-    const work = migratePersistedState(v2, "styleai:v2")!.styles!.work;
-    expect(work.liked).toEqual({ [realId]: true });
-    expect(work.disliked).toEqual({});
-    expect(work).toMatchObject({ feedOrder: [], feedIndex: 0, feedExhausted: false });
+  it("is empty when nothing changed, and ignores device-local feed positions", () => {
+    const state = fresh();
+    expect(diffState(state, state)).toEqual([]);
+    expect(diffState(state, reducer(state, { type: "next" }))).toEqual([]);
   });
 
-  it("keeps only saved looks made of real products", () => {
-    const state = migratePersistedState(v2, "styleai:v2")!;
-    expect(state.savedOutfits!.map((o) => o.id)).toEqual(["look-2"]);
+  it("sends a swipe as the style's new taste plus one reaction", () => {
+    const before = fresh();
+    const after = reducer(before, { type: "react", id: p1, tags: shirt.tags, direction: 1 });
+    const ops = diffState(before, after);
+    expect(ops).toEqual([
+      expect.objectContaining({ op: "upsertStyle", style: expect.objectContaining({ affinity: { relaxed: 1 }, interactions: 1 }) }),
+      { op: "react", styleId: before.activeStyleId, productId: p1, reaction: "like" },
+    ]);
   });
 
-  it("preserves a v3 feed position", () => {
-    const v3 = { ...v2, styles: { work: { ...v2.styles.work, feedOrder: [realId], feedIndex: 1, feedExhausted: true } } };
-    expect(migratePersistedState(v3, STORAGE_KEY)!.styles!.work).toMatchObject({
-      feedOrder: [realId],
-      feedIndex: 1,
-      feedExhausted: true,
+  it("clears a reaction that was removed", () => {
+    const liked = reducer(fresh(), { type: "toggleDetailLike", id: p1, tags: [] });
+    const unliked = reducer(liked, { type: "toggleDetailLike", id: p1, tags: [] });
+    expect(diffState(liked, unliked)).toContainEqual({
+      op: "react",
+      styleId: liked.activeStyleId,
+      productId: p1,
+      reaction: null,
     });
   });
 
-  it("gives every style empty, separate outfit feedback", () => {
-    const work = migratePersistedState(v2, "styleai:v2")!.styles!.work;
-    expect(work).toMatchObject({ outfitAffinity: {}, likedOutfits: 0, dislikedOutfits: 0, outfitCursor: undefined });
-    expect(work.affinity).toEqual({ tailoring: 2, black: 1 });
+  it("adds and removes saved outfits, and deletes styles last", () => {
+    const base = reducer(fresh(), { type: "createStyle", name: "Mine", seedAffinity: {}, description: "" });
+    const saved = reducer(base, { type: "saveOutfit", anchorId: p1, items: { top: p1, bottom: p2 } });
+    const outfitId = saved.savedOutfits[0].id;
+    expect(diffState(base, saved)).toEqual([{ op: "saveOutfit", outfit: saved.savedOutfits[0] }]);
+    expect(diffState(saved, reducer(saved, { type: "removeOutfit", id: outfitId }))).toEqual([
+      { op: "removeOutfit", outfitId },
+    ]);
+
+    const restarted = reducer(saved, { type: "restart" });
+    const ops = diffState(saved, restarted);
+    expect(ops.at(-1)).toEqual({ op: "deleteStyle", styleId: base.activeStyleId });
+    expect(ops).toContainEqual({ op: "removeOutfit", outfitId });
   });
 
-  it("rejects garbage", () => {
-    expect(migratePersistedState("nope", STORAGE_KEY)).toBeNull();
-    expect(migratePersistedState(null, STORAGE_KEY)).toBeNull();
+  it("round-trips through the server shape", () => {
+    const state = reducer(fresh(), { type: "react", id: p1, tags: shirt.tags, direction: -1 });
+    const server = {
+      styles: state.styleOrder.map((id) => ({
+        ...styleFields(state.styles[id]),
+        liked: Object.keys(state.styles[id].liked),
+        disliked: Object.keys(state.styles[id].disliked),
+      })),
+      activeStyleId: state.activeStyleId,
+      hasOnboarded: state.hasOnboarded,
+      savedOutfits: state.savedOutfits,
+    };
+    const restored = fromSynced(server);
+    expect(diffState(state, restored)).toEqual([]);
+    expect(restored.styles[state.activeStyleId].disliked).toEqual({ [p1]: true });
   });
 });
 

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { requirePageUser } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
 import { getProduct } from "@/server/products/service";
 import { ProductPageClient } from "./page-client";
@@ -9,6 +10,7 @@ export default async function ProductPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  await requirePageUser(`/product/${id}`);
   const product = await getProduct(getDb(), id);
   if (!product) notFound();
 

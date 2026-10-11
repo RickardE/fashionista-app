@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { parseOutfitItems } from "@/lib/outfits";
+import { requirePageUser } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
 import { getProduct } from "@/server/products/service";
 import { OutfitPageClient } from "./page-client";
@@ -12,6 +13,7 @@ export default async function OutfitPage({
   searchParams: Promise<{ items?: string }>;
 }) {
   const { id } = await params;
+  await requirePageUser(`/outfit/${id}`);
   const { items } = await searchParams;
   const anchor = await getProduct(getDb(), id);
   if (!anchor) notFound();

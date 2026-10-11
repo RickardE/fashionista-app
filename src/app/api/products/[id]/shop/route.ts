@@ -1,3 +1,4 @@
+import { requireUser } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
 import { jsonError, withErrors } from "@/server/http";
 import { getShopUrl } from "@/server/products/service";
@@ -10,7 +11,9 @@ import { getShopUrl } from "@/server/products/service";
  */
 export const GET = withErrors(
   "product-shop",
-  async (_request: Request, { params }: { params: Promise<{ id: string }> }) => {
+  async (request: Request, { params }: { params: Promise<{ id: string }> }) => {
+    const auth = await requireUser(request);
+    if (!auth.ok) return auth.response;
     const { id } = await params;
     const url = await getShopUrl(getDb(), id);
     if (!url) return jsonError(404, "product_not_found");

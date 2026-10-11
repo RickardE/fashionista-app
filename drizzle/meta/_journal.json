@@ -43,6 +43,13 @@
       "when": 1791375871267,
       "tag": "0005_enrichment",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791710178745,
+      "tag": "0006_accounts",
+      "breakpoints": true
     }
   ]
 }

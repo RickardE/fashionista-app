@@ -8,9 +8,10 @@ import { useStyleProfile } from "@/lib/store/style-profile-context";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { styles, activeStyle, restart } = useStyleProfile();
+  const { styles, activeStyle, restart, account, signOut } = useStyleProfile();
 
   function resetPrototype() {
+    if (!window.confirm("Reset all your styles, likes and saved outfits? This can't be undone.")) return;
     restart();
     router.push("/");
   }
@@ -77,6 +78,19 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between py-[11px] text-neutral-700">
             <span className="text-[14px]">Brands you follow</span>
             <span className="text-[13px]">7</span>
+          </div>
+
+          <div className="mt-10 mb-0.5 text-[10px] font-semibold tracking-[0.12em] text-neutral-500 uppercase">
+            Account
+          </div>
+          <div className="flex items-center justify-between gap-3 py-[11px] text-neutral-700">
+            <span className="min-w-0 truncate text-[14px]">{account?.email}</span>
+            <button
+              onClick={() => void signOut()}
+              className="shrink-0 text-[13px] font-medium text-ink underline underline-offset-2"
+            >
+              Sign out
+            </button>
           </div>
 
           <div className="mt-12 flex justify-center">

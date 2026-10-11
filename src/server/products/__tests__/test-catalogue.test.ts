@@ -4,6 +4,7 @@ import { importFromSource } from "@/server/catalog/ingest";
 import { createTestDb, memorySource, silentLogger } from "@/server/catalog/__tests__/helpers";
 import { feedXml, type FixtureItem } from "@/server/catalog/__tests__/fixtures/feed";
 import type { Db } from "@/server/db/client";
+import { testAuth } from "@/server/users/__tests__/helpers";
 import { products } from "@/server/db/schema";
 import type { Product } from "@/lib/types";
 import { getFeedPage, getInspiration, getProduct, getProductsByIds, listProducts, searchProducts } from "../service";
@@ -12,6 +13,7 @@ import { activateEnrichment } from "./enrichment-helpers";
 
 let db: Db;
 vi.mock("@/server/db/client", () => ({ getDb: () => db }));
+vi.mock("@/server/auth/auth", () => ({ getAuth: () => testAuth }));
 const { GET: feedRoute } = await import("@/app/api/feed/route");
 const { GET: productsRoute } = await import("@/app/api/products/route");
 const { GET: productRoute } = await import("@/app/api/products/[id]/route");
@@ -74,7 +76,7 @@ const enable = () => {
   process.env.TEST_CATALOGUE = "fixture";
 };
 const names = (list: Product[]) => list.map((p) => p.name).sort();
-const req = (path: string) => new Request(`http://localhost${path}`);
+const req = (path: string) => new Request(`http://localhost${path}`, { headers: { "x-test-user": "u1" } });
 const ctx = (productId: string) => ({ params: Promise.resolve({ id: productId }) });
 const json = async (res: Response) => (await res.json()) as { products?: Product[]; product?: Product; tiles?: { product: Product }[] };
 

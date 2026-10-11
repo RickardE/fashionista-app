@@ -3,11 +3,13 @@ import { importFromSource } from "@/server/catalog/ingest";
 import { createTestDb, memorySource, silentLogger } from "@/server/catalog/__tests__/helpers";
 import { feedXml, type FixtureItem } from "@/server/catalog/__tests__/fixtures/feed";
 import type { Db } from "@/server/db/client";
+import { testAuth } from "@/server/users/__tests__/helpers";
 import type { Product } from "@/lib/types";
 import { getFeedPage, getInspiration, listProducts, searchProducts } from "../service";
 
 let db: Db;
 vi.mock("@/server/db/client", () => ({ getDb: () => db }));
+vi.mock("@/server/auth/auth", () => ({ getAuth: () => testAuth }));
 const { GET: feedRoute } = await import("@/app/api/feed/route");
 const { GET: productsRoute } = await import("@/app/api/products/route");
 
@@ -211,7 +213,7 @@ describe("Search and inspiration follow Products eligibility", () => {
 });
 
 describe("API parameters", () => {
-  const req = (path: string) => new Request(`http://localhost${path}`);
+  const req = (path: string) => new Request(`http://localhost${path}`, { headers: { "x-test-user": "u1" } });
 
   it("feed accepts for=products|outfits and gender=men|women", async () => {
     const res = await feedRoute(req("/api/feed?for=outfits&gender=women&limit=50"));

@@ -4,20 +4,15 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useReducer,
   useState,
 } from "react";
+import { usePathname } from "next/navigation";
 import { BUILTIN_STYLE_PRESETS, DEFAULT_STYLE_ID } from "@/lib/data/styles";
 import { mergeAffinity } from "@/lib/personalization";
 import type { AffinityMap } from "@/lib/personalization";
-import {
-  LEGACY_STORAGE_KEYS,
-  STORAGE_KEY,
-  migratePersistedState,
-  type PersistedState,
-} from "@/lib/store/style-profile-migrate";
+import { type Account, useServerSync } from "@/lib/store/use-server-sync";
 import type {
   Outfit,
   OutfitItems,
@@ -28,11 +23,19 @@ import type {
   StyleTag,
 } from "@/lib/types";
 
-type StyleProfileState = PersistedState & {
+export interface PersistedState {
+  styles: Record<string, StyleProfile>;
+  styleOrder: string[];
+  activeStyleId: string;
+  hasOnboarded: boolean;
+  savedOutfits: Outfit[];
+}
+
+export type StyleProfileState = PersistedState & {
   /**
-   * False until persisted state has been loaded into the reducer. Nothing is
-   * written back to storage before then — otherwise the default state can
-   * overwrite what was saved (React re-runs mount effects in dev).
+   * False until the account's state has been loaded into the reducer. Nothing
+   * is synced before then — otherwise the default state could overwrite what
+   * was saved.
    */
   hydrated: boolean;
 };
@@ -379,6 +382,10 @@ interface StyleProfileContextValue {
   saveOutfit: (anchorId: string, items: OutfitItems) => void;
   removeOutfit: (id: string) => void;
   restart: () => void;
+  /** The signed-in user (null only on the login page). */
+  account: Account | null;
+  /** Saves pending changes, ends the session and returns to the login page. */
+  signOut: () => Promise<void>;
   feedLength: number;
   /** The most recent user-initiated style switch — a UI event for the switch transition, not state. */
   styleSwitch: { id: string; at: number } | null;
@@ -411,36 +418,7 @@ export function StyleProfileProvider({
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
   const [styleSwitch, setStyleSwitch] = useState<{ id: string; at: number } | null>(null);
 
-  useEffect(() => {
-    let restored: Partial<PersistedState> | null = null;
-    try {
-      for (const key of [STORAGE_KEY, ...LEGACY_STORAGE_KEYS]) {
-        const raw = window.localStorage.getItem(key);
-        if (!raw) continue;
-        restored = migratePersistedState(JSON.parse(raw), key);
-        break;
-      }
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (err) {
-      // localStorage unavailable or corrupt — start fresh
-    }
-    // Merge over fresh defaults so state saved before a schema change still
-    // hydrates safely. Always dispatch, so persistence starts either way.
-    dispatch({ type: "hydrate", state: { ...initialState(), ...restored } });
-  }, []);
-
-  useEffect(() => {
-    if (!state.hydrated) return;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { hydrated, ...persisted } = state;
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (err) {
-      // storage full or unavailable — ignore, state still works in memory
-    }
-  }, [state]);
-
+  const { account, signOut, clearDevice } = useServerSync(state, dispatch);
   const react = useCallback(
     (product: Product, direction: 1 | -1) =>
       dispatch({ type: "react", id: product.id, tags: product.tags, direction }),
@@ -520,15 +498,11 @@ export function StyleProfileProvider({
     (id: string) => dispatch({ type: "removeOutfit", id }),
     [],
   );
+  // Resets the account's style data too: the sync sends the difference.
   const restart = useCallback(() => {
-    try {
-      [STORAGE_KEY, ...LEGACY_STORAGE_KEYS].forEach((key) => window.localStorage.removeItem(key));
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (err) {
-      // ignore
-    }
+    clearDevice();
     dispatch({ type: "restart" });
-  }, []);
+  }, [clearDevice]);
 
   const activeStyle =
     state.styles[state.activeStyleId] ?? Object.values(state.styles)[0];
@@ -568,6 +542,8 @@ export function StyleProfileProvider({
       saveOutfit,
       removeOutfit,
       restart,
+      account,
+      signOut,
       feedLength: feedLengthOf(activeStyle),
       styleSwitch,
       effectiveAffinity,
@@ -596,14 +572,19 @@ export function StyleProfileProvider({
       saveOutfit,
       removeOutfit,
       restart,
+      account,
+      signOut,
       styleSwitch,
       effectiveAffinity,
     ],
   );
 
+  // Pages read the account's state, so nothing renders until it has loaded —
+  // except the login page, which has no account.
+  const isLogin = usePathname() === "/login";
   return (
     <StyleProfileContext.Provider value={value}>
-      {children}
+      {isLogin || state.hydrated ? children : <div className="h-dvh bg-paper" aria-busy="true" />}
     </StyleProfileContext.Provider>
   );
 }

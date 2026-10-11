@@ -274,3 +274,168 @@ export const productEnrichmentState = pgTable(
   },
   (t) => [index("product_enrichment_state_status_idx").on(t.status)],
 );
+
+// ---------------------------------------------------------------------------
+// Accounts (see src/server/auth/).
+//
+// users / sessions / accounts / verifications are Better Auth's tables (field
+// names are its model fields; it is wired to them in auth.ts). Sign-in is
+// Google only, so accounts never hold a password.
+// ---------------------------------------------------------------------------
+
+export const users = pgTable("users", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  image: text("image"),
+  ...timestamps,
+});
+
+export const sessions = pgTable(
+  "sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    token: text("token").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    ...timestamps,
+  },
+  (t) => [index("sessions_user_idx").on(t.userId)],
+);
+
+export const accounts = pgTable(
+  "accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** The provider's id for the user (Google "sub"). */
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    // Provider tokens, encrypted by Better Auth (account.encryptOAuthTokens).
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
+    scope: text("scope"),
+    /** Unused: there is no email/password sign-in. Required by Better Auth's model. */
+    password: text("password"),
+    ...timestamps,
+  },
+  (t) => [
+    index("accounts_user_idx").on(t.userId),
+    uniqueIndex("accounts_provider_account_uq").on(t.providerId, t.accountId),
+  ],
+);
+
+/** Short-lived values Better Auth needs during sign-in (e.g. OAuth state). */
+export const verifications = pgTable(
+  "verifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    ...timestamps,
+  },
+  (t) => [index("verifications_identifier_idx").on(t.identifier)],
+);
+
+// ---------------------------------------------------------------------------
+// User style data (see src/server/users/).
+//
+// The server copy of what the app used to keep only in localStorage: a user's
+// styles with their learned taste, likes/dislikes per style, saved outfits.
+// Styles and outfits keep the app's own ids as `client_key` (built-in styles
+// share ids like "everyday" across users), unique per user. Feed positions
+// stay on the device.
+// ---------------------------------------------------------------------------
+
+export type Reaction = "like" | "dislike";
+
+export const styleProfiles = pgTable(
+  "style_profiles",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    clientKey: text("client_key").notNull(),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    /** men | women; null until chosen. */
+    gender: text("gender"),
+    /** Display order among the user's styles. */
+    position: integer("position").notNull().default(0),
+    /** Tag scores: the style's starting leaning, product taste and outfit taste. */
+    seedAffinity: jsonb("seed_affinity").$type<Record<string, number>>().notNull().default({}),
+    affinity: jsonb("affinity").$type<Record<string, number>>().notNull().default({}),
+    outfitAffinity: jsonb("outfit_affinity").$type<Record<string, number>>().notNull().default({}),
+    interactions: integer("interactions").notNull().default(0),
+    likedOutfits: integer("liked_outfits").notNull().default(0),
+    dislikedOutfits: integer("disliked_outfits").notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("style_profiles_user_key_uq").on(t.userId, t.clientKey)],
+);
+
+/** One like or dislike of a product within one style. */
+export const productReactions = pgTable(
+  "product_reactions",
+  {
+    styleProfileId: uuid("style_profile_id")
+      .notNull()
+      .references(() => styleProfiles.id, { onDelete: "cascade" }),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id),
+    /** Denormalized owner, so every read can filter by user directly. */
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    reaction: text("reaction").$type<Reaction>().notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    primaryKey({ columns: [t.styleProfileId, t.productId] }),
+    index("product_reactions_user_idx").on(t.userId),
+  ],
+);
+
+export const savedOutfits = pgTable(
+  "saved_outfits",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    clientKey: text("client_key").notNull(),
+    styleProfileId: uuid("style_profile_id")
+      .notNull()
+      .references(() => styleProfiles.id, { onDelete: "cascade" }),
+    anchorProductId: uuid("anchor_product_id")
+      .notNull()
+      .references(() => products.id),
+    /** { outerwear?, top?, bottom?, footwear? } → product id. */
+    items: jsonb("items").$type<Record<string, string>>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("saved_outfits_user_key_uq").on(t.userId, t.clientKey)],
+);
+
+export const userPreferences = pgTable("user_preferences", {
+  userId: uuid("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  /** client_key of the active style. */
+  activeStyleKey: text("active_style_key"),
+  hasOnboarded: boolean("has_onboarded").notNull().default(false),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

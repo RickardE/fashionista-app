@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { requireUser } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
 import { limitParam, parseQuery, withErrors } from "@/server/http";
 import { SHOPPER_GENDERS } from "@/server/products/eligibility";
@@ -12,6 +13,8 @@ const query = z.object({
 
 /** GET /api/search?q=&gender=&limit= — keyword search, same eligibility as the Products feed. */
 export const GET = withErrors("search", async (request: Request) => {
+  const auth = await requireUser(request);
+  if (!auth.ok) return auth.response;
   const parsed = parseQuery(request, query);
   if (!parsed.ok) return parsed.response;
   const { q, limit, gender } = parsed.data;
