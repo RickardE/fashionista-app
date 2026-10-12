@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import { ArrowUpRightIcon } from "@/components/icons";
-import { SwipeStamps } from "@/components/SwipeStamps";
+import { SwipeFeedback } from "@/components/SwipeFeedback";
 import { OutfitComposition } from "@/components/OutfitComposition";
 import { formatPrice } from "@/lib/format";
 import { outfitTotal } from "@/lib/outfits";
@@ -141,7 +141,7 @@ export function OutfitFeedCard({
           <ArrowUpRightIcon />
         </button>
         <div className="h-5" />
-        {isFront && <SwipeStamps x={x} decisionDistance={DECISION_DISTANCE} />}
+        {isFront && <SwipeFeedback x={x} decisionDistance={DECISION_DISTANCE} />}
       </motion.div>
 
     </>

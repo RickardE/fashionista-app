@@ -4,7 +4,7 @@ import { useRef } from "react";
 import Image from "next/image";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import { ArrowUpRightIcon } from "@/components/icons";
-import { SwipeStamps } from "@/components/SwipeStamps";
+import { SwipeFeedback } from "@/components/SwipeFeedback";
 import { formatPrice } from "@/lib/format";
 import type { Product } from "@/lib/types";
 
@@ -139,7 +139,7 @@ export function ProductFeedCard({
           <ArrowUpRightIcon />
         </button>
         <div className="h-5" />
-        {isFront && <SwipeStamps x={x} decisionDistance={DECISION_DISTANCE} />}
+        {isFront && <SwipeFeedback x={x} decisionDistance={DECISION_DISTANCE} />}
       </motion.div>
 
     </>
