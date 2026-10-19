@@ -104,6 +104,13 @@ export function useOutfitFeed() {
         const prev = all[styleId];
         return prev ? { ...all, [styleId]: { ...prev, index: prev.index + 1 } } : all;
       }),
+    /** Key of the outfit before the current one — the one an undo returns to. */
+    previousKey: current.outfits[current.index - 1]?.key as string | undefined,
+    back: () =>
+      setByStyle((all) => {
+        const prev = all[styleId];
+        return prev && prev.index > 0 ? { ...all, [styleId]: { ...prev, index: prev.index - 1 } } : all;
+      }),
     retry: () => setErrors((e) => ({ ...e, [styleId]: false })),
   };
 }

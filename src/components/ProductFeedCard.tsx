@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import Image from "next/image";
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import { ArrowUpRightIcon } from "@/components/icons";
@@ -29,18 +29,31 @@ export function ProductFeedCard({
   stackPosition,
   onOpen,
   onDecide,
+  enterFrom,
 }: {
   product: Product;
   stackPosition: StackPosition;
   onOpen: () => void;
   onDecide: (direction: 1 | -1) => void;
+  /** Set when an undone swipe brings this card back: the side it flies in from. */
+  enterFrom?: 1 | -1;
 }) {
   const isFront = stackPosition === 0;
-  const x = useMotionValue(0);
+  const x = useMotionValue(enterFrom ? enterFrom * EXIT_DISTANCE : 0);
   const rotate = useTransform(x, [-260, 260], [-10, 10]);
 
   const drag = useRef<DragState | null>(null);
-  const settled = useRef(false);
+  // A returning card can't be dragged until it has landed.
+  const settled = useRef(!!enterFrom);
+
+  useEffect(() => {
+    if (!enterFrom) return;
+    animate(x, 0, SNAP_BACK).then(() => {
+      settled.current = false;
+    });
+    // Runs once, when the returning card mounts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function onPointerDown(e: React.PointerEvent) {
     if (!isFront || settled.current) return;

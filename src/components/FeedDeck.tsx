@@ -6,6 +6,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { FeedStatusCard } from "@/components/FeedStatusCard";
 import { GenderChoiceCard } from "@/components/GenderChoice";
 import { ProductFeedCard } from "@/components/ProductFeedCard";
+import { isUndoKey, UndoSwipeButton } from "@/components/UndoSwipeButton";
 import { useCatalog } from "@/lib/store/product-catalog";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
 import { useFeed } from "@/lib/store/use-feed";
@@ -14,7 +15,17 @@ import type { Product } from "@/lib/types";
 export function FeedDeck() {
   const router = useRouter();
   const pathname = usePathname();
-  const { activeStyle, next, react, resetFeed, refreshFeed, chooseGender } = useStyleProfile();
+  const {
+    activeStyle,
+    next,
+    react,
+    resetFeed,
+    refreshFeed,
+    chooseGender,
+    lastSwipe,
+    rememberSwipe,
+    undoSwipe,
+  } = useStyleProfile();
   const { feedOrder, feedIndex, feedExhausted } = activeStyle;
   const catalog = useCatalog();
   const feed = useFeed();
@@ -46,9 +57,26 @@ export function FeedDeck() {
     noticeTimer.current = setTimeout(() => setNotice(""), 2400);
   }, []);
 
+  // The last swipe can be undone while the feed still sits just past it — not
+  // after a style switch, "Look again" or a refetched feed.
+  const undoable =
+    lastSwipe?.kind === "product" &&
+    lastSwipe.styleId === activeStyle.id &&
+    feedOrder[lastSwipe.prevFeedIndex] === lastSwipe.productId &&
+    feedIndex > lastSwipe.prevFeedIndex
+      ? lastSwipe
+      : null;
+  // The card an undo just brought back, and the side it left by.
+  const [returning, setReturning] = useState<{ id: string; from: 1 | -1 } | null>(null);
+
   useEffect(() => {
     if (pathname !== "/products") return;
     function onKey(e: KeyboardEvent) {
+      if (isUndoKey(e)) {
+        e.preventDefault();
+        undo();
+        return;
+      }
       if (e.key === "ArrowRight") {
         e.preventDefault();
         decide(1);
@@ -61,13 +89,33 @@ export function FeedDeck() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, feedIndex, feedOrder, current]);
+  }, [pathname, feedIndex, feedOrder, current, undoable]);
 
   function decide(direction: 1 | -1) {
     if (!current) return;
+    rememberSwipe({
+      kind: "product",
+      styleId: activeStyle.id,
+      productId: current.id,
+      tags: current.tags,
+      direction,
+      prevReaction: activeStyle.liked[current.id] ? "like" : activeStyle.disliked[current.id] ? "dislike" : null,
+      prevFeedIndex: feedIndex,
+      image: current.image,
+      label: `${current.brand} — ${current.name}`,
+    });
+    setReturning(null);
     react(current, direction);
     if (direction > 0) flash("Saved to your collection");
+    else setNotice("");
     next();
+  }
+
+  function undo() {
+    if (!undoable) return;
+    setReturning({ id: undoable.productId, from: undoable.direction });
+    setNotice("");
+    undoSwipe();
   }
 
   const visibleRange = [feedIndex, feedIndex + 1].filter(
@@ -88,6 +136,7 @@ export function FeedDeck() {
               stackPosition={stackPosition}
               onOpen={() => router.push(`/product/${product.id}`)}
               onDecide={(direction) => decide(direction)}
+              enterFrom={returning?.id === product.id ? returning.from : undefined}
             />
           );
         }
@@ -128,6 +177,13 @@ export function FeedDeck() {
           />
         );
       })}
+
+      <UndoSwipeButton
+        visible={!!undoable && feed.status !== "needs_gender"}
+        image={undoable?.image}
+        label={undoable?.label}
+        onUndo={undo}
+      />
 
       <div
         className="pointer-events-none absolute top-0 right-0 left-0 z-10 bg-ink px-[22px] py-[10px] text-[10px] font-semibold tracking-[0.1em] text-paper uppercase transition-opacity duration-[400ms]"

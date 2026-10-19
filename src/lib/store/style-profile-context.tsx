@@ -31,6 +31,33 @@ export interface PersistedState {
   savedOutfits: Outfit[];
 }
 
+/**
+ * The most recent swipe, kept so it can be undone. Only one swipe is ever
+ * remembered: the next swipe replaces it. Session-only — never persisted.
+ */
+export type LastSwipe = {
+  styleId: string;
+  tags: StyleTag[];
+  direction: 1 | -1;
+  /** Thumbnail and alt text for the undo button. */
+  image: string;
+  label: string;
+} & (
+  | {
+      kind: "product";
+      productId: string;
+      /** The product's reaction before the swipe (it may have been liked from its details). */
+      prevReaction: "like" | "dislike" | null;
+      prevFeedIndex: number;
+    }
+  | {
+      kind: "outfit";
+      outfitKey: string;
+      /** Set when the swipe saved the outfit. */
+      savedOutfitId?: string;
+    }
+);
+
 export type StyleProfileState = PersistedState & {
   /**
    * False until the account's state has been loaded into the reducer. Nothing
@@ -47,6 +74,7 @@ type Action =
   | { type: "setStyleGender"; styleId: string; gender: ShopperGender }
   | { type: "chooseGender"; gender: ShopperGender }
   | { type: "reactOutfit"; tags: StyleTag[]; direction: 1 | -1 }
+  | { type: "undoSwipe"; swipe: LastSwipe }
   | { type: "setOutfitCursor"; styleId: string; cursor: string | undefined }
   | { type: "next" }
   | { type: "prev" }
@@ -65,7 +93,7 @@ type Action =
     }
   | { type: "duplicateStyle"; sourceId: string; name: string }
   | { type: "renameStyle"; id: string; name: string }
-  | { type: "saveOutfit"; anchorId: string; items: OutfitItems }
+  | { type: "saveOutfit"; anchorId: string; items: OutfitItems; id?: string }
   | { type: "removeOutfit"; id: string }
   | { type: "restart" };
 
@@ -110,6 +138,17 @@ export function initialState(): StyleProfileState {
   };
 }
 
+/** Adds `delta` to each tag's weight, dropping weights that end up at zero. */
+function shiftAffinity(affinity: AffinityMap, tags: StyleTag[], delta: number): AffinityMap {
+  const next = { ...affinity };
+  tags.forEach((tag) => {
+    const value = (next[tag] ?? 0) + delta;
+    if (value === 0) delete next[tag];
+    else next[tag] = value;
+  });
+  return next;
+}
+
 function feedLengthOf(style: StyleProfile): number {
   return style.feedOrder.length + 1;
 }
@@ -139,6 +178,10 @@ function withGender(style: StyleProfile, gender: ShopperGender): StyleProfile {
     feedExhausted: false,
     outfitCursor: undefined,
   };
+}
+
+function newOutfitId(): string {
+  return `look-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
 export function reducer(state: StyleProfileState, action: Action): StyleProfileState {
@@ -187,6 +230,41 @@ export function reducer(state: StyleProfileState, action: Action): StyleProfileS
           dislikedOutfits: style.dislikedOutfits + (action.direction < 0 ? 1 : 0),
         };
       });
+
+    // Reverses exactly what one swipe did: its taste change, its reaction (back
+    // to what it was before) and, for products, the feed position.
+    case "undoSwipe": {
+      const { swipe } = action;
+      if (swipe.kind === "outfit") {
+        const next = updateStyle(state, swipe.styleId, (style) => ({
+          ...style,
+          outfitAffinity: shiftAffinity(style.outfitAffinity, swipe.tags, -swipe.direction),
+          likedOutfits: Math.max(0, style.likedOutfits - (swipe.direction > 0 ? 1 : 0)),
+          dislikedOutfits: Math.max(0, style.dislikedOutfits - (swipe.direction < 0 ? 1 : 0)),
+        }));
+        return swipe.savedOutfitId
+          ? { ...next, savedOutfits: next.savedOutfits.filter((o) => o.id !== swipe.savedOutfitId) }
+          : next;
+      }
+      return updateStyle(state, swipe.styleId, (style) => {
+        const liked = { ...style.liked };
+        const disliked = { ...style.disliked };
+        delete liked[swipe.productId];
+        delete disliked[swipe.productId];
+        if (swipe.prevReaction === "like") liked[swipe.productId] = true;
+        if (swipe.prevReaction === "dislike") disliked[swipe.productId] = true;
+        return {
+          ...style,
+          affinity: shiftAffinity(style.affinity, swipe.tags, -swipe.direction),
+          liked,
+          disliked,
+          interactions: Math.max(0, style.interactions - 1),
+          // Only step back if the feed still holds the card (it may have been
+          // reset or refetched since).
+          feedIndex: style.feedOrder[swipe.prevFeedIndex] === swipe.productId ? swipe.prevFeedIndex : style.feedIndex,
+        };
+      });
+    }
 
     case "setOutfitCursor":
       return updateStyle(state, action.styleId, (style) => ({ ...style, outfitCursor: action.cursor }));
@@ -324,7 +402,7 @@ export function reducer(state: StyleProfileState, action: Action): StyleProfileS
 
     case "saveOutfit": {
       const outfit: Outfit = {
-        id: `look-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        id: action.id ?? newOutfitId(),
         anchorId: action.anchorId,
         items: action.items,
         styleId: state.activeStyleId,
@@ -379,9 +457,16 @@ interface StyleProfileContextValue {
   }) => void;
   duplicateStyle: (sourceId: string, name: string) => void;
   renameStyle: (id: string, name: string) => void;
-  saveOutfit: (anchorId: string, items: OutfitItems) => void;
+  /** Saves an outfit to the active style and returns its id. */
+  saveOutfit: (anchorId: string, items: OutfitItems) => string;
   removeOutfit: (id: string) => void;
   restart: () => void;
+  /** The most recent swipe, if it can still be undone. */
+  lastSwipe: LastSwipe | null;
+  /** Remembers a swipe so it can be undone, replacing the one before it. */
+  rememberSwipe: (swipe: LastSwipe) => void;
+  /** Reverses the remembered swipe and forgets it. */
+  undoSwipe: () => void;
   /** The signed-in user (null only on the login page). */
   account: Account | null;
   /** Saves pending changes, ends the session and returns to the login page. */
@@ -417,6 +502,7 @@ export function StyleProfileProvider({
 }) {
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
   const [styleSwitch, setStyleSwitch] = useState<{ id: string; at: number } | null>(null);
+  const [lastSwipe, setLastSwipe] = useState<LastSwipe | null>(null);
 
   const { account, signOut, clearDevice } = useServerSync(state, dispatch);
   const react = useCallback(
@@ -465,6 +551,7 @@ export function StyleProfileProvider({
   const setActiveStyle = useCallback(
     (styleId: string) => {
       dispatch({ type: "setActiveStyle", styleId });
+      setLastSwipe(null);
       setStyleSwitch({ id: styleId, at: Date.now() });
     },
     [],
@@ -490,8 +577,11 @@ export function StyleProfileProvider({
     [],
   );
   const saveOutfit = useCallback(
-    (anchorId: string, items: OutfitItems) =>
-      dispatch({ type: "saveOutfit", anchorId, items }),
+    (anchorId: string, items: OutfitItems) => {
+      const id = newOutfitId();
+      dispatch({ type: "saveOutfit", anchorId, items, id });
+      return id;
+    },
     [],
   );
   const removeOutfit = useCallback(
@@ -501,8 +591,15 @@ export function StyleProfileProvider({
   // Resets the account's style data too: the sync sends the difference.
   const restart = useCallback(() => {
     clearDevice();
+    setLastSwipe(null);
     dispatch({ type: "restart" });
   }, [clearDevice]);
+  const rememberSwipe = useCallback((swipe: LastSwipe) => setLastSwipe(swipe), []);
+  const undoSwipe = useCallback(() => {
+    if (!lastSwipe) return;
+    dispatch({ type: "undoSwipe", swipe: lastSwipe });
+    setLastSwipe(null);
+  }, [lastSwipe]);
 
   const activeStyle =
     state.styles[state.activeStyleId] ?? Object.values(state.styles)[0];
@@ -542,6 +639,9 @@ export function StyleProfileProvider({
       saveOutfit,
       removeOutfit,
       restart,
+      lastSwipe,
+      rememberSwipe,
+      undoSwipe,
       account,
       signOut,
       feedLength: feedLengthOf(activeStyle),
@@ -572,6 +672,9 @@ export function StyleProfileProvider({
       saveOutfit,
       removeOutfit,
       restart,
+      lastSwipe,
+      rememberSwipe,
+      undoSwipe,
       account,
       signOut,
       styleSwitch,

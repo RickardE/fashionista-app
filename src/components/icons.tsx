@@ -233,6 +233,23 @@ export function RefreshIcon({ className }: { className?: string }) {
   );
 }
 
+export function UndoIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      className={className}
+    >
+      <path d="M4 12a8 8 0 1 0 2.3-5.7" />
+      <path d="M4 3v5h5" />
+    </svg>
+  );
+}
+
 export function LayersIcon({ className }: { className?: string }) {
   return (
     <svg
