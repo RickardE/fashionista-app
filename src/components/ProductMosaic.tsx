@@ -1,6 +1,19 @@
 import Image from "next/image";
+import { getDb } from "@/server/db/client";
+import { listProducts } from "@/server/products/service";
 
 const COLUMNS = 3;
+
+/** Product photos for the mosaic; empty if the catalogue is unavailable, so pages work without it. */
+export async function mosaicImages(): Promise<string[]> {
+  try {
+    const products = await listProducts(getDb(), { limit: 12 });
+    const images = products.map((p) => p.image).filter(Boolean);
+    return images.length >= 6 ? images : [];
+  } catch {
+    return [];
+  }
+}
 
 /**
  * Three columns of product photos drifting slowly in opposite directions.

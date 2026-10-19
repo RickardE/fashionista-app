@@ -1,26 +1,13 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAuth } from "@/server/auth/auth";
-import { getDb } from "@/server/db/client";
-import { listProducts } from "@/server/products/service";
+import { mosaicImages, ProductMosaic } from "@/components/ProductMosaic";
 import { GoogleSignIn } from "./google-sign-in";
-import { ProductMosaic } from "./product-mosaic";
 
 /** Only same-site paths are followed after sign-in (no open redirect). */
 function safeNext(next: string | undefined): string {
   if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return "/";
   return next.startsWith("/login") ? "/" : next;
-}
-
-/** Product photos for the mosaic; the page still works without them if the catalogue is unavailable. */
-async function mosaicImages(): Promise<string[]> {
-  try {
-    const products = await listProducts(getDb(), { limit: 12 });
-    const images = products.map((p) => p.image).filter(Boolean);
-    return images.length >= 6 ? images : [];
-  } catch {
-    return [];
-  }
 }
 
 const STEPS = ["Swipe what catches your eye.", "We learn your style as you go.", "Get outfits built around it."];
