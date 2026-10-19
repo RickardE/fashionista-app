@@ -82,6 +82,7 @@ type Action =
   | { type: "resetFeed" }
   | { type: "refreshFeed" }
   | { type: "toggleDetailLike"; id: string; tags: StyleTag[] }
+  | { type: "addSeedAffinity"; styleId: string; affinity: AffinityMap }
   | { type: "completeOnboarding" }
   | { type: "setActiveStyle"; styleId: string }
   | {
@@ -350,6 +351,13 @@ export function reducer(state: StyleProfileState, action: Action): StyleProfileS
       });
     }
 
+    // Picked favourites give a style a head start on top of its seed.
+    case "addSeedAffinity":
+      return updateStyle(state, action.styleId, (style) => ({
+        ...style,
+        seedAffinity: mergeAffinity(style.seedAffinity, action.affinity),
+      }));
+
     case "completeOnboarding":
       return { ...state, hasOnboarded: true };
 
@@ -447,6 +455,8 @@ interface StyleProfileContextValue {
   resetFeed: () => void;
   refreshFeed: () => void;
   toggleDetailLike: (product: Product) => void;
+  /** Adds picked favourites' tags to a style's starting taste. */
+  addSeedAffinity: (styleId: string, affinity: AffinityMap) => void;
   completeOnboarding: () => void;
   setActiveStyle: (styleId: string) => void;
   createStyle: (input: {
@@ -544,6 +554,10 @@ export function StyleProfileProvider({
     (product: Product) => dispatch({ type: "toggleDetailLike", id: product.id, tags: product.tags }),
     [],
   );
+  const addSeedAffinity = useCallback(
+    (styleId: string, affinity: AffinityMap) => dispatch({ type: "addSeedAffinity", styleId, affinity }),
+    [],
+  );
   const completeOnboarding = useCallback(
     () => dispatch({ type: "completeOnboarding" }),
     [],
@@ -631,6 +645,7 @@ export function StyleProfileProvider({
       resetFeed,
       refreshFeed,
       toggleDetailLike,
+      addSeedAffinity,
       completeOnboarding,
       setActiveStyle,
       createStyle,
@@ -664,6 +679,7 @@ export function StyleProfileProvider({
       resetFeed,
       refreshFeed,
       toggleDetailLike,
+      addSeedAffinity,
       completeOnboarding,
       setActiveStyle,
       createStyle,

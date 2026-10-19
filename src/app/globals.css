@@ -73,6 +73,25 @@ body {
   }
 }
 
+@keyframes pop {
+  0%,
+  100% {
+    transform: none;
+  }
+  35% {
+    transform: scale(1.35);
+  }
+  70% {
+    transform: scale(0.95);
+  }
+}
+
+/* Runs twice, so it catches the eye without looping. */
+.animate-pop {
+  display: inline-block;
+  animation: pop 0.6s ease 2;
+}
+
 .animate-rise {
   animation: rise 0.5s ease both;
 }

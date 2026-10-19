@@ -15,12 +15,18 @@ const REST_TRANSITION = { duration: 0.4, ease: [0.22, 0.61, 0.36, 1] as const };
 const MOVE_SLOP = 4;
 const DECISION_DISTANCE = 110;
 const EXIT_DISTANCE = 560;
+/** The teaching nudge: how far the card leans each way, and the pause between rounds. */
+const NUDGE_DISTANCE = 72;
+const NUDGE_PAUSE_MS = 2600;
 
 /** 0 = front card, draggable. 1 = the next card, peeking behind it. */
 type StackPosition = 0 | 1;
 
 interface DragState {
+  /** Pointer x at which the card would sit at rest. */
   startX: number;
+  /** Pointer x where the press began, to tell a tap from a drag. */
+  pressX: number;
   moved: boolean;
 }
 
@@ -30,6 +36,7 @@ export function ProductFeedCard({
   onOpen,
   onDecide,
   enterFrom,
+  nudge = false,
 }: {
   product: Product;
   stackPosition: StackPosition;
@@ -37,6 +44,8 @@ export function ProductFeedCard({
   onDecide: (direction: 1 | -1) => void;
   /** Set when an undone swipe brings this card back: the side it flies in from. */
   enterFrom?: 1 | -1;
+  /** Teaches the gesture: the card leans right (heart) then left (✕) until it's touched. */
+  nudge?: boolean;
 }) {
   const isFront = stackPosition === 0;
   const x = useMotionValue(enterFrom ? enterFrom * EXIT_DISTANCE : 0);
@@ -55,10 +64,40 @@ export function ProductFeedCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const nudging = nudge && isFront;
+  const touched = useRef(false);
+  useEffect(() => {
+    if (!nudging) return;
+    let cancelled = false;
+    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    (async () => {
+      await wait(700);
+      while (!cancelled && !touched.current) {
+        for (const to of [NUDGE_DISTANCE, 0, -NUDGE_DISTANCE, 0]) {
+          if (cancelled || touched.current) return;
+          await animate(x, to, { duration: 0.5, ease: "easeInOut" });
+        }
+        await wait(NUDGE_PAUSE_MS);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      x.stop();
+    };
+  }, [nudging, x]);
+
   function onPointerDown(e: React.PointerEvent) {
     if (!isFront || settled.current) return;
-    if ((e.target as HTMLElement).closest("button, a")) return;
-    drag.current = { startX: e.clientX, moved: false };
+    if (nudging && !touched.current) {
+      touched.current = true;
+      x.stop();
+    }
+    if ((e.target as HTMLElement).closest("button, a")) {
+      if (x.get() !== 0) animate(x, 0, SNAP_BACK);
+      return;
+    }
+    // Starts from wherever the card is (mid-nudge, it isn't centred).
+    drag.current = { startX: e.clientX - x.get(), pressX: e.clientX, moved: false };
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
@@ -69,7 +108,7 @@ export function ProductFeedCard({
   function onPointerMove(e: React.PointerEvent) {
     if (!drag.current) return;
     const dx = e.clientX - drag.current.startX;
-    if (Math.abs(dx) > MOVE_SLOP) drag.current.moved = true;
+    if (Math.abs(e.clientX - drag.current.pressX) > MOVE_SLOP) drag.current.moved = true;
     x.set(dx);
   }
 

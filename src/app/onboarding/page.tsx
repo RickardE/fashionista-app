@@ -1,17 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { PrimaryButton, SecondaryButton } from "@/components/ui/Button";
-import { useStyleProfile } from "@/lib/store/style-profile-context";
+import { PrimaryButton } from "@/components/ui/Button";
 
 export default function OnboardingWelcomePage() {
   const router = useRouter();
-  const { completeOnboarding } = useStyleProfile();
-
-  function startExploring() {
-    completeOnboarding();
-    router.push("/products");
-  }
 
   return (
     <div className="animate-rise flex h-dvh flex-col px-[30px] pb-10">
@@ -24,20 +17,12 @@ export default function OnboardingWelcomePage() {
           <br />
           your style.
         </div>
-        <p className="mt-5 max-w-[26ch] text-[15px] leading-[1.6] text-neutral-700 text-pretty">
-          Show us a few outfits you love, or start discovering. Your feed
-          sharpens with everything you like.
+        <p className="mt-5 max-w-[28ch] text-[15px] leading-[1.6] text-neutral-700 text-pretty">
+          Swipe through clothes: right for what you love, left for what you
+          don&rsquo;t. The more you swipe, the better your feed gets.
         </p>
       </div>
-      <PrimaryButton onClick={() => router.push("/onboarding/upload")}>
-        Upload inspiration
-      </PrimaryButton>
-      <SecondaryButton className="mt-[10px]" onClick={startExploring}>
-        Start exploring
-      </SecondaryButton>
-      <div className="mt-4 text-[12px] leading-[1.5] text-neutral-700">
-        No account needed to look around.
-      </div>
+      <PrimaryButton onClick={() => router.push("/onboarding/shopping-for")}>Get started</PrimaryButton>
     </div>
   );
 }

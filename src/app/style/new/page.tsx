@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ChevronLeftIcon, PlusIcon } from "@/components/icons";
+import { affinityFromPicks, FavouritesGrid, togglePick } from "@/components/FavouritesGrid";
+import { ChevronLeftIcon } from "@/components/icons";
 import { GenderToggle } from "@/components/GenderChoice";
 import { PrimaryButton } from "@/components/ui/Button";
 import { useInspiration } from "@/lib/use-inspiration";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
-import type { ShopperGender, StyleTag } from "@/lib/types";
+import type { ShopperGender } from "@/lib/types";
 
 type Phase = "name" | "inspiration" | "creating";
 
@@ -25,24 +25,8 @@ export default function NewStylePage() {
   const [picks, setPicks] = useState<number[]>([]);
   const [ready, setReady] = useState(false);
 
-  function toggle(i: number) {
-    setPicks((prev) => {
-      const at = prev.indexOf(i);
-      if (at >= 0) return prev.filter((p) => p !== i);
-      if (prev.length >= 5) return prev;
-      return [...prev, i];
-    });
-  }
-
   function finish() {
-    const seedAffinity: Partial<Record<StyleTag, number>> = {};
-    picks.forEach((i) => {
-      const product = inspiration.tiles[i]?.product;
-      product?.tags.forEach((tag) => {
-        seedAffinity[tag] = (seedAffinity[tag] ?? 0) + 1;
-      });
-    });
-    createStyle({ name: name.trim(), seedAffinity, gender });
+    createStyle({ name: name.trim(), seedAffinity: affinityFromPicks(inspiration.tiles, picks), gender });
     setPhase("creating");
   }
 
@@ -143,7 +127,7 @@ export default function NewStylePage() {
           Back
         </button>
         <div className="text-[10px] font-semibold tracking-[0.14em] text-neutral-700 uppercase">
-          Add inspiration
+          Pick favourites
         </div>
         <div className="mt-2.5 font-serif text-[28px] leading-[1.1]">
           Anything that captures it?
@@ -154,49 +138,13 @@ export default function NewStylePage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-[22px] pb-5">
-        <div className="grid grid-cols-3 gap-1.5">
-          {inspiration.status === "loading" &&
-            Array.from({ length: 9 }, (_, i) => (
-              <div key={i} className="aspect-[3/4] w-full bg-neutral-200" />
-            ))}
-          {inspiration.tiles.map((tile, i) => {
-            const on = picks.includes(i);
-            const num = picks.indexOf(i) + 1;
-            const product = tile.product;
-            return (
-              <div
-                key={tile.label}
-                className="relative aspect-[3/4] w-full min-w-0 overflow-hidden bg-neutral-200"
-              >
-                <Image
-                  src={product.image}
-                  alt={tile.label}
-                  fill
-                  sizes="130px"
-                  className="object-cover"
-                />
-                <button
-                  onClick={() => toggle(i)}
-                  className={`absolute top-[5px] right-[5px] z-[3] flex h-[22px] w-[22px] items-center justify-center border text-[10px] font-semibold ${
-                    on
-                      ? "border-ink bg-ink text-paper"
-                      : "border-neutral-400 bg-[rgba(248,244,244,0.82)] text-ink"
-                  }`}
-                >
-                  {on ? num : <PlusIcon />}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-        {inspiration.status === "error" && (
-          <p className="mt-3.5 text-[13px] leading-[1.6] text-neutral-700">
-            We couldn&rsquo;t load inspiration images.{" "}
-            <button onClick={inspiration.retry} className="font-semibold underline">
-              Try again
-            </button>
-          </p>
-        )}
+        <FavouritesGrid
+          tiles={inspiration.tiles}
+          status={inspiration.status}
+          onRetry={inspiration.retry}
+          picks={picks}
+          onToggle={(i) => setPicks((p) => togglePick(p, i))}
+        />
       </div>
 
       <div className="px-[22px] pb-8">

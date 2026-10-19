@@ -13,11 +13,14 @@ export function UndoSwipeButton({
   image,
   label,
   visible,
+  tip = false,
   onUndo,
 }: {
   image?: string;
   label?: string;
   visible: boolean;
+  /** One-time hint above the button, the first time it appears. */
+  tip?: boolean;
   onUndo: () => void;
 }) {
   // Keep showing the last swipe's thumbnail while the button fades out.
@@ -38,6 +41,15 @@ export function UndoSwipeButton({
       </span>
       <UndoIcon />
       <span>Undo</span>
+      {tip && visible && (
+        <span
+          role="status"
+          className="animate-rise absolute right-0 bottom-full mb-2.5 bg-ink px-3 py-2 text-[11px] font-medium tracking-normal whitespace-nowrap text-paper normal-case"
+        >
+          Swiped by mistake? Undo
+          <span aria-hidden className="absolute -bottom-1 right-6 h-2 w-2 rotate-45 bg-ink" />
+        </span>
+      )}
     </button>
   );
 }

@@ -388,13 +388,19 @@ and `/api/products/:id`). Off when unset or empty; an unknown name throws
 | Route | Screen |
 |---|---|
 | `/` | Redirects to `/onboarding` or `/products` |
-| `/onboarding`, `/onboarding/upload`, `/onboarding/analysis`, `/onboarding/style` | First run: pick 3–5 inspiration images from the catalogue, a short "analysis" screen (timed, no analysis is performed), the starting style |
+| `/onboarding`, `/onboarding/shopping-for`, `/onboarding/favourites` | First run: welcome, Men/Women, then (optional) pick 3–5 favourite catalogue pieces that seed the first style's taste. No photo uploads. |
 | `/products` | Products feed (swipe products) |
 | `/outfits` | Outfits feed (swipe whole looks) |
 | `/outfit/[id]` | Build outfit around a product (`?items=` reproduces exact pieces) with Swap |
 | `/product/[id]` | Product detail; inside the app it opens as a sheet via the `@modal` intercepting route |
 | `/search`, `/saved`, `/profile` | Search, saved products and looks, manage styles (opened from the style switcher) |
-| `/style/new`, `/style/[id]` | Create / view a style |
+| `/style/new`, `/style/[id]`, `/style/[id]/favourites` | Create / view a style; pick favourites to add to a style's taste |
+
+After onboarding, the app teaches itself in place: the first product card
+leans right and left to show the gesture, and one-time tips appear the first
+time the user likes, passes, sees the undo button, opens Outfits, and after
+15 swipes (pointing at the style switcher). Seen tips are remembered per
+device and account in `localStorage` (`src/lib/tips.ts`).
 
 Bottom navigation: Products · Outfits · Saved.
 

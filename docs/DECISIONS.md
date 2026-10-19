@@ -211,7 +211,7 @@ testers see a change. Rollback: remove the variable and redeploy.
 | 2 | Inline images over 5 MB fail (`image_error`) | ~1% of products | Downscale before sending |
 | 3 | Remaining category errors: "denim" in a shirt's title → jeans; "Jacket" in a knit's name → outerwear; ribbed knit tops → knitwear; Peak Performance "Helium down hybrid hood" → sweatshirts | Products in wrong slots / needs_review | Rule fixes via the diff process (OPERATIONS §3.1) |
 | 4 | Dresses fill the top slot, suits the outerwear slot | Dress + trousers, suit + trousers | Dress = top + bottom; suit = outerwear + bottom |
-| 5 | `outfitAffinity` is learned but unused; the Products feed isn't personalized; onboarding picks aren't used and "analysis" is a timed screen | Personalization is shallow | Recommendation milestone |
+| 5 | `outfitAffinity` is learned but unused; the Products feed isn't personalized (picked favourites only seed a style's taste) | Personalization is shallow | Recommendation milestone |
 | 6 | No review UI and no way to accept a needs_review result | Manual work happens in scripts | Small admin/review tool |
 | 7 | No committed catalogue-diff command | Rule changes need scratch scripts | Add `products:category-diff` |
 | 8 | Men's sneakers: 2 of 10 shoes in `user-test-1` | Casual men's looks repeat sneakers | Swap in one more sneaker (~$0.03) |

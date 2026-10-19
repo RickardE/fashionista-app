@@ -2,15 +2,19 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { FeedStatusCard } from "@/components/FeedStatusCard";
 import { GenderChoiceCard } from "@/components/GenderChoice";
 import { ProductFeedCard } from "@/components/ProductFeedCard";
+import { TipBanner } from "@/components/TipBanner";
 import { isUndoKey, UndoSwipeButton } from "@/components/UndoSwipeButton";
 import { useCatalog } from "@/lib/store/product-catalog";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
 import { useFeed } from "@/lib/store/use-feed";
+import { pulseSavedTab, useTips } from "@/lib/tips";
 import type { Product } from "@/lib/types";
+
+/** After this many swipes in a style, point out that styles can be switched. */
+const STYLES_TIP_AFTER = 15;
 
 export function FeedDeck() {
   const router = useRouter();
@@ -29,6 +33,9 @@ export function FeedDeck() {
   const { feedOrder, feedIndex, feedExhausted } = activeStyle;
   const catalog = useCatalog();
   const feed = useFeed();
+  const tips = useTips();
+  // Shown with the undo button the first time it appears, until the next swipe.
+  const [undoTip, setUndoTip] = useState(false);
 
   const productAt = (i: number): Product | undefined =>
     feedOrder[i] ? catalog.get(feedOrder[i]) : undefined;
@@ -66,6 +73,8 @@ export function FeedDeck() {
     feedIndex > lastSwipe.prevFeedIndex
       ? lastSwipe
       : null;
+  const showStylesTip =
+    feed.status !== "needs_gender" && activeStyle.interactions >= STYLES_TIP_AFTER && !tips.hasSeen("styles");
   // The card an undo just brought back, and the side it left by.
   const [returning, setReturning] = useState<{ id: string; from: 1 | -1 } | null>(null);
 
@@ -106,8 +115,20 @@ export function FeedDeck() {
     });
     setReturning(null);
     react(current, direction);
-    if (direction > 0) flash("Saved to your collection");
-    else setNotice("");
+    if (direction > 0) {
+      flash(`Saved to ${activeStyle.name}`);
+      if (!tips.hasSeen("first-like")) {
+        pulseSavedTab();
+        tips.markSeen("first-like");
+      }
+    } else if (!tips.hasSeen("first-pass")) {
+      flash("Got it, less like this");
+      tips.markSeen("first-pass");
+    } else {
+      setNotice("");
+    }
+    setUndoTip(!tips.hasSeen("undo"));
+    tips.markSeen("undo");
     next();
   }
 
@@ -115,6 +136,7 @@ export function FeedDeck() {
     if (!undoable) return;
     setReturning({ id: undoable.productId, from: undoable.direction });
     setNotice("");
+    setUndoTip(false);
     undoSwipe();
   }
 
@@ -137,6 +159,7 @@ export function FeedDeck() {
               onOpen={() => router.push(`/product/${product.id}`)}
               onDecide={(direction) => decide(direction)}
               enterFrom={returning?.id === product.id ? returning.from : undefined}
+              nudge={activeStyle.showSwipeHint}
             />
           );
         }
@@ -178,8 +201,16 @@ export function FeedDeck() {
         );
       })}
 
+      {showStylesTip && (
+        <TipBanner pointer onDismiss={() => tips.markSeen("styles")}>
+          You&rsquo;re swiping in your <strong>{activeStyle.name}</strong> style. Tap its name above to
+          switch or add a style. Each one learns separately.
+        </TipBanner>
+      )}
+
       <UndoSwipeButton
         visible={!!undoable && feed.status !== "needs_gender"}
+        tip={undoTip}
         image={undoable?.image}
         label={undoable?.label}
         onUndo={undo}
@@ -196,9 +227,7 @@ export function FeedDeck() {
         className="pointer-events-none absolute right-0 bottom-2.5 left-0 flex items-center justify-center gap-[7px] text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase transition-opacity duration-500"
         style={{ opacity: activeStyle.showSwipeHint && feed.status !== "needs_gender" ? 1 : 0 }}
       >
-        <ChevronLeftIcon />
-        <span>Swipe to explore</span>
-        <ChevronRightIcon />
+        <span>Right to save · left to pass · tap for details</span>
       </div>
     </div>
   );

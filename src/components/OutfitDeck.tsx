@@ -5,10 +5,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { FeedStatusCard } from "@/components/FeedStatusCard";
 import { GenderChoiceCard } from "@/components/GenderChoice";
 import { OutfitFeedCard } from "@/components/OutfitFeedCard";
+import { TipBanner } from "@/components/TipBanner";
 import { isUndoKey, UndoSwipeButton } from "@/components/UndoSwipeButton";
 import { outfitHref } from "@/lib/outfits";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
 import { useOutfitFeed } from "@/lib/store/use-outfit-feed";
+import { pulseSavedTab, useTips } from "@/lib/tips";
 
 /** The Outfits feed: swipe whole outfits. Love saves the outfit to the active style. */
 export function OutfitDeck() {
@@ -18,6 +20,9 @@ export function OutfitDeck() {
     useStyleProfile();
   const feed = useOutfitFeed();
   const { outfit, nextOutfit } = feed;
+  const tips = useTips();
+  // Shown with the undo button the first time it appears, until the next swipe.
+  const [undoTip, setUndoTip] = useState(false);
 
   // Undoable while the swiped outfit is still the one just behind this card.
   const undoable =
@@ -42,10 +47,20 @@ export function OutfitDeck() {
     let savedOutfitId: string | undefined;
     if (direction > 0) {
       savedOutfitId = saveOutfit(outfit.anchorId, outfit.items);
-      flash("Outfit saved to your collection");
+      flash(`Outfit saved to ${activeStyle.name}`);
+      if (!tips.hasSeen("first-like")) {
+        pulseSavedTab();
+        tips.markSeen("first-like");
+      }
+    } else if (!tips.hasSeen("first-pass")) {
+      flash("Got it, less like this");
+      tips.markSeen("first-pass");
     } else {
       setNotice("");
     }
+    tips.markSeen("outfits");
+    setUndoTip(!tips.hasSeen("undo"));
+    tips.markSeen("undo");
     const cover = outfit.pieces.find((p) => p.product.id === outfit.anchorId) ?? outfit.pieces[0];
     rememberSwipe({
       kind: "outfit",
@@ -65,6 +80,7 @@ export function OutfitDeck() {
     if (!undoable) return;
     setReturning({ key: undoable.outfitKey, from: undoable.direction });
     setNotice("");
+    setUndoTip(false);
     undoSwipe();
     feed.back();
   }
@@ -126,8 +142,15 @@ export function OutfitDeck() {
         <FeedStatusCard kicker="One moment" title={<>Putting outfits<br />together&hellip;</>} />
       )}
 
+      {feed.status !== "needs_gender" && !tips.hasSeen("outfits") && (
+        <TipBanner onDismiss={() => tips.markSeen("outfits")}>
+          Whole looks, put together for you. Swipe right to save one, or tap it to swap pieces.
+        </TipBanner>
+      )}
+
       <UndoSwipeButton
         visible={!!undoable && feed.status !== "needs_gender"}
+        tip={undoTip}
         image={undoable?.image}
         label={undoable?.label}
         onUndo={undo}

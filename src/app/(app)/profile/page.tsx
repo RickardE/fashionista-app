@@ -63,10 +63,10 @@ export default function ProfilePage() {
             Preferences
           </div>
           <button
-            onClick={() => router.push("/onboarding/upload")}
+            onClick={() => router.push(`/style/${activeStyle.id}/favourites`)}
             className="flex w-full items-center justify-between py-[11px] text-neutral-700"
           >
-            <span className="text-[14px]">Add inspiration</span>
+            <span className="text-[14px]">Pick favourites for {activeStyle.name}</span>
             <ChevronRightIcon />
           </button>
           <div className="flex items-center justify-between py-[11px] text-neutral-700">

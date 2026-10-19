@@ -128,7 +128,7 @@ export default function StyleDetailPage() {
         </div>
         {[
           { label: "Rename style", onClick: openRename },
-          { label: "Add inspiration", onClick: () => router.push("/onboarding/upload") },
+          { label: "Pick favourites", onClick: () => router.push(`/style/${style!.id}/favourites`) },
           { label: "Duplicate style", onClick: openDuplicate },
         ].map((row) => (
           <button
