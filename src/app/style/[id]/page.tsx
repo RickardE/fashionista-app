@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { GenderToggle } from "@/components/GenderChoice";
-import { StyleAvatar } from "@/components/StyleAvatar";
 import { PrimaryButton, SecondaryButton } from "@/components/ui/Button";
 import { TAG_LABELS } from "@/lib/style-tags";
 import { mergeAffinity, topTags } from "@/lib/personalization";
@@ -80,7 +79,6 @@ export default function StyleDetailPage() {
       </div>
 
       <div className="no-scrollbar animate-rise flex-1 overflow-y-auto px-[22px] pb-12">
-        <StyleAvatar style={style} size={56} />
         <div className="flex items-baseline gap-2.5 pt-4">
           <span className="font-serif text-[44px] leading-[1.02] tracking-[-0.015em]">
             {style.name}

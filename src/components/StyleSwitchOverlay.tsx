@@ -2,17 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { StyleAvatar } from "@/components/StyleAvatar";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
 
-/** A brief full-screen beat when the user switches style, like changing profiles. */
+/** A brief full-screen beat when the user switches style, like changing profiles: it says what changed. */
 export function StyleSwitchOverlay() {
   const { styleSwitch, state } = useStyleProfile();
   const [dismissedAt, setDismissedAt] = useState<number | null>(null);
 
   useEffect(() => {
     if (!styleSwitch) return;
-    const timer = setTimeout(() => setDismissedAt(styleSwitch.at), 950);
+    const timer = setTimeout(() => setDismissedAt(styleSwitch.at), 1300);
     return () => clearTimeout(timer);
   }, [styleSwitch]);
 
@@ -37,12 +36,11 @@ export function StyleSwitchOverlay() {
               transition={{ duration: 0.35, delay: 0.08, ease: "easeOut" }}
               className="flex flex-col items-center"
             >
-              <StyleAvatar style={style} size={64} />
-              <div className="mt-5 font-serif text-[34px] leading-none">
+              <div className="max-w-[90vw] truncate px-[22px] font-serif text-[34px] leading-[1.1]">
                 {style.name}
               </div>
-              <div className="mt-3 text-[12px] text-neutral-700">
-                {style.description}
+              <div className="mt-3 text-[13px] text-neutral-700">
+                Your feed and collection for {style.name}
               </div>
             </motion.div>
           </div>

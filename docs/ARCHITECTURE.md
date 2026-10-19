@@ -393,7 +393,7 @@ and `/api/products/:id`). Off when unset or empty; an unknown name throws
 | `/outfits` | Outfits feed (swipe whole looks) |
 | `/outfit/[id]` | Build outfit around a product (`?items=` reproduces exact pieces) with Swap |
 | `/product/[id]` | Product detail; inside the app it opens as a sheet via the `@modal` intercepting route |
-| `/search`, `/saved`, `/profile` | Search, saved products and looks, profile |
+| `/search`, `/saved`, `/profile` | Search, saved products and looks, manage styles (opened from the style switcher) |
 | `/style/new`, `/style/[id]` | Create / view a style |
 
 Bottom navigation: Products · Outfits · Saved.

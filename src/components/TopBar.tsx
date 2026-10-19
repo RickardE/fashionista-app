@@ -1,24 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { GearIcon, SearchIcon } from "@/components/icons";
+import { SearchIcon } from "@/components/icons";
+import { StyleSelector } from "@/components/StyleSelector";
 
-export function TopBar({
-  title,
-  meta,
-  metaSlot,
-}: {
-  title: string;
-  meta?: string;
-  metaSlot?: React.ReactNode;
-}) {
+/** The app's header: wordmark, search and the active style (the style switcher), then the page title. */
+export function TopBar({ title }: { title: string }) {
   return (
     <header className="z-20 flex-none bg-paper [padding-top:env(safe-area-inset-top)]">
       <div className="flex h-12 items-center justify-between px-[22px]">
         <span className="text-[11px] font-semibold tracking-[0.42em] uppercase">
           STYLE
         </span>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <Link
             href="/search"
             aria-label="Search products"
@@ -26,23 +20,11 @@ export function TopBar({
           >
             <SearchIcon />
           </Link>
-          <Link
-            href="/profile"
-            aria-label="Your styles"
-            className="flex h-8 w-8 items-center justify-end text-neutral-700"
-          >
-            <GearIcon />
-          </Link>
+          <StyleSelector />
         </div>
       </div>
-      <div className="flex h-11 items-start justify-between px-[22px]">
-        <span className="font-serif text-[26px] leading-none">{title}</span>
-        {metaSlot ??
-          (meta && (
-            <span className="pt-[7px] text-[12px] font-medium text-neutral-700">
-              {meta}
-            </span>
-          ))}
+      <div className="flex h-11 items-start px-[22px]">
+        <span className="truncate font-serif text-[26px] leading-[1.1]">{title}</span>
       </div>
     </header>
   );

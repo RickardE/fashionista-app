@@ -2,13 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { ChevronRightIcon, PlusIcon } from "@/components/icons";
-import { StyleAvatar } from "@/components/StyleAvatar";
+import { styleContents } from "@/components/StyleSelector";
 import { TopBar } from "@/components/TopBar";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { styles, activeStyle, restart, account, signOut } = useStyleProfile();
+  const { state, styles, activeStyle, restart, account, signOut } = useStyleProfile();
 
   function resetPrototype() {
     if (!window.confirm("Reset all your styles, likes and saved outfits? This can't be undone.")) return;
@@ -18,7 +18,7 @@ export default function ProfilePage() {
 
   return (
     <>
-      <TopBar title="Your Styles" />
+      <TopBar title="Manage styles" />
       <main className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
         <div className="px-[22px] pt-1.5 pb-12">
           <div className="h-[2px] bg-divider" />
@@ -26,13 +26,15 @@ export default function ProfilePage() {
           <div className="mt-6 mb-1 text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
             My styles
           </div>
+          <p className="mb-1 text-[13px] leading-[1.5] text-neutral-700">
+            Each style has its own feed, likes and collection.
+          </p>
           {styles.map((s) => (
             <button
               key={s.id}
               onClick={() => router.push(`/style/${s.id}`)}
               className="flex w-full items-center gap-3.5 border-b border-neutral-300 py-[15px] text-left"
             >
-              <StyleAvatar style={s} size={40} />
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-2">
                   <span className="text-[17px] font-semibold">{s.name}</span>
@@ -43,7 +45,7 @@ export default function ProfilePage() {
                   )}
                 </span>
                 <span className="mt-0.5 block text-[12px] text-neutral-700">
-                  {s.description}
+                  {styleContents(s, state.savedOutfits)}
                 </span>
               </span>
               <ChevronRightIcon />

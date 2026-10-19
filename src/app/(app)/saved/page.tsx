@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LookTile } from "@/components/LookTile";
 import { ProductTile } from "@/components/ProductTile";
-import { StyleSelector } from "@/components/StyleSelector";
 import { TopBar } from "@/components/TopBar";
 import { ArrowRightIcon } from "@/components/icons";
 import { useProducts } from "@/lib/store/product-catalog";
@@ -14,7 +13,7 @@ type SavedTab = "products" | "outfits";
 
 export default function SavedPage() {
   const router = useRouter();
-  const { state, activeStyle } = useStyleProfile();
+  const { state, styles, activeStyle, setActiveStyle } = useStyleProfile();
   const [tab, setTab] = useState<SavedTab>("products");
 
   // Newest first; ids are canonical product ids, resolved through the API.
@@ -27,13 +26,36 @@ export default function SavedPage() {
     () => state.savedOutfits.filter((o) => o.styleId === activeStyle.id),
     [state.savedOutfits, activeStyle.id],
   );
+
+  // For an empty tab: the other style with the most saved, so an empty
+  // collection doesn't read as lost likes.
+  const elsewhere = useMemo(() => {
+    const count = (id: string, liked: Record<string, true>) =>
+      tab === "products" ? Object.keys(liked).length : state.savedOutfits.filter((o) => o.styleId === id).length;
+    const best = styles
+      .filter((s) => s.id !== activeStyle.id)
+      .map((s) => ({ style: s, count: count(s.id, s.liked) }))
+      .sort((a, b) => b.count - a.count)[0];
+    return best && best.count > 0 ? best : null;
+  }, [tab, styles, activeStyle.id, state.savedOutfits]);
+
+  const switchHint = elsewhere && (
+    <button
+      onClick={() => setActiveStyle(elsewhere.style.id)}
+      className="mt-4 self-start text-[13px] text-neutral-700 underline underline-offset-2"
+    >
+      {elsewhere.style.name} has {elsewhere.count} saved{" "}
+      {tab === "products"
+        ? elsewhere.count === 1 ? "piece" : "pieces"
+        : elsewhere.count === 1 ? "outfit" : "outfits"}{" "}
+      &middot; switch
+    </button>
+  );
+
   return (
     <>
-      <TopBar title="Your collection" />
+      <TopBar title={`${activeStyle.name} · Collection`} />
       <main className="no-scrollbar min-h-0 flex-1 overflow-y-auto">
-        <div className="px-[22px] pb-3">
-          <StyleSelector placement="inline" />
-        </div>
         <div className="flex items-center gap-6 px-[22px] pt-1.5 pb-4">
           {(["products", "outfits"] as const).map((t) => (
             <button
@@ -70,7 +92,7 @@ export default function SavedPage() {
               <div className="mt-[22px] font-serif text-[30px] leading-[1.1]">
                 Nothing saved
                 <br />
-                just yet.
+                in {activeStyle.name} yet.
               </div>
               <p className="mt-3.5 mb-6 max-w-[27ch] text-[14px] leading-[1.6] text-neutral-700">
                 Love a piece in Products and it lands here — your own
@@ -83,6 +105,7 @@ export default function SavedPage() {
                 <span>Browse products</span>
                 <ArrowRightIcon />
               </button>
+              {switchHint}
             </div>
           ) : (
             <div className="px-[22px] pb-10">
@@ -99,7 +122,7 @@ export default function SavedPage() {
             <div className="mt-[22px] font-serif text-[30px] leading-[1.1]">
               No outfits
               <br />
-              just yet.
+              in {activeStyle.name} yet.
             </div>
             <p className="mt-3.5 mb-6 max-w-[27ch] text-[14px] leading-[1.6] text-neutral-700">
               Love an outfit in Outfits, or build one from any product — save
@@ -112,6 +135,7 @@ export default function SavedPage() {
               <span>Browse outfits</span>
               <ArrowRightIcon />
             </button>
+            {switchHint}
           </div>
         ) : (
           <div className="px-[22px] pb-10">

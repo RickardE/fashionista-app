@@ -165,24 +165,6 @@ export function FiltersIcon({ className }: { className?: string }) {
   );
 }
 
-export function GearIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      width="15"
-      height="15"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.4"
-      className={className}
-    >
-      <path d="M4 8h10M18 8h2M4 16h4M12 16h8" />
-      <circle cx="16" cy="8" r="2" />
-      <circle cx="10" cy="16" r="2" />
-    </svg>
-  );
-}
-
 export function FeedTabIcon({ className }: { className?: string }) {
   return (
     <svg
