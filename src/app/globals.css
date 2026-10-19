@@ -82,6 +82,40 @@ body {
   transform-origin: left;
 }
 
+@keyframes drift-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@keyframes drift-down {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Login mosaic columns: each holds its images twice, so -50% loops seamlessly. */
+.animate-drift-up {
+  animation: drift-up 38s linear infinite;
+}
+
+.animate-drift-down {
+  animation: drift-down 44s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-drift-up,
+  .animate-drift-down {
+    animation: none;
+  }
+}
+
 .animate-breathe {
   animation: breathe 2.4s ease-in-out infinite;
 }

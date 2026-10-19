@@ -36,10 +36,7 @@ export default function SplashPage() {
         Stockholm
       </div>
       <div className="animate-rise absolute bottom-[46px] left-[30px] right-[30px]">
-        <div className="text-[13px] font-semibold tracking-[0.48em] uppercase">
-          STYLEAI
-        </div>
-        <div className="animate-grow my-4 h-[2px] w-full bg-ink" />
+        <div className="animate-grow mb-4 h-[2px] w-full bg-ink" />
         <div className="font-serif text-[30px] leading-[1.1]">
           Your style. Found.
         </div>

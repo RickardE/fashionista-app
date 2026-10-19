@@ -21,7 +21,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "STYLEAI — Your style. Found.",
+  title: "Your style. Found.",
   description:
     "A fashion discovery app. Swipe through a feed shaped by your taste, save what you love, and watch your style profile sharpen with every choice.",
 };

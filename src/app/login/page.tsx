@@ -1,13 +1,29 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getAuth } from "@/server/auth/auth";
+import { getDb } from "@/server/db/client";
+import { listProducts } from "@/server/products/service";
 import { GoogleSignIn } from "./google-sign-in";
+import { ProductMosaic } from "./product-mosaic";
 
 /** Only same-site paths are followed after sign-in (no open redirect). */
 function safeNext(next: string | undefined): string {
   if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return "/";
   return next.startsWith("/login") ? "/" : next;
 }
+
+/** Product photos for the mosaic; the page still works without them if the catalogue is unavailable. */
+async function mosaicImages(): Promise<string[]> {
+  try {
+    const products = await listProducts(getDb(), { limit: 12 });
+    const images = products.map((p) => p.image).filter(Boolean);
+    return images.length >= 6 ? images : [];
+  } catch {
+    return [];
+  }
+}
+
+const STEPS = ["Swipe what catches your eye.", "We learn your style as you go.", "Get outfits built around it."];
 
 export default async function LoginPage({
   searchParams,
@@ -17,28 +33,35 @@ export default async function LoginPage({
   const { next, error } = await searchParams;
   const destination = safeNext(next);
   if (await getAuth().api.getSession({ headers: await headers() })) redirect(destination);
+  const images = await mosaicImages();
 
   return (
-    <div className="relative h-dvh bg-paper px-[30px] pb-[46px]">
-      <div className="absolute top-6 left-[30px] text-[10px] font-semibold tracking-[0.12em] text-neutral-500 uppercase [padding-top:env(safe-area-inset-top)]">
-        Stockholm
-      </div>
-      <div className="animate-rise absolute bottom-[46px] left-[30px] right-[30px]">
-        <div className="text-[13px] font-semibold tracking-[0.48em] uppercase">STYLEAI</div>
-        <div className="my-4 h-[2px] w-full bg-ink" />
-        <div className="font-serif text-[30px] leading-[1.1]">Your style. Found.</div>
-        <p className="mt-3 mb-8 text-[13px] text-neutral-700">
-          Sign in to keep your styles, likes and saved outfits on every device.
-        </p>
+    <div className="relative flex h-dvh flex-col overflow-hidden bg-paper">
+      <div className="relative min-h-0 flex-1">{images.length > 0 && <ProductMosaic images={images} />}</div>
+      <div className="animate-rise relative px-6 pb-9">
+        <div className="mb-[18px] h-[2px] w-full bg-ink" />
+        <h1 className="font-serif text-[46px] leading-none tracking-[-0.01em]">
+          Dress like yourself, <em>only sharper.</em>
+        </h1>
+        <ol className="mt-[22px] mb-[26px] flex flex-col gap-[9px] text-[13px] text-neutral-800">
+          {STEPS.map((step, i) => (
+            <li key={step} className="flex gap-3.5">
+              <span className="w-4 pt-0.5 text-[10px] font-semibold tracking-[0.12em] text-neutral-600">
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span>{step}</span>
+            </li>
+          ))}
+        </ol>
         {error && (
           <p role="alert" className="mb-4 text-[13px] text-accent-700">
             Sign-in didn&apos;t complete. Please try again.
           </p>
         )}
         <GoogleSignIn callbackURL={destination} />
-        <p className="mt-5 text-[11px] leading-[1.5] text-neutral-500">
-          Signing in stores your name, email address, styles, likes and saved outfits so STYLEAI
-          can remember them for you during this test.
+        <p className="mt-3.5 text-[11px] leading-[1.5] text-neutral-700">
+          We save your name, email and style choices so they&apos;re here next time. This is a test
+          version.
         </p>
       </div>
     </div>
