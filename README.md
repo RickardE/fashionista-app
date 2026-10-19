@@ -1,12 +1,26 @@
 # STYLEAI
 
-A fashion discovery app: swipe through a feed shaped by your taste, save
-what you love, and watch a lightweight local "style profile" sharpen with
-every like and dismiss. Built from the visual/UX reference in `reference/`.
+A fashion discovery app: swipe through real products and complete outfits,
+save what you love, and keep separate style profiles (Everyday, Work,
+Vacation, your own) that learn from every like and dismiss. Products come from
+merchant feeds and are described by an AI enrichment layer. Built from the
+visual/UX reference in `reference/`.
+
+**Documentation**
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — how the system is built and how it works, end to end
+- [docs/OPERATIONS.md](docs/OPERATIONS.md) — runbooks: imports, enrichment, pilots, backfill, deploys, the user test
+- [docs/DECISIONS.md](docs/DECISIONS.md) — decisions with their evidence, run history, known issues
+
+> Production currently runs the controlled user test (`TEST_CATALOGUE=user-test-1`):
+> only the approved test products are shown. Don't run catalogue imports while
+> it runs. See [OPERATIONS.md §7](docs/OPERATIONS.md#7-user-test-user-test-1).
 
 ## Stack
 
-Next.js (App Router) · TypeScript · Tailwind CSS v4 · React 19 · Framer Motion
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · Framer Motion ·
+Postgres (Neon) via Drizzle · Anthropic/OpenAI vision models for enrichment ·
+vitest + PGlite
 
 ## Run locally
 
@@ -49,31 +63,40 @@ imports, migrations and enrichment run from your machine via the CLI scripts.
    ```
 
 3. **Vercel** — import the GitHub repo and set `DATABASE_URL` to the *pooled*
-   Neon string (Production + Preview). Functions are pinned to `fra1` in
-   `vercel.json`, next to the Neon project (AWS eu-central-1, Frankfurt);
-   change both together. Nothing else is needed at runtime: feed URLs and model
-   API keys are CLI-only.
+   Neon string. Today it is set for Production only, so Preview deployments
+   can't serve products. Functions are pinned to `fra1` in `vercel.json`, next
+   to the Neon project (AWS eu-central-1, Frankfurt); change both together.
+   Nothing else is needed at runtime: feed URLs and model API keys are
+   CLI-only. `master` deploys Production.
 
 Product photography is served from the merchant via `next/image`
 (`remotePatterns` in `next.config.ts`).
 
 ## How it works
 
-- **State**: Styles, likes/saved items (by product id), tag affinities, feed
-  position and onboarding progress live in a single React Context
+A short version; the full description is in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+- **State**: styles, likes, saved products and looks, tag scores, feed
+  positions and onboarding progress live in one React Context
   (`src/lib/store/style-profile-context.tsx`), persisted to `localStorage`.
-- **Personalization**: every like/dismiss nudges a set of style-tag scores
-  (`src/lib/personalization.ts`). The feed re-sorts the *upcoming* cards by
-  those scores after each reaction, and the same scores drive search
-  ranking, the "why we picked this" copy, and the profile's affinity list.
-- **Catalog**: real products from Postgres via the product API (see
-  "Backend" below). The client caches products by id
-  (`src/lib/store/product-catalog.tsx`) and pages the feed in
-  (`src/lib/store/use-feed.ts`).
-- **Routing**: `/`, `/onboarding` (+ `upload`/`analysis`/`style`),
-  `/discover`, `/search`, `/saved`, `/profile`, `/product/[id]`. Opening a
-  product from within the app shows it as a sliding sheet via a Next.js
-  intercepting route; direct links/refreshes render it as a full page.
+  There are no accounts; nothing about users is stored server-side.
+- **Personalization**: every like/dismiss in the Products feed nudges the
+  active style's tag scores (`src/lib/personalization.ts`). Those scores (plus
+  the style's seed scores) rank the pieces of generated outfits and drive the
+  profile's top tags. The Products feed itself is served in a stable catalogue
+  order; search is ranked by text relevance.
+- **Feeds**: the Products feed swipes clothing (`src/lib/store/use-feed.ts`);
+  the Outfits feed composes one complete look per anchor product in the
+  browser (`src/lib/store/use-outfit-feed.ts`, `src/lib/outfit-feed.ts`).
+- **Outfits**: `src/lib/outfits.ts` fills outerwear / top / bottom / footwear
+  slots, ranking candidates by compatibility (formality, season, pattern — from
+  AI enrichment where available) and then by the style's tag scores. Swap
+  offers ranked alternatives for one slot.
+- **Routing**: `/` → `/onboarding` or `/products`; `/products`, `/outfits`,
+  `/saved`, `/search`, `/profile`, `/outfit/[id]`, `/product/[id]`,
+  `/style/new`, `/style/[id]`. Opening a product inside the app shows it as a
+  sliding sheet via an intercepting route; direct links render a full page.
 
 ## Backend (catalog)
 
@@ -98,7 +121,7 @@ deleted. Each run is recorded in `import_runs` with its stats.
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /api/feed?cursor=&limit=` | For You feed — active, in-stock products, stable order, keyset-paginated |
+| `GET /api/feed?for=products\|outfits&gender=&cursor=&limit=` | Products feed (clothing) or outfit anchors (clothing + shoes) — active, in-stock, stable order, keyset-paginated |
 | `GET /api/products?ids=a,b` | Resolve products by id (incl. unavailable — for saved items) |
 | `GET /api/products?category=&gender=&exclude=&limit=` | Filter by canonical fields (Build the Look, "more like this") |
 | `GET /api/products/:id` | One product (404 if unknown) |
@@ -106,8 +129,9 @@ deleted. Each run is recorded in `import_runs` with its stats.
 | `GET /api/search?q=&limit=` | Keyword search (Postgres full-text) |
 | `GET /api/inspiration` | Catalogue images for onboarding / new style |
 
-Responses use the `Product` type in `src/lib/types.ts`; no source ids or
-offer internals are exposed.
+Responses use the `Product` type in `src/lib/types.ts`: catalogue facts, an
+optional `enrichment` summary (AI-inferred, kept apart from the facts) and
+style tags. No source ids, offer internals or raw model output are exposed.
 
 **Test catalogue.** For a controlled user test, `TEST_CATALOGUE=<name>`
 restricts every endpoint above (except the shop redirect) to the products
@@ -143,3 +167,11 @@ model receives byte-identical, SHA-256-fingerprinted images; the report checks
 that compared runs had identical input (content, prompt/schema, image). Recommendation-ready = eligible +
 an active completed enrichment matching current content (`enrichment/state.ts`).
 Model prices live in `enrichment/pricing.ts` (override with `ENRICHMENT_PRICING_JSON`).
+
+Pilot comparison tools: `--attention` (review queue for two runs), `--compare`
+(before/after report, replaying each run under every gate version) and
+`products:enrich-pilot -- --exclude-run N --size N` (held-out samples). The
+validated configuration is Anthropic `claude-opus-5-5` at effort `low`; see
+[docs/DECISIONS.md](docs/DECISIONS.md) for the evidence and
+[docs/OPERATIONS.md](docs/OPERATIONS.md) for the full workflow, including the
+batched full-catalogue backfill.

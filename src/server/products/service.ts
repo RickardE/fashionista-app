@@ -156,13 +156,18 @@ export async function getProduct(db: Db, id: string): Promise<Product | null> {
 /**
  * Outfit components (Build outfit, Swap, Outfits feed candidates) and
  * "more like this": showable products eligible for outfits — clothing or
- * shoes, gender-compatible — optionally narrowed to categories.
+ * shoes, gender-compatible — optionally narrowed to categories. Same stable
+ * order and keyset cursor as the feed, so callers can page past `limit`.
  */
-export async function listProducts(
+export async function listProductsPage(
   db: Db,
-  opts: { categories?: Category[]; gender?: ShopperGender; excludeIds?: string[]; limit: number },
-): Promise<Product[]> {
+  opts: { categories?: Category[]; gender?: ShopperGender; excludeIds?: string[]; cursor?: string; limit: number },
+): Promise<FeedPage> {
   const exclude = opts.excludeIds?.filter(isProductId) ?? [];
+  const after =
+    opts.cursor && isProductId(opts.cursor)
+      ? sql`(md5(${products.id}::text), ${products.id}) > (md5(${opts.cursor}::text), ${opts.cursor}::uuid)`
+      : undefined;
   const rows = await selectProducts(db)
     .where(
       and(
@@ -171,11 +176,23 @@ export async function listProducts(
         testCatalogueScope(),
         opts.categories?.length ? inArray(products.category, opts.categories) : undefined,
         ...exclude.map((id) => ne(products.id, id)),
+        after,
       ),
     )
     .orderBy(sql`md5(${products.id}::text)`, products.id)
-    .limit(opts.limit);
-  return rows.map(toProductDto);
+    .limit(opts.limit + 1);
+  const page = rows.slice(0, opts.limit);
+  return {
+    products: page.map(toProductDto),
+    nextCursor: rows.length > opts.limit ? page[page.length - 1].id : null,
+  };
+}
+
+export async function listProducts(
+  db: Db,
+  opts: { categories?: Category[]; gender?: ShopperGender; excludeIds?: string[]; limit: number },
+): Promise<Product[]> {
+  return (await listProductsPage(db, opts)).products;
 }
 
 /** Lower-cased word tokens safe to put in a tsquery (letters/digits only). */

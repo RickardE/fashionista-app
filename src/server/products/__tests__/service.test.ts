@@ -11,6 +11,7 @@ import {
   getProductsByIds,
   getShopUrl,
   listProducts,
+  listProductsPage,
   searchProducts,
   searchTokens,
 } from "../service";
@@ -145,6 +146,20 @@ describe("listing by canonical fields", () => {
   it("excludes given ids", async () => {
     const list = await listProducts(db, { excludeIds: [ids.shirt], limit: 10 });
     expect(list.map((p) => p.id)).not.toContain(ids.shirt);
+  });
+
+  it("pages past the limit with a keyset cursor, in the same order as one big page", async () => {
+    const all = (await listProducts(db, { limit: 50 })).map((p) => p.id);
+    expect(all.length).toBeGreaterThan(1);
+    const seen: string[] = [];
+    let cursor: string | undefined;
+    for (;;) {
+      const page = await listProductsPage(db, { limit: 1, cursor });
+      seen.push(...page.products.map((p) => p.id));
+      if (!page.nextCursor) break;
+      cursor = page.nextCursor;
+    }
+    expect(seen).toEqual(all);
   });
 });
 

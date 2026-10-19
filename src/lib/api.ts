@@ -47,14 +47,15 @@ export function fetchProductsByIds(ids: string[], signal?: AbortSignal) {
 }
 
 export function fetchProducts(
-  filter: { categories?: ProductCategory[]; gender?: ShopperGender; exclude?: string[]; limit?: number },
+  filter: { categories?: ProductCategory[]; gender?: ShopperGender; exclude?: string[]; cursor?: string; limit?: number },
   signal?: AbortSignal,
 ) {
-  return get<{ products: Product[] }>(
+  return get<{ products: Product[]; nextCursor: string | null }>(
     `/api/products?${qs({
       category: filter.categories?.join(","),
       gender: filter.gender,
       exclude: filter.exclude?.join(","),
+      cursor: filter.cursor,
       limit: filter.limit,
     })}`,
     signal,

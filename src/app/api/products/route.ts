@@ -4,7 +4,7 @@ import { requireUser } from "@/server/auth/session";
 import { getDb } from "@/server/db/client";
 import { jsonError, limitParam, listParam, parseQuery, withErrors } from "@/server/http";
 import { SHOPPER_GENDERS } from "@/server/products/eligibility";
-import { getProductsByIds, listProducts, MAX_LIMIT } from "@/server/products/service";
+import { getProductsByIds, listProductsPage, MAX_LIMIT } from "@/server/products/service";
 
 const query = z.object({
   /** Fetch specific products (any status — used to resolve saved items). */
@@ -13,25 +13,27 @@ const query = z.object({
   category: listParam.pipe(z.array(z.enum(CATEGORIES))).optional(),
   gender: z.enum(SHOPPER_GENDERS).optional(),
   exclude: listParam.pipe(z.array(z.string()).max(MAX_LIMIT)).optional(),
+  /** Keyset cursor from a previous listing's `nextCursor`. */
+  cursor: z.uuid().optional(),
   limit: limitParam(20, MAX_LIMIT),
 });
 
 /**
  * GET /api/products?ids=a,b,c
- * GET /api/products?category=trousers,jeans&gender=men&exclude=<id>&limit=12
+ * GET /api/products?category=trousers,jeans&gender=men&exclude=<id>&limit=12&cursor=<id>
+ *   → { products, nextCursor } (nextCursor is null when the listing is exhausted)
  */
 export const GET = withErrors("products", async (request: Request) => {
   const auth = await requireUser(request);
   if (!auth.ok) return auth.response;
   const parsed = parseQuery(request, query);
   if (!parsed.ok) return parsed.response;
-  const { ids, category, gender, exclude, limit } = parsed.data;
+  const { ids, category, gender, exclude, cursor, limit } = parsed.data;
   const db = getDb();
 
   if (ids) {
-    if (category || gender || exclude) return jsonError(400, "ids_cannot_be_combined_with_filters");
+    if (category || gender || exclude || cursor) return jsonError(400, "ids_cannot_be_combined_with_filters");
     return Response.json({ products: await getProductsByIds(db, ids) });
   }
-  const products = await listProducts(db, { categories: category, gender, excludeIds: exclude, limit });
-  return Response.json({ products });
+  return Response.json(await listProductsPage(db, { categories: category, gender, excludeIds: exclude, cursor, limit }));
 });

@@ -135,7 +135,7 @@ export function ProductFeedCard({
           onClick={onOpen}
           className="mx-[22px] mt-3.5 flex items-center gap-2 self-start border-b border-neutral-400 pb-[3px] text-[10px] font-semibold tracking-[0.1em] text-neutral-700 uppercase transition-colors hover:border-ink hover:text-ink"
         >
-          <span>Why this piece</span>
+          <span>View details</span>
           <ArrowUpRightIcon />
         </button>
         <div className="h-5" />

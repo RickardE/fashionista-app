@@ -6,6 +6,8 @@ import {
   outfitHref,
   outfitItemList,
   parseOutfitItems,
+  pieceLabel,
+  replacePiece,
   roleFor,
 } from "@/lib/outfits";
 import { initialState, reducer } from "@/lib/store/style-profile-context";
@@ -66,7 +68,8 @@ describe("Build the Look on real products", () => {
 
   it("offers swap alternatives excluding pieces already in the look", () => {
     const items = generateOutfit(coat, pool, { neutral: 2 });
-    expect(alternativesFor("top", items, coat, pool, {}).map((p) => p.id)).toEqual([shirt.id]);
+    const lookup = (id: string) => [coat, ...pool].find((p) => p.id === id);
+    expect(alternativesFor("top", items, coat, pool, {}, { lookup }).products.map((p) => p.id)).toEqual([shirt.id]);
   });
 
   it("resolves look pieces through a lookup, skipping unknown ids", () => {
@@ -193,9 +196,46 @@ describe("outfit links", () => {
     expect(parseOutfitItems(new URL(href, "http://x").searchParams.get("items"))).toEqual(items);
   });
 
+  it("keeps a swapped outfit, the original anchor included even once it's swapped out", () => {
+    const anchor = "11111111-1111-4111-8111-111111111111";
+    const items = {
+      top: anchor,
+      bottom: "22222222-2222-4222-8222-222222222222",
+      footwear: "33333333-3333-4333-8333-333333333333",
+    };
+    const swapped = replacePiece(items, "top", "44444444-4444-4444-8444-444444444444");
+    expect(swapped).toEqual({ ...items, top: "44444444-4444-4444-8444-444444444444" });
+    expect(items.top).toBe(anchor); // the original is untouched
+    const href = outfitHref(anchor, swapped);
+    expect(href.startsWith(`/outfit/${anchor}?items=`)).toBe(true);
+    expect(parseOutfitItems(new URL(href, "http://x").searchParams.get("items"))).toEqual(swapped);
+  });
+
   it("ignores malformed items", () => {
     expect(parseOutfitItems("hat:123,top:not-an-id")).toBeUndefined();
     expect(parseOutfitItems(null)).toBeUndefined();
+  });
+});
+
+describe("swap copy", () => {
+  it("names the actual piece, not its slot", () => {
+    expect(pieceLabel(product({ category: "skirts" }))).toBe("skirt");
+    expect(pieceLabel(product({ category: "jeans" }))).toBe("jeans");
+    expect(pieceLabel(product({ category: "shoes" }))).toBe("shoes");
+  });
+});
+
+describe("saving a swapped outfit", () => {
+  it("adds a separate outfit and leaves the original as it was", () => {
+    const anchor = "11111111-1111-4111-8111-111111111111";
+    const original = { top: anchor, bottom: "22222222-2222-4222-8222-222222222222" };
+    const once = reducer({ ...initialState(), hydrated: true }, { type: "saveOutfit", anchorId: anchor, items: original });
+    const swapped = replacePiece(original, "top", "33333333-3333-4333-8333-333333333333");
+    const twice = reducer(once, { type: "saveOutfit", anchorId: anchor, items: swapped });
+    expect(twice.savedOutfits).toHaveLength(2);
+    expect(twice.savedOutfits[0]).toMatchObject({ anchorId: anchor, items: swapped, styleId: once.activeStyleId });
+    expect(twice.savedOutfits[1]).toBe(once.savedOutfits[0]);
+    expect(twice.savedOutfits[1].items).toEqual({ top: anchor, bottom: "22222222-2222-4222-8222-222222222222" });
   });
 });
 

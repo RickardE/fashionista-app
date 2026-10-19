@@ -29,13 +29,29 @@ export function categoriesForRole(role: OutfitRole): ProductCategory[] {
   return (Object.keys(CATEGORY_TO_ROLE) as ProductCategory[]).filter((c) => CATEGORY_TO_ROLE[c] === role);
 }
 
-/** Editorial label for each slot, used in the builder and outfit card. */
-export const ROLE_LABEL: Record<OutfitRole, string> = {
-  outerwear: "Outerwear",
-  top: "Top",
-  bottom: "Trousers",
-  footwear: "Shoes",
+/** What to call a piece in copy ("Swap the skirt"), by its category; every slot category is covered. */
+const PIECE_LABEL: Partial<Record<ProductCategory, string>> = {
+  outerwear: "outerwear",
+  blazers: "blazer",
+  suits: "suit",
+  "t-shirts": "t-shirt",
+  shirts: "shirt",
+  polos: "polo",
+  knitwear: "knit",
+  sweatshirts: "sweatshirt",
+  tops: "top",
+  waistcoats: "waistcoat",
+  dresses: "dress",
+  trousers: "trousers",
+  jeans: "jeans",
+  shorts: "shorts",
+  skirts: "skirt",
+  shoes: "shoes",
 };
+
+export function pieceLabel(product: Product): string {
+  return PIECE_LABEL[product.category] ?? "piece";
+}
 
 /** Visual stacking order for any outfit, regardless of which piece anchored it. */
 export const ROLE_DISPLAY_ORDER: OutfitRole[] = ["outerwear", "top", "bottom", "footwear"];
@@ -162,20 +178,81 @@ export function generateOutfit(anchor: Product, pool: Product[], affinity: Affin
   return items;
 }
 
-/** Ranked replacement candidates for a single slot, excluding what's already there. */
+// ---------------------------------------------------------------------------
+// Swap
+// ---------------------------------------------------------------------------
+
+/** Compatibility level of a candidate that only passes with no rules at all — e.g. it breaks formality. */
+const CLASHING = RULE_LEVELS.length - 1;
+
+export interface SwapOptions {
+  /** Resolves every piece in the outfit, including ones that aren't in the pool. */
+  lookup: (id: string) => Product | undefined;
+  /** Products already shown or swapped out of this slot — never offered again in the session. */
+  seen?: Iterable<string>;
+  /** Products the user disliked in the active style: offered only after everything else. */
+  disliked?: Readonly<Record<string, true>>;
+  count?: number;
+}
+
+export interface SwapBatch {
+  products: Product[];
+  /**
+   * False when the batch holds fallback candidates: pieces that clash with the
+   * rest of the outfit or that the user disliked. A batch never mixes the two,
+   * so fallbacks are never presented alongside good matches.
+   */
+  suitable: boolean;
+  /** Unseen candidates remain in the pool after this batch. */
+  more: boolean;
+}
+
+/**
+ * The next batch of replacement candidates for one slot. Candidates fill the
+ * slot's role, are available, gender-compatible with the anchor and every
+ * remaining piece, and not already in the outfit or seen. They are judged
+ * against all the other pieces (not the one being replaced), suitable ones
+ * first; within a group, most compatible first, then by style affinity.
+ */
 export function alternativesFor(
   role: OutfitRole,
   items: OutfitItems,
   anchor: Product,
   pool: Product[],
   affinity: AffinityMap,
-  count = 3,
-): Product[] {
-  const exclude = new Set(Object.values(items).filter((id): id is string => !!id));
-  // Judge alternatives against the rest of the look, not the piece being replaced.
-  const byId = new Map([anchor, ...pool].map((p) => [p.id, p]));
-  const rest = ROLE_DISPLAY_ORDER.flatMap((r) => (r !== role && items[r] && byId.get(items[r]!) ? [byId.get(items[r]!)!] : []));
-  return ranked(candidatesFor(role, anchor, pool, exclude), rest, affinity).slice(0, count);
+  { lookup, seen = [], disliked = {}, count = 3 }: SwapOptions,
+): SwapBatch {
+  const exclude = new Set([...Object.values(items).filter((id): id is string => !!id), ...seen]);
+  const rest = ROLE_DISPLAY_ORDER.flatMap((r) => {
+    const product = r !== role && items[r] ? lookup(items[r]!) : undefined;
+    return product ? [product] : [];
+  });
+  const unique = [...new Map(pool.map((p) => [p.id, p])).values()];
+  const candidates = candidatesFor(role, anchor, unique, exclude).filter((p) => rest.every((r) => genderCompatible(r, p)));
+
+  const level = new Map(candidates.map((c) => [c.id, compatibilityLevel(c, rest)]));
+  const isDisliked = (p: Product) => !!disliked[p.id];
+  const isFallback = (p: Product) => isDisliked(p) || level.get(p.id) === CLASHING;
+  const order = [...candidates].sort(
+    (a, b) =>
+      Number(isFallback(a)) - Number(isFallback(b)) ||
+      Number(isDisliked(a)) - Number(isDisliked(b)) ||
+      level.get(a.id)! - level.get(b.id)! ||
+      scoreFor(b, affinity) - scoreFor(a, affinity),
+  );
+
+  const suitable = !!order[0] && !isFallback(order[0]);
+  const products: Product[] = [];
+  for (const p of order) {
+    if (products.length === count || isFallback(p) === suitable) break;
+    products.push(p);
+  }
+  return { products, suitable, more: order.length > products.length };
+}
+
+/** The outfit with one slot's piece replaced; every other slot is unchanged. */
+export function replacePiece(items: OutfitItems, role: OutfitRole, productId: string): OutfitItems {
+  return { ...items, [role]: productId };
 }
 
 export function outfitItemList(

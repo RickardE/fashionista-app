@@ -65,9 +65,20 @@ describe("GET /api/products", () => {
     expect((await res.json()).products.map((p: { name: string }) => p.name)).toEqual(["Merino Rollneck"]);
   });
 
-  it("rejects unknown categories and mixing ids with filters", async () => {
+  it("lists candidates in pages with a cursor", async () => {
+    const first = await (await list(req("/api/products?limit=1"))).json();
+    expect(first.products).toHaveLength(1);
+    expect(first.nextCursor).toBe(first.products[0].id);
+    const second = await (await list(req(`/api/products?limit=1&cursor=${first.nextCursor}`))).json();
+    expect(second.products).toHaveLength(1);
+    expect(second.products[0].id).not.toBe(first.products[0].id);
+  });
+
+  it("rejects unknown categories, bad cursors and mixing ids with filters", async () => {
     expect((await list(req("/api/products?category=Linneskjortor"))).status).toBe(400);
+    expect((await list(req("/api/products?cursor=not-a-uuid"))).status).toBe(400);
     expect((await list(req(`/api/products?ids=${shirtId}&category=shirts`))).status).toBe(400);
+    expect((await list(req(`/api/products?ids=${shirtId}&cursor=${shirtId}`))).status).toBe(400);
   });
 });
 
