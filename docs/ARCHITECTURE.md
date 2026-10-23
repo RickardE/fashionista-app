@@ -23,18 +23,21 @@ their rules; this document connects them and links to them.
         ▼
  Product API (Next.js route handlers, Vercel) /api/feed · /api/products · /api/search · /api/inspiration
         │  Product DTO: catalogue facts + optional AI enrichment summary + style tags
+        │  every route needs a signed-in session (Google, Better Auth)
         ▼
  Web app (React, runs in the browser)         Products feed · Outfits feed · Build outfit · Swap · Saved · Search
-        │  style profiles, likes and saved items in localStorage
+        │  style profiles, likes and saved outfits ⇄ /api/me/state · /api/me/sync → Postgres
         ▼
  Merchant site                                /api/products/:id/shop → 302 to the offer URL
 ```
 
 Two rules shape everything:
 
-1. **The deployed app only reads.** Imports, migrations and enrichment are CLI
-   scripts run from a developer machine against the database. No model API key
-   or feed URL is needed (or present) on Vercel.
+1. **The deployed app only reads the catalogue.** Imports, migrations and
+   enrichment are CLI scripts run from a developer machine against the
+   database. No model API key or feed URL is needed (or present) on Vercel.
+   The only data the app writes is its users' own: sessions and style data
+   (§6.2).
 2. **AI output is an interpretation layer.** It is stored next to the catalogue,
    never written into it. Source facts and normalized categories are only ever
    changed by the import.
@@ -49,6 +52,9 @@ Two rules shape everything:
 | `src/server/catalog/` | Feed sources, mapping, normalization, grouping, import |
 | `src/server/enrichment/` | Taxonomy, prompt, providers, validation, gate, pipeline, pilot and review tooling |
 | `src/server/products/` | Read side: product service, eligibility, enrichment summary, style tags, test catalogue |
+| `src/server/auth/` | Better Auth setup (Google sign-in) and the session checks every route uses |
+| `src/server/users/` | Each user's style data: load it, apply sync batches |
+| `src/proxy.ts` | Sends pages without a session cookie to `/login` |
 | `src/server/db/` | Drizzle schema and client |
 | `scripts/` | CLI entry points (`products-import.ts`, `products-enrich*.ts`, `db-migrate.ts`, …) |
 | `drizzle/` | SQL migrations |
@@ -56,7 +62,8 @@ Two rules shape everything:
 
 Stack: Next.js 16 (App Router; read `node_modules/next/dist/docs/` before
 changing framework code — see `AGENTS.md`), React 19, TypeScript, Tailwind CSS
-v4, Framer Motion, Drizzle ORM 0.45 + postgres.js, zod 4, vitest + PGlite.
+v4, Framer Motion, Drizzle ORM 0.45 + postgres.js, zod 4, Better Auth 1.7,
+vitest + PGlite.
 
 ---
 
@@ -169,8 +176,14 @@ Enrichment uses this hash to know whether its description is still current.
 | `enrichment_runs` | One row per enrichment run: kind (`pilot` / `incremental` / `backfill`), provider, model, effort, taxonomy/prompt version, params (incl. gate version, product ids, seed), status, stats |
 | `product_enrichments` | **Append-only**, one row per attempt: input sent (incl. request hash and image SHA-256), raw output, validated attributes and confidences, validation findings and gate reasons/notes, outcome, tokens, cost, latency |
 | `product_enrichment_state` | One row per product: status, attempts, lock, the content hash and versions of the last attempt, and **`active_enrichment_id`** — the result the app shows |
+| `users`, `sessions`, `accounts`, `verifications` | Better Auth: one user per Google account (unique email), database sessions, the linked Google account (OAuth tokens stored encrypted, never used) |
+| `style_profiles` | A user's styles: `client_key` (the app's style id), name, description, gender, display position, seed / learned / outfit tag scores, counters |
+| `product_reactions` | Like or dislike per style and product |
+| `saved_outfits` | Saved outfits: `client_key`, style, anchor product, `items` (product id per slot) |
+| `user_preferences` | Active style and whether onboarding is done |
 
-Migrations are in `drizzle/` (applied with `npm run db:migrate`).
+All user tables cascade-delete with their user. Migrations are in `drizzle/`
+(applied with `npm run db:migrate`).
 
 ---
 
@@ -225,7 +238,7 @@ category ↔ garment-type rules and the prompt glossary all derive from it.
 
 | Field | Values (summary) |
 |---|---|
-| `garment_type` | 59 types (oxford_shirt, chinos, puffer, loafers, …) + `other`; each category allows a set |
+| `garment_type` | 59 types including `other` (oxford_shirt, chinos, puffer, loafers, …); each category allows a set |
 | `fit` | slim · regular · relaxed · oversized · not_applicable (shoes) |
 | `leg_shape` *(1.1+)* | skinny · straight · tapered · bootcut · flare · wide · not_applicable |
 | `colour_primary`, `colour_secondary` | canonical colours |
@@ -335,15 +348,20 @@ place for "what may appear where":
 
 ### 5.2 Endpoints
 
+Every endpoint needs a signed-in session and answers 401 without one (§6.2).
+
 | Endpoint | Purpose |
 |---|---|
 | `GET /api/feed?for=products\|outfits&gender=&cursor=&limit=` | Feed pages in a stable, brand-mixed order (md5 of id), keyset-paginated. Not personalized server-side |
 | `GET /api/products?ids=a,b` | Resolve products by id (saved items, outfit links) |
-| `GET /api/products?category=&gender=&exclude=&limit=` | Outfit candidates for a slot, "more like this" |
+| `GET /api/products?category=&gender=&exclude=&cursor=&limit=` | Outfit candidates for a slot, "more like this"; keyset-paginated (`nextCursor`) |
 | `GET /api/products/:id` | One product, 404 if unknown |
 | `GET /api/products/:id/shop` | 302 to the best offer's merchant URL |
 | `GET /api/search?q=&gender=&limit=` | Postgres full-text search (OR of prefix terms, ranked), clothing only |
 | `GET /api/inspiration?gender=` | Labelled catalogue images for onboarding and new styles |
+| `GET /api/me/state` | The signed-in user and their style data (`state: null` for a new account) |
+| `POST /api/me/sync { ops }` | Apply a batch of style-data changes (§6.2) |
+| `/api/auth/*` | Better Auth's handler: Google sign-in, callback, session, sign-out. The only routes without a session check |
 
 Handlers are thin: [`products/service.ts`](../src/server/products/service.ts)
 does the queries and maps rows to the `Product` DTO.
@@ -354,8 +372,9 @@ Defined in [`src/lib/types.ts`](../src/lib/types.ts). No source ids or offer
 internals are exposed.
 
 - **Catalogue facts**: id, brand, name, price (sale price if lower), currency,
-  image, product type, category, subcategory, gender, colour(s), material,
-  retailer, sizes, availability, `shopUrl`.
+  `image` (the main photo) and `images` (every photo, main first — today's
+  Johnells feed has one per product), product type, category, subcategory,
+  gender, colour(s), material, retailer, sizes, availability, `shopUrl`.
 - **`enrichment`** *(optional)* — AI-inferred, kept apart from the facts:
   `taxonomyVersion`, `garmentType`, `fit`, `legShape` (legwear only),
   `colourPrimary`, `colourProfile`, `pattern`, `formality`, `seasons`,
@@ -387,29 +406,78 @@ and `/api/products/:id`). Off when unset or empty; an unknown name throws
 
 | Route | Screen |
 |---|---|
-| `/` | Redirects to `/onboarding` or `/products` |
+| `/login` | Google sign-in over drifting catalogue photos; `?next=` returns to the page that was asked for |
+| `/` | A short personal welcome ("Hi, {first name}.", the active style) that continues to `/onboarding` or `/products` after 1.2 s or on tap |
 | `/onboarding`, `/onboarding/shopping-for`, `/onboarding/favourites` | First run: welcome, Men/Women, then (optional) pick 3–5 favourite catalogue pieces that seed the first style's taste. No photo uploads. |
 | `/products` | Products feed (swipe products) |
 | `/outfits` | Outfits feed (swipe whole looks) |
 | `/outfit/[id]` | Build outfit around a product (`?items=` reproduces exact pieces) with Swap |
 | `/product/[id]` | Product detail; inside the app it opens as a sheet via the `@modal` intercepting route |
-| `/search`, `/saved`, `/profile` | Search, saved products and looks, manage styles (opened from the style switcher) |
+| `/search`, `/saved`, `/profile` | Search (from the top bar), saved products and outfits, manage styles and the account (signed-in email, Sign out) |
 | `/style/new`, `/style/[id]`, `/style/[id]/favourites` | Create / view a style; pick favourites to add to a style's taste |
 
-After onboarding, the app teaches itself in place: the first product card
-leans right and left to show the gesture, and one-time tips appear the first
-time the user likes, passes, sees the undo button, opens Outfits, and after
-15 swipes (pointing at the style switcher). Seen tips are remembered per
+Every page except `/login` needs a session: [`proxy.ts`](../src/proxy.ts) sends
+visitors without a session cookie to `/login?next=…`, and the server-rendered
+product and outfit pages verify the session themselves.
+
+Bottom navigation: Products · Outfits · Saved. The active style's name sits in
+every top bar and opens a **Switch style** sheet showing what each style holds
+(gender, saved pieces, outfits).
+
+**Swiping.** Right likes, left passes. A like gives no text; the Saved tab pops
+to show where it went. **Undo** (button with a thumbnail — up to three
+overlapping pieces for an outfit — or Backspace / Cmd+Z) reverses the last
+swipe only, including its taste change. In the Outfits feed, swapping a piece
+and leaving the outfit (back button or system back) counts as a right swipe:
+the changed outfit is saved and liked and the feed moves on; Undo brings the
+changed card back. Just looking and going back leaves the card as it was. A
+saved outfit opened from Saved offers **Save changes**, which replaces it.
+
+**Product details** show every photo as a swipeable gallery; tapping opens it
+full screen with pinch / double-tap zoom (up to 4×).
+
+**Teaching in place.** After onboarding the first product card leans right and
+left to show the gesture, and one-time tips appear on the first pass ("Got it,
+less like this"), the first time the undo button shows, on opening Outfits, and
+after 15 swipes (pointing at the style switcher). Seen tips are remembered per
 device and account in `localStorage` (`src/lib/tips.ts`).
 
-Bottom navigation: Products · Outfits · Saved.
+### 6.2 Accounts, state and personalization
 
-### 6.2 State and personalization
+**Accounts.** Sign-in is Google only, via Better Auth
+([`server/auth/auth.ts`](../src/server/auth/auth.ts)); there is no
+email/password. Google always shows its account chooser, so a shared phone can
+switch users. Sessions are rows in `sessions` behind an httpOnly cookie: 30
+days, extended at most once a day while the app is used; a signed 5-minute
+cookie cache saves a database read per request, so revoking a session takes
+effect within 5 minutes. Every API route except `/api/auth/*` starts with
+`requireUser` ([`server/auth/session.ts`](../src/server/auth/session.ts)); the
+user id for any data access comes from the session, never from the request.
 
-All user state lives in the browser. [`store/style-profile-context.tsx`](../src/lib/store/style-profile-context.tsx)
-holds it in one React context, persisted to `localStorage` (versioned, with
-migrations in `style-profile-migrate.ts`). There are no user accounts and no
-server-side user data.
+**State.** [`store/style-profile-context.tsx`](../src/lib/store/style-profile-context.tsx)
+holds the user's state in one React context, and the reducer is the only place
+it changes. [`store/use-server-sync.ts`](../src/lib/store/use-server-sync.ts)
+connects it to the account:
+
+- **Load**: on each page load the app fetches `/api/me/state`. A new account
+  starts from the built-in styles. Nothing is synced until this has loaded, so
+  defaults can never overwrite saved data; if the server is unreachable the
+  page retries rather than showing defaults.
+- **Sync**: after a change, the last state the server acknowledged is diffed
+  against the current one ([`store/state-sync.ts`](../src/lib/store/state-sync.ts))
+  into idempotent operations (`upsertStyle`, `deleteStyle`, `react`,
+  `saveOutfit`, `removeOutfit`, `prefs`), sent to `/api/me/sync` after 400 ms.
+  A failed batch is recomputed and merged with later changes on retry
+  (backoff 2 s → 30 s); pending changes are flushed when the tab is hidden.
+  A 401 at any point sends the user to `/login`.
+- **Server**: [`server/users/state.ts`](../src/server/users/state.ts) validates
+  each batch (max 500 ops, 30 styles) and scopes every query by the session's
+  user id; the app's style and outfit ids are only keys *within* that user.
+  `/api/me/sync` also rejects other origins.
+- **On the device** (`localStorage`, per user): feed positions (order, index,
+  outfit cursor), the swipe hint and seen tips. They are not synced, so a new
+  device starts the feeds from the top.
+- Sign out flushes pending changes, then reloads into `/login`.
 
 - **Styles**: three presets (Everyday, Work, Vacation — `lib/data/styles.ts`)
   each with seed tag scores, plus user-created styles. Each style learns
@@ -481,6 +549,9 @@ All variables are listed with explanations in [`.env.example`](../.env.example).
 | `ENRICHMENT_PROVIDER` / `_MODEL` / `_EFFORT` | scripts | Defaults for `products:enrich*` |
 | `ENRICHMENT_PRICING_JSON` | scripts | Extra/overriding model prices |
 | `TEST_CATALOGUE` | app | Restrict the app to a named test catalogue (§5.4) |
+| `BETTER_AUTH_SECRET` | app | Signs session cookies, encrypts stored OAuth tokens; one value per environment (changing it signs everyone out) |
+| `BETTER_AUTH_URL` | app | The app's public origin |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | app | Google OAuth client; redirect URI `<BETTER_AUTH_URL>/api/auth/callback/google` |
 | `LOG_LEVEL` | both | debug · info · warn · error |
 | `ENV_FILE` | scripts | Load a different env file (e.g. `.env.neon`) |
 
@@ -498,10 +569,13 @@ postgres.js rejects.
   together. Pushing to `master` deploys **Production**; pushing any other branch
   creates a **Preview**.
 - **Neon** holds the only database. Production and all CLI work use it.
-- Environment variables in Vercel today: `DATABASE_URL` (Production),
+- Environment variables in Vercel today: `DATABASE_URL`, `BETTER_AUTH_SECRET`,
+  `BETTER_AUTH_URL`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` (Production),
   `TEST_CATALOGUE=user-test-1` (Production, and Preview for branch `user-test-1`).
-  Preview deployments have no `DATABASE_URL`, so they cannot serve products, and
-  are behind Vercel Authentication.
+  Preview deployments have no `DATABASE_URL` or auth settings, so they cannot
+  sign anyone in or serve products, and are behind Vercel Authentication.
+- **Google sign-in** only accepts `http://localhost` or a public https origin as
+  a redirect, so in development sign in at `localhost:3000`, not the LAN IP.
 - Product images are served from the merchant through `next/image`
   (`remotePatterns` in `next.config.ts`).
 
@@ -515,6 +589,7 @@ normalization and category regression cases from the real feed, import
 idempotency and safeguards, every enrichment stage (schema, normalization,
 rules, gate versions, pipeline, claims, pilot isolation, fail-fast, provider
 adapters with fake clients), the read side (eligibility, test catalogue on every
-path, enrichment summary, tags) and client logic (outfit generation,
-compatibility, feed composition, state migration). Typecheck: `npx tsc --noEmit`;
+path, enrichment summary, tags), user data (state round-trip, sync batches,
+isolation between users, the `/api/me` routes) and client logic (outfit
+generation, compatibility, feed composition, sync diffing, undo, favourites). Typecheck: `npx tsc --noEmit`;
 lint: `npx eslint src scripts`.

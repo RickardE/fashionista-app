@@ -14,7 +14,9 @@ in [ARCHITECTURE.md](ARCHITECTURE.md); why, in [DECISIONS.md](DECISIONS.md).
 
 - **The database is shared.** There is one Neon database. The deployed app, every
   CLI script and every developer machine use it. Every script in this document
-  changes production data unless it says *dry run* or *read-only*.
+  changes production data unless it says *dry run* or *read-only*. It also
+  holds real users' accounts and style data: signing in to a local dev server
+  that points at Neon reads and writes your production account.
 - **Scripts run locally**, never on Vercel. `scripts/env.ts` loads `.env.local`
   (or the file named in `ENV_FILE`); scripts prefer `DATABASE_URL_UNPOOLED`.
 - **Secrets** — the feed URL (affiliate token), model API keys and database URLs —
@@ -31,9 +33,16 @@ in [ARCHITECTURE.md](ARCHITECTURE.md); why, in [DECISIONS.md](DECISIONS.md).
 
 ```bash
 npm install
-cp .env.example .env.local      # fill in DATABASE_URL(_UNPOOLED), feed URL, ANTHROPIC_API_KEY
+cp .env.example .env.local      # fill in DATABASE_URL(_UNPOOLED), feed URL, ANTHROPIC_API_KEY,
+                                # BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID/_SECRET
 npm run dev                     # http://localhost:3000, against the database in .env.local
 ```
+
+Every page needs a Google sign-in. The Google OAuth client must list
+`http://localhost:3000/api/auth/callback/google` as a redirect URI. Sign in at
+`localhost`, not the machine's LAN IP — Google refuses private-IP redirects, so
+signed-in flows can't be tested from a phone against a dev server; use
+Production or a desktop browser at phone width.
 
 For a throw-away local database instead of Neon: `npm run db:up` (Docker,
 Postgres on port 5433), point `DATABASE_URL` at it, then `npm run db:migrate`.
@@ -202,8 +211,15 @@ There is no review UI. List them with `npm run products:enrich-report -- --run <
 ## 5. Deployments
 
 - `master` → Vercel Production (https://fashionista-app-three.vercel.app).
-  Any other branch → a Preview (behind Vercel Authentication; no `DATABASE_URL`,
-  so it cannot serve products until one is added for Preview).
+  Any other branch → a Preview (behind Vercel Authentication; no `DATABASE_URL`
+  or auth settings, so it cannot sign anyone in or serve products until those
+  are added for Preview — plus the Preview URL as a redirect URI in Google).
+- Production needs `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and
+  `GOOGLE_CLIENT_ID` / `_SECRET` (README → Deploy). Changing
+  `BETTER_AUTH_SECRET` signs everyone out.
+- A schema change: run `ENV_FILE=.env.neon npm run db:migrate` *before* pushing
+  code that needs it, and keep migrations additive while code that doesn't
+  know them may still be running.
 - Environment variables: Vercel → Project → Settings → Environment Variables, or
   `npx vercel env ls | add | rm` (log in with `npx vercel login`, link with
   `npx vercel link --project fashionista-app`). A change only applies to new
@@ -217,7 +233,9 @@ There is no review UI. List them with `npm run products:enrich-report -- --run <
 
 | Symptom | Cause / fix |
 |---|---|
-| Feed stuck on "Pulling your edit together…" | Stale state in the browser's `localStorage`; clear site data. (The fix for the known case is in `FeedDeck`.) |
+| Every page redirects to `/login`; API calls return 401 | No valid session — sign in. Curl needs the session cookie (§7.2) |
+| Google sign-in fails with `redirect_uri_mismatch` | The origin isn't a redirect URI on the OAuth client, or `BETTER_AUTH_URL` doesn't match the URL you're on (e.g. a LAN IP) |
+| Feed positions look wrong on one device | Feed positions are per device in `localStorage` (`styleai:device:<user id>`); clear site data to restart them. Styles, likes and saves are on the server and survive |
 | Enrichment: 400 "API key not scoped to a workspace" | Use a workspace key (`sk-ant-api03-…`) or set `ANTHROPIC_WORKSPACE_ID` |
 | `image_error: image too large` | Image over the 5 MB inline cap — §4.6 |
 | Import says "feed unchanged — skipping" | Feed not modified since the last run; `--force` to re-import anyway |
@@ -238,12 +256,18 @@ There is no review UI. List them with `npm run products:enrich-report -- --run <
 
 ### 7.2 Verify (read-only)
 
+The API needs a session. Sign in on the site, then copy the value of the
+`__Secure-better-auth.session_token` cookie (browser devtools → Application →
+Cookies). Treat it like a password; signing out invalidates it.
+
 ```bash
 U=https://fashionista-app-three.vercel.app
-curl -s "$U/api/feed?for=outfits&gender=men&limit=50" | jq '.products | length'      # ≤ 62
-curl -s "$U/api/products?category=shoes&gender=women&limit=50" | jq '.products | length'
-curl -s -o /dev/null -w '%{http_code}\n' "$U/api/products/<id outside the list>"         # 404
-npm run products:enrich-report                                                          # recommendation-ready count
+C="Cookie: __Secure-better-auth.session_token=<value>"
+curl -s -H "$C" "$U/api/feed?for=outfits&gender=men&limit=50" | jq '.products | length'      # ≤ 62
+curl -s -H "$C" "$U/api/products?category=shoes&gender=women&limit=50" | jq '.products | length'
+curl -s -H "$C" -o /dev/null -w '%{http_code}\n' "$U/api/products/<id outside the list>"     # 404
+curl -s -o /dev/null -w '%{http_code}\n' "$U/api/feed"                                       # 401 without a session
+npm run products:enrich-report                                                               # recommendation-ready count
 ```
 
 Last verified after deployment: every feed, search, product and outfit page
@@ -281,5 +305,9 @@ summary and enrichment-based tags, the rest behave as before.
   and they drop out of the catalogue.
 - Do not run enrichment with `--include-review`/`--retry-failed` broadly; change
   the catalogue deliberately (§7.3).
-- Users' likes, styles and saved items live only in their browsers; nothing is
-  collected server-side. Gather feedback outside the app.
+- Testers sign in with Google. Their styles, likes/dislikes per style and saved
+  outfits are stored per user (`style_profiles`, `product_reactions`,
+  `saved_outfits`, `user_preferences`); feed positions stay on their devices.
+  There is no analytics or event log (no swipe timestamps or order beyond
+  `created_at`/`updated_at`), and no in-app feedback — gather feedback outside
+  the app.

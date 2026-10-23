@@ -201,6 +201,27 @@ isolation.
 test catalogue while the flag is on, and there is no staging step before
 testers see a change. Rollback: remove the variable and redeploy.
 
+## D16. Accounts: Google sign-in, style data on the server
+
+**Decision.** Better Auth with Google as the only sign-in, database sessions
+(30 days, extended with use), and the whole app — every page and every API route
+except `/api/auth/*` — behind a session. Styles, reactions, saved outfits and
+preferences move from `localStorage` to per-user tables (migration 0006);
+feed positions, the swipe hint and seen tips stay per device. The
+`localStorage`-only state and its migrations were removed rather than imported,
+since no real users had data in them.
+
+**How.** The reducer stays the single place state changes; the app syncs the
+diff against the last acknowledged state as idempotent operations, so a failed
+batch is just recomputed. Every query is scoped by the session's user id; ids
+from the client are keys within that user only. Google's account chooser is
+always shown so a shared phone can switch users. OAuth tokens are stored
+encrypted and never used.
+
+**Trade-offs.** Testers need a Google account; Preview deployments can't sign
+anyone in (issue 11); signed-in flows can't be tested on a phone against a dev
+server (Google rejects LAN-IP redirects).
+
 ---
 
 ## Known issues and open items
@@ -217,6 +238,8 @@ testers see a change. Rollback: remove the variable and redeploy.
 | 8 | Men's sneakers: 2 of 10 shoes in `user-test-1` | Casual men's looks repeat sneakers | Swap in one more sneaker (~$0.03) |
 | 9 | Search covers clothing only | Searching for shoes returns nothing | Include shoes in search if wanted |
 | 10 | `wide_trousers` overlaps `leg_shape: wide` | Two ways to say the same thing | Remove in taxonomy 2.0 |
-| 11 | Preview deployments have no `DATABASE_URL` and need Vercel login | Previews can't be used for testing | Add a Preview `DATABASE_URL` (or a separate Neon branch) and adjust deployment protection |
+| 11 | Preview deployments have no `DATABASE_URL` or auth settings and need Vercel login | Previews can't be used for testing | Add Preview `DATABASE_URL` (or a separate Neon branch) and `BETTER_AUTH_*` / Google settings with the Preview URL as a redirect URI; adjust deployment protection |
 | 12 | Model/review history lives in git-ignored `.data/` | Evidence can be lost | Archive key reports with the docs if needed |
 | 13 | Feed data quality: e.g. Parajumpers "Nolan" has a children's description | Minor | Report to the merchant |
+| 14 | Feed positions are per device | On a new device the feeds start from the top, showing already-swiped products again | Sync positions, or skip products the style has already reacted to |
+| 15 | Real users' data shares the one database with dev work | A local dev server pointed at Neon reads and writes production accounts | A separate Neon branch for development |
