@@ -15,7 +15,7 @@ const TABS = [
 
 export function BottomNavigation() {
   const pathname = usePathname();
-  // The first save draws the eye to Saved, so people learn where likes go.
+  // Each save draws the eye to Saved, so people learn where likes go.
   const [pulse, setPulse] = useState(0);
   useEffect(() => {
     const onPulse = () => setPulse((n) => n + 1);

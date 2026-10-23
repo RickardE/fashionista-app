@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
 
 /** One-time tips, each shown the first time the user reaches what it explains. */
-export type TipId = "first-like" | "first-pass" | "undo" | "outfits" | "styles";
+export type TipId = "first-pass" | "undo" | "outfits" | "styles";
 
 function read(key: string): Set<TipId> {
   try {
@@ -42,7 +42,7 @@ export function useTips() {
   return { hasSeen: (id: TipId) => seen.has(id), markSeen };
 }
 
-/** Asks the bottom nav to draw the eye to the Saved tab once. */
+/** Asks the bottom nav to draw the eye to the Saved tab, after a save. */
 export const SAVED_PULSE_EVENT = "saved-pulse";
 export function pulseSavedTab() {
   window.dispatchEvent(new Event(SAVED_PULSE_EVENT));

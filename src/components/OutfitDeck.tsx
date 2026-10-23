@@ -40,17 +40,15 @@ export function OutfitDeck() {
     noticeTimer.current = setTimeout(() => setNotice(""), 2400);
   }, []);
 
-  // Leaving a changed outfit saved it without a swipe, so say so for a moment (Undo is offered too).
+  // Leaving a changed outfit saved it like a right swipe, so the Saved tab pops on return.
   const { kept, clearKept } = feed;
   useEffect(() => {
     if (!kept) return;
     pulseSavedTab();
-    const timer = setTimeout(clearKept, 2400);
-    return () => clearTimeout(timer);
-    // clearKept is a new function each render; the moment starts when `kept` does.
+    clearKept();
+    // clearKept is a new function each render; this runs when `kept` turns on.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kept]);
-  const shownNotice = notice || (kept ? `Outfit saved to ${activeStyle.name}` : "");
 
   function decide(direction: 1 | -1) {
     if (!outfit) return;
@@ -59,10 +57,8 @@ export function OutfitDeck() {
     let savedOutfitId: string | undefined;
     if (direction > 0) {
       savedOutfitId = saveOutfit(outfit.anchorId, outfit.items);
-      // Only the first save says where likes go; after that the Saved tab's pop is enough.
-      if (!tips.hasSeen("first-like")) flash(`Outfit saved to ${activeStyle.name}`);
-      else setNotice("");
-      tips.markSeen("first-like");
+      // The Saved tab's pop says where it went; no text.
+      setNotice("");
       pulseSavedTab();
     } else if (!tips.hasSeen("first-pass")) {
       flash("Got it, less like this");
@@ -169,9 +165,9 @@ export function OutfitDeck() {
 
       <div
         className="pointer-events-none absolute top-0 right-0 left-0 z-10 bg-ink px-[22px] py-[10px] text-[10px] font-semibold tracking-[0.1em] text-paper uppercase transition-opacity duration-[400ms]"
-        style={{ opacity: shownNotice ? 1 : 0 }}
+        style={{ opacity: notice ? 1 : 0 }}
       >
-        {shownNotice || " "}
+        {notice || " "}
       </div>
     </div>
   );

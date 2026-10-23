@@ -35,7 +35,7 @@ interface StyleOutfits {
   outfits: FeedOutfit[];
   index: number;
   recent: string[];
-  /** True right after the outfit before `index` was kept from its page, until the next move. */
+  /** True right after the outfit before `index` was kept from its page, until the feed has shown it. */
   kept?: boolean;
 }
 
