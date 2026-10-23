@@ -124,10 +124,14 @@ export interface StyleProfile {
   disliked: Record<string, true>;
   affinity: Partial<Record<StyleTag, number>>;
   interactions: number;
-  /** Product ids loaded into this style's feed so far, in display order. */
+  /**
+   * Product ids loaded into this style's feed this session, in display order.
+   * Session-only: the server leaves out what the style has reacted to, so a
+   * reload or another device carries on from there.
+   */
   feedOrder: string[];
   feedIndex: number;
-  /** True once the API has no more feed pages for this style. */
+  /** True once the style has seen every product the API has for it. */
   feedExhausted: boolean;
   /** Who this style shops for; unset until the user picks Men or Women. */
   gender?: ShopperGender;
@@ -135,8 +139,12 @@ export interface StyleProfile {
   outfitAffinity: Partial<Record<StyleTag, number>>;
   likedOutfits: number;
   dislikedOutfits: number;
-  /** Last catalogue product used as an outfit anchor, so the Outfits feed continues where it left off. */
-  outfitCursor?: string;
+  /**
+   * Anchors of the outfits swiped in this style this session. Session-only:
+   * changes are synced (see state-sync.ts) and the Outfits feed leaves out
+   * every anchor the style has swiped.
+   */
+  outfitsSwiped: string[];
   showSwipeHint: boolean;
   createdAt: number;
 }

@@ -235,7 +235,7 @@ There is no review UI. List them with `npm run products:enrich-report -- --run <
 |---|---|
 | Every page redirects to `/login`; API calls return 401 | No valid session — sign in. Curl needs the session cookie (§7.2) |
 | Google sign-in fails with `redirect_uri_mismatch` | The origin isn't a redirect URI on the OAuth client, or `BETTER_AUTH_URL` doesn't match the URL you're on (e.g. a LAN IP) |
-| Feed positions look wrong on one device | Feed positions are per device in `localStorage` (`styleai:device:<user id>`); clear site data to restart them. Styles, likes and saves are on the server and survive |
+| A style's feed shows "You've seen every product/outfit" | That style has swiped everything it can be shown: products it has liked/disliked (`product_reactions`) and outfit anchors it has swiped (`seen_outfit_anchors`) are left out. Another style, or more products, will show more |
 | Enrichment: 400 "API key not scoped to a workspace" | Use a workspace key (`sk-ant-api03-…`) or set `ANTHROPIC_WORKSPACE_ID` |
 | `image_error: image too large` | Image over the 5 MB inline cap — §4.6 |
 | Import says "feed unchanged — skipping" | Feed not modified since the last run; `--force` to re-import anyway |
@@ -307,7 +307,7 @@ summary and enrichment-based tags, the rest behave as before.
   the catalogue deliberately (§7.3).
 - Testers sign in with Google. Their styles, likes/dislikes per style and saved
   outfits are stored per user (`style_profiles`, `product_reactions`,
-  `saved_outfits`, `user_preferences`); feed positions stay on their devices.
+  `saved_outfits`, `seen_outfit_anchors`, `user_preferences`).
   There is no analytics or event log (no swipe timestamps or order beyond
   `created_at`/`updated_at`), and no in-app feedback — gather feedback outside
   the app.

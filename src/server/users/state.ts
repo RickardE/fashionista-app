@@ -10,13 +10,20 @@ import { z } from "zod";
 import type { SyncedState, SyncOp } from "@/lib/store/state-sync";
 import { TAG_LABELS } from "@/lib/style-tags";
 import type { Db } from "@/server/db/client";
-import { productReactions, products, savedOutfits, styleProfiles, userPreferences } from "@/server/db/schema";
+import {
+  productReactions,
+  products,
+  savedOutfits,
+  seenOutfitAnchors,
+  styleProfiles,
+  userPreferences,
+} from "@/server/db/schema";
 import { SHOPPER_GENDERS } from "@/server/products/eligibility";
 
 export const MAX_OPS = 500;
 export const MAX_STYLES = 30;
 
-const clientKey = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
+export const clientKey = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
 const productId = z.uuid();
 const score = z.number().finite().min(-1e6).max(1e6);
 const tagScores = z.partialRecord(z.enum(Object.keys(TAG_LABELS) as [string, ...string[]]), score);
@@ -59,6 +66,12 @@ export const syncBody = z.object({
           productId,
           reaction: z.enum(["like", "dislike"]).nullable(),
         }),
+        z.object({
+          op: z.literal("outfitsSeen"),
+          styleId: clientKey,
+          anchorIds: z.array(productId).min(1).max(MAX_OPS),
+          seen: z.boolean(),
+        }),
         z.object({ op: z.literal("saveOutfit"), outfit }),
         z.object({ op: z.literal("removeOutfit"), outfitId: clientKey }),
         z.object({ op: z.literal("prefs"), activeStyleId: z.union([clientKey, z.literal("")]), hasOnboarded: z.boolean() }),
@@ -66,6 +79,15 @@ export const syncBody = z.object({
     )
     .max(MAX_OPS),
 });
+
+/** The row id of one of the user's styles; undefined if it isn't on the server (yet). */
+export async function styleProfileIdFor(db: Db, userId: string, styleKey: string): Promise<string | undefined> {
+  const [row] = await db
+    .select({ id: styleProfiles.id })
+    .from(styleProfiles)
+    .where(and(eq(styleProfiles.userId, userId), eq(styleProfiles.clientKey, styleKey)));
+  return row?.id;
+}
 
 /** Null when the user has never synced anything (a brand-new account). */
 export async function getUserState(db: Db, userId: string): Promise<SyncedState | null> {
@@ -140,6 +162,7 @@ export async function applySync(db: Db, userId: string, ops: SyncOp[]): Promise<
   const referenced = new Set<string>();
   for (const op of ops) {
     if (op.op === "react") referenced.add(op.productId);
+    if (op.op === "outfitsSeen" && op.seen) op.anchorIds.forEach((id) => referenced.add(id));
     if (op.op === "saveOutfit") [op.outfit.anchorId, ...Object.values(op.outfit.items)].forEach((id) => id && referenced.add(id));
   }
 
@@ -227,6 +250,34 @@ export async function applySync(db: Db, userId: string, ops: SyncOp[]): Promise<
               // The key already belongs to this user's style; this keeps the update scoped regardless.
               setWhere: eq(productReactions.userId, userId),
             });
+          break;
+        }
+        case "outfitsSeen": {
+          const styleProfileId = styleIds.get(op.styleId);
+          if (!styleProfileId) {
+            skip(op, "unknown_style");
+            continue;
+          }
+          if (!op.seen) {
+            await tx
+              .delete(seenOutfitAnchors)
+              .where(
+                and(
+                  eq(seenOutfitAnchors.userId, userId),
+                  eq(seenOutfitAnchors.styleProfileId, styleProfileId),
+                  inArray(seenOutfitAnchors.productId, op.anchorIds),
+                ),
+              );
+            break;
+          }
+          const ids = op.anchorIds.filter((id) => known.has(id));
+          if (ids.length < op.anchorIds.length) skip(op, "unknown_product");
+          if (ids.length) {
+            await tx
+              .insert(seenOutfitAnchors)
+              .values(ids.map((productId) => ({ userId, styleProfileId, productId })))
+              .onConflictDoNothing();
+          }
           break;
         }
         case "saveOutfit": {

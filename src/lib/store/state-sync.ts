@@ -6,8 +6,10 @@
  * one and sends the difference as a batch of idempotent operations — so a
  * failed batch is simply recomputed (and merged with later changes) next time.
  *
- * Feed positions (feedOrder, feedIndex, feedExhausted, outfitCursor) and the
- * swipe hint are per device and never synced.
+ * What a style has been shown is account data: Products-feed swipes are its
+ * reactions, and Outfits-feed swipes are sent as `outfitsSeen`. The feeds
+ * themselves (feedOrder, feedIndex, feedExhausted) are session-only, and the
+ * swipe hint is per device.
  */
 
 import type { Outfit, ShopperGender, StyleProfile, StyleTag } from "@/lib/types";
@@ -47,6 +49,7 @@ export type SyncOp =
   | { op: "upsertStyle"; style: SyncedStyleFields; position: number }
   | { op: "deleteStyle"; styleId: string }
   | { op: "react"; styleId: string; productId: string; reaction: "like" | "dislike" | null }
+  | { op: "outfitsSeen"; styleId: string; anchorIds: string[]; seen: boolean }
   | { op: "saveOutfit"; outfit: Outfit }
   | { op: "removeOutfit"; outfitId: string }
   | { op: "prefs"; activeStyleId: string; hasOnboarded: boolean };
@@ -123,6 +126,14 @@ export function diffState(prev: SyncableState, next: SyncableState): SyncOp[] {
       const reaction = reactionOf(style, productId);
       if (reaction !== reactionOf(before, productId)) ops.push({ op: "react", styleId: id, productId, reaction });
     }
+
+    const swipedBefore = new Set(before?.outfitsSwiped ?? []);
+    const swipedNow = new Set(style.outfitsSwiped);
+    const seen = style.outfitsSwiped.filter((a) => !swipedBefore.has(a));
+    // Only an undo takes an outfit back out.
+    const unseen = [...swipedBefore].filter((a) => !swipedNow.has(a));
+    if (seen.length) ops.push({ op: "outfitsSeen", styleId: id, anchorIds: seen, seen: true });
+    if (unseen.length) ops.push({ op: "outfitsSeen", styleId: id, anchorIds: unseen, seen: false });
   }
 
   const prevOutfits = new Set(prev.savedOutfits.map((o) => o.id));
@@ -145,7 +156,7 @@ export function diffState(prev: SyncableState, next: SyncableState): SyncOp[] {
   return ops;
 }
 
-/** Server state → the client's synced fields (device-local feed fields start empty). */
+/** Server state → the client's synced fields (session-only feed fields start empty). */
 export function fromSynced(state: SyncedState): SyncableState {
   const styles: Record<string, StyleProfile> = {};
   for (const s of state.styles) {
@@ -156,6 +167,7 @@ export function fromSynced(state: SyncedState): SyncableState {
       feedOrder: [],
       feedIndex: 0,
       feedExhausted: false,
+      outfitsSwiped: [],
       showSwipeHint: s.interactions === 0,
     };
   }

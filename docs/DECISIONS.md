@@ -222,6 +222,24 @@ encrypted and never used.
 anyone in (issue 11); signed-in flows can't be tested on a phone against a dev
 server (Google rejects LAN-IP redirects).
 
+## D17. Feeds leave out what the style has seen
+
+**Decision.** The server, not the device, decides what a style still has to
+see: `/api/feed?style=` leaves out products the style has liked or disliked
+(every Products-feed swipe is one), and outfit anchors it has swiped in the
+Outfits feed (`seen_outfit_anchors`, migration 0007, synced as `outfitsSeen`
+ops). Feed lists are session-only; a reload or another device carries on with
+what's left. When nothing is left the feed says so instead of starting over.
+
+**Why.** Feed positions on the device meant a new device, a reload of the
+Outfits feed or its end showed everything again. Search and filters are to be
+merged into the feeds later, and a position in one fixed order wouldn't survive
+a filter change; "already seen" does.
+
+**Trade-offs.** An undone swipe is taken back out (its reaction or anchor is
+removed). A product liked from its page counts as seen in the Products feed.
+The two feeds don't share what's seen (issue 14).
+
 ---
 
 ## Known issues and open items
@@ -241,5 +259,5 @@ server (Google rejects LAN-IP redirects).
 | 11 | Preview deployments have no `DATABASE_URL` or auth settings and need Vercel login | Previews can't be used for testing | Add Preview `DATABASE_URL` (or a separate Neon branch) and `BETTER_AUTH_*` / Google settings with the Preview URL as a redirect URI; adjust deployment protection |
 | 12 | Model/review history lives in git-ignored `.data/` | Evidence can be lost | Archive key reports with the docs if needed |
 | 13 | Feed data quality: e.g. Parajumpers "Nolan" has a children's description | Minor | Report to the merchant |
-| 14 | Feed positions are per device | On a new device the feeds start from the top, showing already-swiped products again | Sync positions, or skip products the style has already reacted to |
+| 14 | A product swiped in Products can still be an Outfits-feed anchor (and the reverse) | Some repetition between the two feeds | Decide whether the feeds should share "seen" |
 | 15 | Real users' data shares the one database with dev work | A local dev server pointed at Neon reads and writes production accounts | A separate Neon branch for development |

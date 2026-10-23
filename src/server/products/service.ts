@@ -8,7 +8,7 @@ import { and, eq, inArray, ne, sql } from "drizzle-orm";
 import { sizeRank } from "@/server/catalog/grouping";
 import type { Category, Gender, ProductType } from "@/server/catalog/types";
 import type { Db } from "@/server/db/client";
-import { offers, products, variants } from "@/server/db/schema";
+import { offers, productReactions, products, seenOutfitAnchors, variants } from "@/server/db/schema";
 import type { Product } from "@/lib/types";
 import { eligibleFor, type FeedKind, type ShopperGender } from "./eligibility";
 import { activeEnrichmentColumn, parseActiveEnrichment } from "./enrichment";
@@ -114,19 +114,47 @@ export interface FeedPage {
 }
 
 /**
+ * Leaves out what the style has already been shown: in the Products feed,
+ * anything it has liked or disliked (every swipe is one, and so is a like
+ * from a product page); in the Outfits feed, anchors of outfits it swiped.
+ */
+function notSeenBy(styleProfileId: string, kind: FeedKind) {
+  return kind === "products"
+    ? sql`not exists (
+        select 1 from ${productReactions} r
+        where r.style_profile_id = ${styleProfileId} and r.product_id = "products"."id"
+      )`
+    : sql`not exists (
+        select 1 from ${seenOutfitAnchors} s
+        where s.style_profile_id = ${styleProfileId} and s.product_id = "products"."id"
+      )`;
+}
+
+/**
  * A feed page: showable products eligible for the feed kind and shopper gender,
- * in a stable, brand-mixed order (md5 of the id), keyset-paginated.
+ * in a stable, brand-mixed order (md5 of the id), keyset-paginated. With a
+ * style, only what that style hasn't been shown yet (see notSeenBy), so a
+ * reload or another device carries on rather than starting over.
  * Not personalized — that's a later milestone.
  */
 export async function getFeedPage(
   db: Db,
-  opts: { cursor?: string; limit: number; kind?: FeedKind; gender?: ShopperGender },
+  opts: { cursor?: string; limit: number; kind?: FeedKind; gender?: ShopperGender; styleProfileId?: string },
 ): Promise<FeedPage> {
+  const kind = opts.kind ?? "products";
   const after = opts.cursor
     ? sql`(md5(${products.id}::text), ${products.id}) > (md5(${opts.cursor}::text), ${opts.cursor}::uuid)`
     : undefined;
   const rows = await selectProducts(db)
-    .where(and(showable, eligibleFor(opts.kind ?? "products", opts.gender), testCatalogueScope(), after))
+    .where(
+      and(
+        showable,
+        eligibleFor(kind, opts.gender),
+        testCatalogueScope(),
+        opts.styleProfileId ? notSeenBy(opts.styleProfileId, kind) : undefined,
+        after,
+      ),
+    )
     .orderBy(sql`md5(${products.id}::text)`, products.id)
     .limit(opts.limit + 1);
   const page = rows.slice(0, opts.limit);

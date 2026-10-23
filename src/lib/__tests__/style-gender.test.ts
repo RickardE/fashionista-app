@@ -36,13 +36,12 @@ describe("style gender", () => {
       { type: "react", id: A, tags: ["black"], direction: 1 },
       { type: "next" },
       { type: "reactOutfit", tags: ["neutral"], direction: 1 },
-      { type: "setOutfitCursor", styleId: "everyday", cursor: B },
       { type: "saveOutfit", anchorId: A, items: { top: A, bottom: B } },
     );
     s = run(s, { type: "setStyleGender", styleId: "everyday", gender: "women" });
 
     const everyday = s.styles.everyday;
-    expect(everyday).toMatchObject({ gender: "women", feedOrder: [], feedIndex: 0, outfitCursor: undefined });
+    expect(everyday).toMatchObject({ gender: "women", feedOrder: [], feedIndex: 0 });
     expect(everyday.liked).toEqual({ [A]: true });
     expect(everyday.affinity).toEqual({ black: 1 });
     expect(everyday.outfitAffinity).toEqual({ neutral: 1 });

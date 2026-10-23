@@ -102,8 +102,9 @@ A short version; the full description is in
   onboarding progress live in one React Context
   (`src/lib/store/style-profile-context.tsx`). They are loaded from
   `/api/me/state` and every change is synced to the user's rows in Postgres
-  through `/api/me/sync`. Only feed positions, the swipe hint and seen tips
-  stay on the device (`localStorage`).
+  through `/api/me/sync`. The feeds leave out what the style has already been
+  shown, so they carry on across reloads and devices. Only the swipe hint and
+  seen tips stay on the device (`localStorage`).
 - **Personalization**: every like/dismiss in the Products feed nudges the
   active style's tag scores (`src/lib/personalization.ts`). Those scores (plus
   the style's seed scores) rank the pieces of generated outfits and drive the

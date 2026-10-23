@@ -14,7 +14,8 @@ export type FeedStatus = "ready" | "loading" | "error" | "needs_gender";
 /**
  * Keeps the active style's feed filled from /api/feed. Each style pages
  * independently (its own position and cursor); the cursor is simply the last
- * product id already in that style's feed.
+ * product id already in that style's feed. The server leaves out products the
+ * style has reacted to, so a new session starts at the first unswiped one.
  */
 export function useFeed(): { status: FeedStatus; retry: () => void } {
   const { activeStyle, appendFeed } = useStyleProfile();
@@ -35,7 +36,7 @@ export function useFeed(): { status: FeedStatus; retry: () => void } {
     inFlight.current.add(key);
     // Not aborted on unmount: the page belongs to the style's feed (root
     // store), not to this component.
-    fetchFeedPage({ cursor: lastId, limit: PAGE_SIZE, gender, kind: "products" })
+    fetchFeedPage({ cursor: lastId, limit: PAGE_SIZE, gender, kind: "products", style: styleId })
       .then((page) => {
         ingest(page.products);
         appendFeed(
@@ -50,8 +51,8 @@ export function useFeed(): { status: FeedStatus; retry: () => void } {
       .finally(() => inFlight.current.delete(key));
   }, [gender, feedExhausted, failed, remaining, styleId, lastId, ingest, appendFeed]);
 
-  // After a reload the ids are persisted but the products aren't: resolve the
-  // cards around the current position.
+  // Cards normally arrive with their page; resolve any around the current
+  // position that the catalogue doesn't hold.
   useEffect(() => {
     ensure(feedOrder.slice(feedIndex, feedIndex + 4));
   }, [feedOrder, feedIndex, ensure]);

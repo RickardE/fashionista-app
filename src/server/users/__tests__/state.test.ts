@@ -14,6 +14,7 @@ vi.mock("@/server/auth/auth", () => ({ getAuth: () => testAuth }));
 
 const { GET: getState } = await import("@/app/api/me/state/route");
 const { POST: sync } = await import("@/app/api/me/sync/route");
+const { GET: feed } = await import("@/app/api/feed/route");
 
 let close: () => Promise<void>;
 let alice: string;
@@ -167,5 +168,63 @@ describe("/api/me routes", () => {
     const userIdInBody = await sync(post(bob, { userId: alice, ops: [{ op: "deleteStyle", styleId: "work" }] }));
     expect(userIdInBody.status).toBe(200);
     expect((await getUserState(db, alice))!.styles.map((s) => s.id)).toContain("work");
+  });
+});
+
+describe("feeds leave out what a style has seen", () => {
+  let carol: string;
+  const feedIds = async (userId: string, query: string) => {
+    const res = await feed(new Request(`http://localhost/api/feed?limit=50&${query}`, { headers: { "x-test-user": userId } }));
+    expect(res.status).toBe(200);
+    return ((await res.json()) as { products: { id: string }[] }).products.map((p) => p.id);
+  };
+
+  beforeAll(async () => {
+    carol = await createUser(db, "carol@example.test");
+    await applySync(db, carol, [{ op: "upsertStyle", style: style("everyday"), position: 0 }]);
+  });
+
+  it("Products: skips what the style has reacted to, in that style only", async () => {
+    const all = await feedIds(carol, "for=products");
+    const [first, second] = all;
+    await applySync(db, carol, [
+      { op: "react", styleId: "everyday", productId: first, reaction: "like" },
+      { op: "react", styleId: "everyday", productId: second, reaction: "dislike" },
+    ]);
+    expect(await feedIds(carol, "for=products&style=everyday")).toEqual(all.slice(2));
+    // Another style, or no style, still sees everything.
+    expect(await feedIds(carol, "for=products&style=work")).toEqual(all);
+    expect(await feedIds(carol, "for=products")).toEqual(all);
+  });
+
+  it("Outfits: skips swiped anchors until the swipe is undone", async () => {
+    const all = await feedIds(carol, "for=outfits");
+    const anchor = all[0];
+    const seen = (value: boolean): SyncOp => ({ op: "outfitsSeen", styleId: "everyday", anchorIds: [anchor], seen: value });
+    expect(await applySync(db, carol, [seen(true), seen(true)])).toEqual({ applied: 2, skipped: [] });
+    expect(await feedIds(carol, "for=outfits&style=everyday")).toEqual(all.slice(1));
+    await applySync(db, carol, [seen(false)]);
+    expect(await feedIds(carol, "for=outfits&style=everyday")).toEqual(all);
+  });
+
+  it("only ever reads the signed-in user's style of that name", async () => {
+    const all = await feedIds(bob, "for=outfits");
+    await applySync(db, carol, [{ op: "outfitsSeen", styleId: "everyday", anchorIds: [all[0]], seen: true }]);
+    expect(await feedIds(bob, "for=outfits&style=everyday")).toEqual(all);
+  });
+
+  it("reports unknown anchors and styles", async () => {
+    expect(
+      await applySync(db, carol, [
+        { op: "outfitsSeen", styleId: "everyday", anchorIds: [missing], seen: true },
+        { op: "outfitsSeen", styleId: "nope", anchorIds: [p1], seen: true },
+      ]),
+    ).toEqual({
+      applied: 1,
+      skipped: [
+        { op: "outfitsSeen", reason: "unknown_product" },
+        { op: "outfitsSeen", reason: "unknown_style" },
+      ],
+    });
   });
 });

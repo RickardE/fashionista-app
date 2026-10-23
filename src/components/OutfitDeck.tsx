@@ -53,7 +53,7 @@ export function OutfitDeck() {
   function decide(direction: 1 | -1) {
     if (!outfit) return;
     const tags = outfit.pieces.flatMap((p) => p.product.tags);
-    reactOutfit(tags, direction);
+    reactOutfit(tags, direction, outfit.anchorId);
     let savedOutfitId: string | undefined;
     if (direction > 0) {
       savedOutfitId = saveOutfit(outfit.anchorId, outfit.items);
@@ -73,6 +73,7 @@ export function OutfitDeck() {
       kind: "outfit",
       styleId: activeStyle.id,
       outfitKey: outfit.key,
+      anchorId: outfit.anchorId,
       tags,
       direction,
       savedOutfitId,
@@ -138,6 +139,12 @@ export function OutfitDeck() {
             enterFrom={returning?.key === outfit.key ? returning.from : undefined}
           />
         </>
+      ) : feed.status === "exhausted" ? (
+        <FeedStatusCard
+          kicker="That’s every outfit"
+          title={<>You&rsquo;ve seen<br />every outfit.</>}
+          body="There are no more starting pieces for this style right now. New outfits appear here as new products arrive."
+        />
       ) : feed.status === "error" ? (
         <FeedStatusCard
           kicker="Something went wrong"

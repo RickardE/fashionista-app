@@ -64,7 +64,13 @@ describe("undo swipe", () => {
   });
 
   it("leaves the feed position alone once the feed no longer holds the card", () => {
-    const undone = run(withFeed(), ...swipe(1), { type: "refreshFeed" }, { type: "undoSwipe", swipe: productSwipe(1) });
+    // A gender change drops the queued feed.
+    const undone = run(
+      withFeed(),
+      ...swipe(1),
+      { type: "setStyleGender", styleId: "everyday", gender: "men" },
+      { type: "undoSwipe", swipe: productSwipe(1) },
+    );
     expect(undone.styles.everyday.feedIndex).toBe(0);
     expect(undone.styles.everyday.liked).toEqual({});
   });
@@ -73,7 +79,7 @@ describe("undo swipe", () => {
     const before = withFeed();
     const liked = run(
       before,
-      { type: "reactOutfit", tags: ["neutral"], direction: 1 },
+      { type: "reactOutfit", tags: ["neutral"], direction: 1, anchorId: A },
       { type: "saveOutfit", anchorId: A, items: { top: A, bottom: B }, id: "look-1" },
     );
     const undone = run(liked, {
@@ -82,6 +88,7 @@ describe("undo swipe", () => {
         kind: "outfit",
         styleId: "everyday",
         outfitKey: "k",
+        anchorId: A,
         tags: ["neutral"],
         direction: 1,
         savedOutfitId: "look-1",
@@ -89,7 +96,13 @@ describe("undo swipe", () => {
         label: "",
       },
     });
-    expect(undone.styles.everyday).toMatchObject({ outfitAffinity: {}, likedOutfits: 0, dislikedOutfits: 0 });
+    expect(liked.styles.everyday.outfitsSwiped).toEqual([A]);
+    expect(undone.styles.everyday).toMatchObject({
+      outfitAffinity: {},
+      likedOutfits: 0,
+      dislikedOutfits: 0,
+      outfitsSwiped: [],
+    });
     expect(undone.savedOutfits).toEqual([]);
     expect(diffState(before, undone)).toEqual([]);
   });

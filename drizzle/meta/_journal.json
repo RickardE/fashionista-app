@@ -50,6 +50,13 @@
       "when": 1791710178745,
       "tag": "0006_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792762255435,
+      "tag": "0007_seen_outfits",
+      "breakpoints": true
     }
   ]
 }

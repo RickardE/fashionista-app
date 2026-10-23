@@ -352,7 +352,7 @@ Every endpoint needs a signed-in session and answers 401 without one (§6.2).
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /api/feed?for=products\|outfits&gender=&cursor=&limit=` | Feed pages in a stable, brand-mixed order (md5 of id), keyset-paginated. Not personalized server-side |
+| `GET /api/feed?for=products\|outfits&gender=&style=&cursor=&limit=` | Feed pages in a stable, brand-mixed order (md5 of id), keyset-paginated. With `style` (one of the user's), leaves out what that style has seen. Not personalized server-side |
 | `GET /api/products?ids=a,b` | Resolve products by id (saved items, outfit links) |
 | `GET /api/products?category=&gender=&exclude=&cursor=&limit=` | Outfit candidates for a slot, "more like this"; keyset-paginated (`nextCursor`) |
 | `GET /api/products/:id` | One product, 404 if unknown |
@@ -474,14 +474,15 @@ connects it to the account:
   each batch (max 500 ops, 30 styles) and scopes every query by the session's
   user id; the app's style and outfit ids are only keys *within* that user.
   `/api/me/sync` also rejects other origins.
-- **On the device** (`localStorage`, per user): feed positions (order, index,
-  outfit cursor), the swipe hint and seen tips. They are not synced, so a new
-  device starts the feeds from the top.
+- **What a style has seen** is on the server too: its reactions, and the outfit
+  anchors it swiped (`outfitsSeen` ops → `seen_outfit_anchors`). The feeds
+  leave both out (§6.3), so the feed lists themselves are session-only.
+- **On the device** (`localStorage`, per user): the swipe hint and seen tips.
 - Sign out flushes pending changes, then reloads into `/login`.
 
 - **Styles**: three presets (Everyday, Work, Vacation — `lib/data/styles.ts`)
   each with seed tag scores, plus user-created styles. Each style learns
-  independently and has its own gender, feed position and outfit cursor.
+  independently and has its own gender and its own "seen" for both feeds.
 - **Learning**: a like/dismiss in the Products feed adds ±1 to the style's
   score for each of the product's tags. Outfit likes/dismisses update a separate
   outfit score (`outfitAffinity`), which is **recorded but not yet used** for ranking.
@@ -495,15 +496,17 @@ connects it to the account:
 ### 6.3 Feeds
 
 - **Products feed** ([`store/use-feed.ts`](../src/lib/store/use-feed.ts)): pages of
-  20 from `/api/feed?for=products`, prefetching when 8 cards remain.
+  20 from `/api/feed?for=products&style=`, prefetching when 8 cards remain.
+  Products the style has liked or disliked are left out; when none are left
+  the feed says so.
 - **Outfits feed** ([`store/use-outfit-feed.ts`](../src/lib/store/use-outfit-feed.ts)):
   anchors in pages of 20 from `/api/feed?for=outfits`; a candidate pool of up to
   50 products per slot per gender, fetched once per session; outfits are
   composed in the browser with `composeOutfits`
   ([`lib/outfit-feed.ts`](../src/lib/outfit-feed.ts)) — one outfit per anchor,
   shown only with ≥ 3 pieces; the last 24 pieces used are held back so
-  consecutive outfits differ. At the end of the
-  catalogue it starts again from the top.
+  consecutive outfits differ. Anchors the style has swiped are left out; when
+  none are left the feed says so.
 
 ### 6.4 Outfit generation
 

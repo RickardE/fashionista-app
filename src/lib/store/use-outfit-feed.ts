@@ -35,6 +35,10 @@ interface StyleOutfits {
   outfits: FeedOutfit[];
   index: number;
   recent: string[];
+  /** Last anchor fetched, to page on from. */
+  cursor?: string;
+  /** No anchors left that the style hasn't swiped. */
+  exhausted?: boolean;
   /** True right after the outfit before `index` was kept from its page, until the feed has shown it. */
   kept?: boolean;
 }
@@ -75,15 +79,16 @@ export function keepFeedOutfit(key: string, items: OutfitItems, pieces: FeedOutf
   return false;
 }
 
-export type OutfitFeedStatus = "ready" | "loading" | "error" | "needs_gender";
+export type OutfitFeedStatus = "ready" | "loading" | "error" | "needs_gender" | "exhausted";
 
 /**
  * The active style's Outfits feed. Outfits are composed on the client from
- * catalogue products; each style keeps its own position (and anchor cursor,
- * persisted, so a reload continues with new outfits).
+ * catalogue products; each style keeps its own position for the session. The
+ * server leaves out anchors the style has already swiped, so a reload or
+ * another device continues with new outfits.
  */
 export function useOutfitFeed() {
-  const { activeStyle, effectiveAffinity, setOutfitCursor } = useStyleProfile();
+  const { activeStyle, effectiveAffinity } = useStyleProfile();
   const { ingest } = useCatalog();
   const gender = activeStyle.gender;
   // Outfits are kept per style *and* gender: switching gender starts fresh.
@@ -95,15 +100,15 @@ export function useOutfitFeed() {
   const current = byStyle[styleId] ?? { outfits: [], index: 0, recent: [] };
   const remaining = current.outfits.length - current.index;
   const failed = !!errors[styleId];
-  const cursor = activeStyle.outfitCursor;
+  const { cursor, exhausted } = current;
 
   useEffect(() => {
-    if (!gender || failed || remaining >= PREFETCH_AT || inFlight.current.has(styleId)) return;
+    if (!gender || failed || exhausted || remaining >= PREFETCH_AT || inFlight.current.has(styleId)) return;
     inFlight.current.add(styleId);
     const affinity = effectiveAffinity;
     const recent = current.recent;
 
-    fetchFeedPage({ cursor, limit: ANCHOR_PAGE, gender, kind: "outfits" })
+    fetchFeedPage({ cursor, limit: ANCHOR_PAGE, gender, kind: "outfits", style: activeStyle.id })
       .then(async (page) => {
         const pool = await poolFor(gender);
         ingest([...page.products, ...pool]);
@@ -112,22 +117,34 @@ export function useOutfitFeed() {
           const prev = all[styleId] ?? { outfits: [], index: 0, recent: [] };
           return {
             ...all,
-            [styleId]: { outfits: [...prev.outfits, ...composed.outfits], index: prev.index, recent: composed.recent },
+            [styleId]: {
+              outfits: [...prev.outfits, ...composed.outfits],
+              index: prev.index,
+              recent: composed.recent,
+              cursor: page.products.at(-1)?.id ?? prev.cursor,
+              exhausted: page.nextCursor === null,
+            },
           };
         });
-        // At the end of the catalogue, start again from the top.
-        setOutfitCursor(activeStyle.id, page.nextCursor ?? undefined);
         setErrors((e) => ({ ...e, [styleId]: false }));
       })
       .catch(() => setErrors((e) => ({ ...e, [styleId]: true })))
       .finally(() => inFlight.current.delete(styleId));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [styleId, gender, failed, remaining, cursor]);
+  }, [styleId, gender, failed, exhausted, remaining, cursor]);
 
   return {
     outfit: current.outfits[current.index] as FeedOutfit | undefined,
     nextOutfit: current.outfits[current.index + 1] as FeedOutfit | undefined,
-    status: (!gender ? "needs_gender" : failed ? "error" : remaining <= 0 ? "loading" : "ready") as OutfitFeedStatus,
+    status: (!gender
+      ? "needs_gender"
+      : failed
+        ? "error"
+        : remaining > 0
+          ? "ready"
+          : exhausted
+            ? "exhausted"
+            : "loading") as OutfitFeedStatus,
     advance: () =>
       updateSession((all) => {
         const prev = all[styleId];

@@ -23,8 +23,6 @@ export function FeedDeck() {
     activeStyle,
     next,
     react,
-    resetFeed,
-    refreshFeed,
     chooseGender,
     lastSwipe,
     rememberSwipe,
@@ -45,14 +43,11 @@ export function FeedDeck() {
   // Products that went out of stock (or vanished) since they were queued are
   // skipped. feedIndex is a dependency because the next card's state is often
   // already "missing" (cards are resolved in batches), so the state alone
-  // doesn't change between consecutive skips. A finished feed that ends in
-  // unusable cards would otherwise strand the deck — fetch it afresh instead.
+  // doesn't change between consecutive skips. Past the last one is the end card.
   useEffect(() => {
     const unusable = (current && !current.available) || currentState === "missing";
-    if (!unusable) return;
-    if (feedExhausted && feedIndex >= feedOrder.length - 1) refreshFeed();
-    else next();
-  }, [current, currentState, feedIndex, feedOrder.length, feedExhausted, next, refreshFeed]);
+    if (unusable) next();
+  }, [current, currentState, feedIndex, next]);
 
   const [notice, setNotice] = useState("");
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -65,7 +60,7 @@ export function FeedDeck() {
   }, []);
 
   // The last swipe can be undone while the feed still sits just past it — not
-  // after a style switch, "Look again" or a refetched feed.
+  // after a style switch or a gender change.
   const undoable =
     lastSwipe?.kind === "product" &&
     lastSwipe.styleId === activeStyle.id &&
@@ -172,10 +167,9 @@ export function FeedDeck() {
             <FeedStatusCard
               key="__end__"
               behind={stackPosition !== 0}
-              kicker="That’s today’s edit"
-              title={<>You&rsquo;ve seen<br />everything new.</>}
-              body="A fresh selection arrives each morning, shaped by what you liked today."
-              action={{ label: "Look again", onClick: resetFeed }}
+              kicker="That’s everything"
+              title={<>You&rsquo;ve seen<br />every product.</>}
+              body="You’ve swiped everything there is for this style right now. New products appear here as they arrive."
             />
           );
         }

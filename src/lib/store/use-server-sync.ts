@@ -20,8 +20,8 @@ export interface Account {
   image: string | null;
 }
 
-/** Per-device feed positions; everything else lives on the server. */
-type DeviceStyle = Pick<StyleProfile, "feedOrder" | "feedIndex" | "feedExhausted" | "outfitCursor" | "showSwipeHint">;
+/** Per-device bits of a style; everything else lives on the server (feeds are session-only). */
+type DeviceStyle = Pick<StyleProfile, "showSwipeHint">;
 
 const deviceKey = (userId: string) => `styleai:device:${userId}`;
 /** Pre-account storage (no real users had data in it); removed on first load. */
@@ -42,19 +42,13 @@ function writeDevice(userId: string, state: StyleProfileState) {
   const device = Object.fromEntries(
     Object.entries(state.styles).map(([id, s]) => [
       id,
-      {
-        feedOrder: s.feedOrder,
-        feedIndex: s.feedIndex,
-        feedExhausted: s.feedExhausted,
-        outfitCursor: s.outfitCursor,
-        showSwipeHint: s.showSwipeHint,
-      } satisfies DeviceStyle,
+      { showSwipeHint: s.showSwipeHint } satisfies DeviceStyle,
     ]),
   );
   try {
     window.localStorage.setItem(deviceKey(userId), JSON.stringify(device));
   } catch {
-    // storage full or unavailable — positions just restart next visit
+    // storage full or unavailable — the swipe hint just shows again
   }
 }
 
@@ -176,7 +170,11 @@ export function useServerSync(
       const base = synced ?? initialState();
       const device = readDevice(body.user.id);
       const styles = Object.fromEntries(
-        Object.entries(base.styles).map(([id, s]) => [id, { ...s, ...device[id] }]),
+        // Only the hint: older saves also hold feed positions, which no longer live here.
+        Object.entries(base.styles).map(([id, s]) => {
+          const hint = device[id]?.showSwipeHint;
+          return [id, typeof hint === "boolean" ? { ...s, showSwipeHint: hint } : s];
+        }),
       );
       syncer.loaded(synced ?? EMPTY_SYNCED);
       try {

@@ -94,7 +94,32 @@ describe("server sync diff", () => {
     expect(ops.at(-1)).toMatchObject({ op: "prefs", hasOnboarded: false });
   });
 
-  it("is empty when nothing changed, and ignores device-local feed positions", () => {
+  it("sends outfits swiped in the feed as seen, and an undone one as unseen", () => {
+    const before = fresh();
+    const swiped = reducer(before, { type: "reactOutfit", tags: [], direction: -1, anchorId: p1 });
+    expect(diffState(before, swiped)).toContainEqual({
+      op: "outfitsSeen",
+      styleId: before.activeStyleId,
+      anchorIds: [p1],
+      seen: true,
+    });
+    // Liked on a saved outfit's own page (no anchor): nothing is marked seen.
+    const fromPage = reducer(before, { type: "reactOutfit", tags: [], direction: 1 });
+    expect(diffState(before, fromPage).some((o) => o.op === "outfitsSeen")).toBe(false);
+
+    const undone = reducer(swiped, {
+      type: "undoSwipe",
+      swipe: { kind: "outfit", styleId: before.activeStyleId, outfitKey: "k", anchorId: p1, tags: [], direction: -1, images: [], label: "" },
+    });
+    expect(diffState(swiped, undone)).toContainEqual({
+      op: "outfitsSeen",
+      styleId: before.activeStyleId,
+      anchorIds: [p1],
+      seen: false,
+    });
+  });
+
+  it("is empty when nothing changed, and ignores session-only feed positions", () => {
     const state = fresh();
     expect(diffState(state, state)).toEqual([]);
     expect(diffState(state, reducer(state, { type: "next" }))).toEqual([]);
@@ -256,25 +281,5 @@ describe("saving a swapped outfit", () => {
     expect(twice.savedOutfits[0]).toMatchObject({ anchorId: anchor, items: swapped, styleId: once.activeStyleId });
     expect(twice.savedOutfits[1]).toBe(once.savedOutfits[0]);
     expect(twice.savedOutfits[1].items).toEqual({ top: anchor, bottom: "22222222-2222-4222-8222-222222222222" });
-  });
-});
-
-describe("feed refresh", () => {
-  it("drops a stale feed so it is fetched again from the start", () => {
-    const base = initialState();
-    const id = base.activeStyleId;
-    const stale = {
-      ...base,
-      styles: {
-        ...base.styles,
-        [id]: { ...base.styles[id], feedOrder: ["a", "b", "c"], feedIndex: 2, feedExhausted: true, liked: { a: true as const } },
-      },
-    };
-    const next = reducer(stale, { type: "refreshFeed" });
-    expect(next.styles[id]).toMatchObject({ feedOrder: [], feedIndex: 0, feedExhausted: false });
-    // Taste and saved items survive; only the queued feed is dropped.
-    expect(next.styles[id].liked).toEqual({ a: true });
-    const other = base.styleOrder.find((s) => s !== id)!;
-    expect(next.styles[other]).toBe(stale.styles[other]);
   });
 });

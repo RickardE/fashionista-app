@@ -354,8 +354,8 @@ export const verifications = pgTable(
 // The server copy of what the app used to keep only in localStorage: a user's
 // styles with their learned taste, likes/dislikes per style, saved outfits.
 // Styles and outfits keep the app's own ids as `client_key` (built-in styles
-// share ids like "everyday" across users), unique per user. Feed positions
-// stay on the device.
+// share ids like "everyday" across users), unique per user. What a style has
+// already been shown is account data too: the feeds leave it out.
 // ---------------------------------------------------------------------------
 
 export type Reaction = "like" | "dislike";
@@ -428,6 +428,32 @@ export const savedOutfits = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("saved_outfits_user_key_uq").on(t.userId, t.clientKey)],
+);
+
+/**
+ * Outfits a style has been shown in the Outfits feed (swiped either way), by
+ * anchor product, so the feed never offers the same starting piece twice.
+ * The Products feed needs no such table: every swipe there is a reaction.
+ */
+export const seenOutfitAnchors = pgTable(
+  "seen_outfit_anchors",
+  {
+    styleProfileId: uuid("style_profile_id")
+      .notNull()
+      .references(() => styleProfiles.id, { onDelete: "cascade" }),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id),
+    /** Denormalized owner, so every read can filter by user directly. */
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.styleProfileId, t.productId] }),
+    index("seen_outfit_anchors_user_idx").on(t.userId),
+  ],
 );
 
 export const userPreferences = pgTable("user_preferences", {

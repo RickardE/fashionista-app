@@ -180,11 +180,12 @@ export function OutfitPageClient({
     if (savedHere && !savedId) removeOutfit(savedHere.id);
     const savedOutfitId = savedId ?? (alreadySaved ? undefined : saveOutfit(anchor.id, items));
     const tags = list.flatMap((i) => i.product.tags);
-    reactOutfit(tags, 1);
+    reactOutfit(tags, 1, anchor.id);
     rememberSwipe({
       kind: "outfit",
       styleId: activeStyle.id,
       outfitKey: fromFeed,
+      anchorId: anchor.id,
       tags,
       direction: 1,
       savedOutfitId,

@@ -53,6 +53,7 @@ export type LastSwipe = {
   | {
       kind: "outfit";
       outfitKey: string;
+      anchorId: string;
       /** Set when the swipe saved the outfit. */
       savedOutfitId?: string;
     }
@@ -73,14 +74,11 @@ type Action =
   | { type: "appendFeed"; styleId: string; gender: ShopperGender; ids: string[]; exhausted: boolean }
   | { type: "setStyleGender"; styleId: string; gender: ShopperGender }
   | { type: "chooseGender"; gender: ShopperGender }
-  | { type: "reactOutfit"; tags: StyleTag[]; direction: 1 | -1 }
+  | { type: "reactOutfit"; tags: StyleTag[]; direction: 1 | -1; anchorId?: string }
   | { type: "undoSwipe"; swipe: LastSwipe }
-  | { type: "setOutfitCursor"; styleId: string; cursor: string | undefined }
   | { type: "next" }
   | { type: "prev" }
   | { type: "setFeedIndex"; index: number }
-  | { type: "resetFeed" }
-  | { type: "refreshFeed" }
   | { type: "toggleDetailLike"; id: string; tags: StyleTag[] }
   | { type: "addSeedAffinity"; styleId: string; affinity: AffinityMap }
   | { type: "completeOnboarding" }
@@ -116,6 +114,7 @@ function makeStyleProfile(preset: {
     feedOrder: [],
     feedIndex: 0,
     feedExhausted: false,
+    outfitsSwiped: [],
     outfitAffinity: {},
     likedOutfits: 0,
     dislikedOutfits: 0,
@@ -177,7 +176,6 @@ function withGender(style: StyleProfile, gender: ShopperGender): StyleProfile {
     feedOrder: [],
     feedIndex: 0,
     feedExhausted: false,
-    outfitCursor: undefined,
   };
 }
 
@@ -224,11 +222,14 @@ export function reducer(state: StyleProfileState, action: Action): StyleProfileS
         action.tags.forEach((tag) => {
           outfitAffinity[tag] = (outfitAffinity[tag] ?? 0) + action.direction;
         });
+        const { anchorId } = action;
         return {
           ...style,
           outfitAffinity,
           likedOutfits: style.likedOutfits + (action.direction > 0 ? 1 : 0),
           dislikedOutfits: style.dislikedOutfits + (action.direction < 0 ? 1 : 0),
+          outfitsSwiped:
+            anchorId && !style.outfitsSwiped.includes(anchorId) ? [...style.outfitsSwiped, anchorId] : style.outfitsSwiped,
         };
       });
 
@@ -242,6 +243,7 @@ export function reducer(state: StyleProfileState, action: Action): StyleProfileS
           outfitAffinity: shiftAffinity(style.outfitAffinity, swipe.tags, -swipe.direction),
           likedOutfits: Math.max(0, style.likedOutfits - (swipe.direction > 0 ? 1 : 0)),
           dislikedOutfits: Math.max(0, style.dislikedOutfits - (swipe.direction < 0 ? 1 : 0)),
+          outfitsSwiped: style.outfitsSwiped.filter((id) => id !== swipe.anchorId),
         }));
         return swipe.savedOutfitId
           ? { ...next, savedOutfits: next.savedOutfits.filter((o) => o.id !== swipe.savedOutfitId) }
@@ -266,9 +268,6 @@ export function reducer(state: StyleProfileState, action: Action): StyleProfileS
         };
       });
     }
-
-    case "setOutfitCursor":
-      return updateStyle(state, action.styleId, (style) => ({ ...style, outfitCursor: action.cursor }));
 
     case "setStyleGender":
       return updateStyle(state, action.styleId, (style) => withGender(style, action.gender));
@@ -313,22 +312,6 @@ export function reducer(state: StyleProfileState, action: Action): StyleProfileS
       return updateStyle(state, state.activeStyleId, (style) => ({
         ...style,
         feedIndex: Math.max(0, Math.min(action.index, feedLengthOf(style) - 1)),
-      }));
-
-    case "resetFeed":
-      return updateStyle(state, state.activeStyleId, (style) => ({
-        ...style,
-        feedIndex: 0,
-      }));
-
-    // Drops the queued feed so it is fetched again from the start — for a feed
-    // that can no longer show anything (e.g. ids from a previous catalogue).
-    case "refreshFeed":
-      return updateStyle(state, state.activeStyleId, (style) => ({
-        ...style,
-        feedOrder: [],
-        feedIndex: 0,
-        feedExhausted: false,
       }));
 
     case "toggleDetailLike": {
@@ -446,14 +429,14 @@ interface StyleProfileContextValue {
   setStyleGender: (styleId: string, gender: ShopperGender) => void;
   /** First-time pick: active style plus every style without a gender. */
   chooseGender: (gender: ShopperGender) => void;
-  /** Records a love / not-for-me on a whole outfit, given all its pieces' tags. */
-  reactOutfit: (tags: StyleTag[], direction: 1 | -1) => void;
-  setOutfitCursor: (styleId: string, cursor: string | undefined) => void;
+  /**
+   * Records a love / not-for-me on a whole outfit, given all its pieces' tags.
+   * `anchorId` for a swipe in the Outfits feed, so the feed won't offer it again.
+   */
+  reactOutfit: (tags: StyleTag[], direction: 1 | -1, anchorId?: string) => void;
   next: () => void;
   prev: () => void;
   setFeedIndex: (index: number) => void;
-  resetFeed: () => void;
-  refreshFeed: () => void;
   toggleDetailLike: (product: Product) => void;
   /** Adds picked favourites' tags to a style's starting taste. */
   addSeedAffinity: (styleId: string, affinity: AffinityMap) => void;
@@ -534,12 +517,8 @@ export function StyleProfileProvider({
     [],
   );
   const reactOutfit = useCallback(
-    (tags: StyleTag[], direction: 1 | -1) => dispatch({ type: "reactOutfit", tags, direction }),
-    [],
-  );
-  const setOutfitCursor = useCallback(
-    (styleId: string, cursor: string | undefined) =>
-      dispatch({ type: "setOutfitCursor", styleId, cursor }),
+    (tags: StyleTag[], direction: 1 | -1, anchorId?: string) =>
+      dispatch({ type: "reactOutfit", tags, direction, anchorId }),
     [],
   );
   const next = useCallback(() => dispatch({ type: "next" }), []);
@@ -548,8 +527,6 @@ export function StyleProfileProvider({
     (index: number) => dispatch({ type: "setFeedIndex", index }),
     [],
   );
-  const resetFeed = useCallback(() => dispatch({ type: "resetFeed" }), []);
-  const refreshFeed = useCallback(() => dispatch({ type: "refreshFeed" }), []);
   const toggleDetailLike = useCallback(
     (product: Product) => dispatch({ type: "toggleDetailLike", id: product.id, tags: product.tags }),
     [],
@@ -638,12 +615,9 @@ export function StyleProfileProvider({
       setStyleGender,
       chooseGender,
       reactOutfit,
-      setOutfitCursor,
       next,
       prev,
       setFeedIndex,
-      resetFeed,
-      refreshFeed,
       toggleDetailLike,
       addSeedAffinity,
       completeOnboarding,
@@ -672,12 +646,9 @@ export function StyleProfileProvider({
       setStyleGender,
       chooseGender,
       reactOutfit,
-      setOutfitCursor,
       next,
       prev,
       setFeedIndex,
-      resetFeed,
-      refreshFeed,
       toggleDetailLike,
       addSeedAffinity,
       completeOnboarding,

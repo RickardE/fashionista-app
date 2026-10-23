@@ -33,11 +33,11 @@ const qs = (params: Record<string, string | number | undefined>) =>
   ).toString();
 
 export function fetchFeedPage(
-  opts: { cursor?: string; limit?: number; gender: ShopperGender; kind: "products" | "outfits" },
+  opts: { cursor?: string; limit?: number; gender: ShopperGender; kind: "products" | "outfits"; style: string },
   signal?: AbortSignal,
 ) {
   return get<{ products: Product[]; nextCursor: string | null }>(
-    `/api/feed?${qs({ for: opts.kind, gender: opts.gender, cursor: opts.cursor, limit: opts.limit ?? 20 })}`,
+    `/api/feed?${qs({ for: opts.kind, gender: opts.gender, style: opts.style, cursor: opts.cursor, limit: opts.limit ?? 20 })}`,
     signal,
   );
 }
