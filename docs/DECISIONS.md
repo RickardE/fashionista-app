@@ -207,7 +207,8 @@ testers see a change. Rollback: remove the variable and redeploy.
 (30 days, extended with use), and the whole app — every page and every API route
 except `/api/auth/*` — behind a session. Styles, reactions, saved outfits and
 preferences move from `localStorage` to per-user tables (migration 0006);
-feed positions, the swipe hint and seen tips stay per device. The
+feed positions, the swipe hint and seen tips stay per device (feed positions
+were replaced by server-side "seen" in D17). The
 `localStorage`-only state and its migrations were removed rather than imported,
 since no real users had data in them.
 

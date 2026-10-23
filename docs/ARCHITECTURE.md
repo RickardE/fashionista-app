@@ -180,6 +180,7 @@ Enrichment uses this hash to know whether its description is still current.
 | `style_profiles` | A user's styles: `client_key` (the app's style id), name, description, gender, display position, seed / learned / outfit tag scores, counters |
 | `product_reactions` | Like or dislike per style and product |
 | `saved_outfits` | Saved outfits: `client_key`, style, anchor product, `items` (product id per slot) |
+| `seen_outfit_anchors` | Starting pieces of outfits a style has swiped in the Outfits feed, which leaves them out |
 | `user_preferences` | Active style and whether onboarding is done |
 
 All user tables cascade-delete with their user. Migrations are in `drizzle/`
@@ -466,7 +467,7 @@ connects it to the account:
 - **Sync**: after a change, the last state the server acknowledged is diffed
   against the current one ([`store/state-sync.ts`](../src/lib/store/state-sync.ts))
   into idempotent operations (`upsertStyle`, `deleteStyle`, `react`,
-  `saveOutfit`, `removeOutfit`, `prefs`), sent to `/api/me/sync` after 400 ms.
+  `outfitsSeen`, `saveOutfit`, `removeOutfit`, `prefs`), sent to `/api/me/sync` after 400 ms.
   A failed batch is recomputed and merged with later changes on retry
   (backoff 2 s → 30 s); pending changes are flushed when the tab is hidden.
   A 401 at any point sends the user to `/login`.
