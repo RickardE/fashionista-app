@@ -14,7 +14,7 @@ export function LookTile({ outfit }: { outfit: Outfit }) {
   const total = outfitTotal(list);
 
   return (
-    <Link href={outfitHref(outfit.anchorId, outfit.items)} className="block">
+    <Link href={outfitHref(outfit.anchorId, outfit.items, { saved: outfit.id })} className="block">
       <OutfitComposition products={list.map((i) => i.product)} className="w-full" />
       <div className="pt-[9px]">
         <span className="block text-[9.5px] font-semibold tracking-[0.1em] text-neutral-700 uppercase">

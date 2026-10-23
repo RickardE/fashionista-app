@@ -40,6 +40,18 @@ export function OutfitDeck() {
     noticeTimer.current = setTimeout(() => setNotice(""), 2400);
   }, []);
 
+  // Leaving a changed outfit saved it without a swipe, so say so for a moment (Undo is offered too).
+  const { kept, clearKept } = feed;
+  useEffect(() => {
+    if (!kept) return;
+    pulseSavedTab();
+    const timer = setTimeout(clearKept, 2400);
+    return () => clearTimeout(timer);
+    // clearKept is a new function each render; the moment starts when `kept` does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kept]);
+  const shownNotice = notice || (kept ? `Outfit saved to ${activeStyle.name}` : "");
+
   function decide(direction: 1 | -1) {
     if (!outfit) return;
     const tags = outfit.pieces.flatMap((p) => p.product.tags);
@@ -126,7 +138,7 @@ export function OutfitDeck() {
             key={outfit.key}
             pieces={outfit.pieces}
             stackPosition={0}
-            onOpen={() => router.push(outfitHref(outfit.anchorId, outfit.items))}
+            onOpen={() => router.push(outfitHref(outfit.anchorId, outfit.items, { feed: outfit.key }))}
             onDecide={decide}
             enterFrom={returning?.key === outfit.key ? returning.from : undefined}
           />
@@ -158,9 +170,9 @@ export function OutfitDeck() {
 
       <div
         className="pointer-events-none absolute top-0 right-0 left-0 z-10 bg-ink px-[22px] py-[10px] text-[10px] font-semibold tracking-[0.1em] text-paper uppercase transition-opacity duration-[400ms]"
-        style={{ opacity: notice ? 1 : 0 }}
+        style={{ opacity: shownNotice ? 1 : 0 }}
       >
-        {notice || " "}
+        {shownNotice || " "}
       </div>
     </div>
   );

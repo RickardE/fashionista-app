@@ -6,6 +6,7 @@ import {
   outfitHref,
   outfitItemList,
   parseOutfitItems,
+  parseOutfitSource,
   pieceLabel,
   replacePiece,
   roleFor,
@@ -210,6 +211,16 @@ describe("outfit links", () => {
     const href = outfitHref(anchor, swapped);
     expect(href.startsWith(`/outfit/${anchor}?items=`)).toBe(true);
     expect(parseOutfitItems(new URL(href, "http://x").searchParams.get("items"))).toEqual(swapped);
+  });
+
+  it("carries where the outfit was opened from", () => {
+    const items = { top: "22222222-2222-4222-8222-222222222222" };
+    const params = (href: string) => new URL(href, "http://x").searchParams;
+    const fromFeed = outfitHref(items.top, items, { feed: `${items.top}:${items.top}` });
+    expect(parseOutfitItems(params(fromFeed).get("items"))).toEqual(items);
+    expect(parseOutfitSource(params(fromFeed))).toEqual({ feed: `${items.top}:${items.top}` });
+    expect(parseOutfitSource(params(outfitHref(items.top, items, { saved: "o1" })))).toEqual({ saved: "o1" });
+    expect(parseOutfitSource(params(outfitHref(items.top, items)))).toBeUndefined();
   });
 
   it("ignores malformed items", () => {

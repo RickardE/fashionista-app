@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  ArrowRightIcon,
   ArrowUpRightIcon,
   BookmarkIcon,
   ChevronLeftIcon,
@@ -21,6 +22,7 @@ import {
   outfitItemList,
   outfitTotal,
   parseOutfitItems,
+  parseOutfitSource,
   pieceLabel,
   reasonForLook,
   replacePiece,
@@ -30,6 +32,7 @@ import {
 } from "@/lib/outfits";
 import { useCatalog, useProducts } from "@/lib/store/product-catalog";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
+import { keepFeedOutfit } from "@/lib/store/use-outfit-feed";
 import type { OutfitItems, OutfitRole, Product } from "@/lib/types";
 
 /** Candidates fetched per slot and page (the product API's maximum); Swap pages further on demand. */
@@ -57,6 +60,11 @@ interface SwapSession {
  * product ("Build outfit" from a product). Either way any piece — the anchor
  * included — can be swapped. `anchor` stays the piece the outfit started from,
  * even once it has been swapped out.
+ *
+ * Changes are kept on the way out, however the page is left: an outfit from
+ * the feed that was changed (or saved here) counts as a right swipe — saved,
+ * liked, and the feed moves on, with Undo there; a changed saved outfit
+ * replaces the saved one.
  */
 export function OutfitPageClient({
   anchor,
@@ -67,12 +75,14 @@ export function OutfitPageClient({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { effectiveAffinity, saveOutfit, state, activeStyle } = useStyleProfile();
+  const { effectiveAffinity, saveOutfit, removeOutfit, reactOutfit, rememberSwipe, state, activeStyle } =
+    useStyleProfile();
   const catalog = useCatalog();
   const { ingest } = catalog;
   // Swaps are written to the URL without a server round trip, so the URL can
   // be newer than the server-rendered props (e.g. when history restores this page).
   const [startItems] = useState(() => parseOutfitItems(searchParams.get("items")) ?? initialItems);
+  const [source] = useState(() => parseOutfitSource(searchParams));
   // A given outfit's pieces may not be cached yet (e.g. opened from Saved after a reload).
   useProducts(startItems ? Object.values(startItems).filter((id): id is string => !!id) : []);
 
@@ -84,7 +94,10 @@ export function OutfitPageClient({
   const [attempt, setAttempt] = useState(0);
   const [items, setItems] = useState<OutfitItems | null>(startItems ?? null);
   const [swap, setSwap] = useState<SwapSession | null>(null);
-  const [saved, setSaved] = useState(false);
+  /** The outfit as saved with the bookmark on this page, if it was. */
+  const [savedHere, setSavedHere] = useState<{ id: string; items: OutfitItems } | null>(null);
+  /** Set once leaving has kept the changes, so they're kept only once. */
+  const kept = useRef(false);
   /** Where each slot's listing continues; null once it is exhausted. */
   const cursors = useRef<Partial<Record<OutfitRole, string | null>>>({});
   /** Pieces swapped out of each slot while this page is open — not offered for that slot again. */
@@ -132,11 +145,11 @@ export function OutfitPageClient({
   const alreadySaved =
     !!items &&
     state.savedOutfits.some((o) => o.styleId === activeStyle.id && sameItems(o.items, items));
+  const edited = !!items && !!startItems && !sameItems(items, startItems);
+  const savedOutfit =
+    source && "saved" in source ? state.savedOutfits.find((o) => o.id === source.saved) : undefined;
+  const fromFeed = source && "feed" in source ? source.feed : undefined;
 
-  function goBack() {
-    if (window.history.length > 1) router.back();
-    else router.push("/outfits");
-  }
   const lookup = (id: string) => (id === anchor.id ? anchor : catalog.get(id));
   const list = useMemo(
     () => (items ? outfitItemList(items, lookup) : []),
@@ -148,6 +161,50 @@ export function OutfitPageClient({
     () => reasonForLook(list.map((i) => i.product), effectiveAffinity),
     [list, effectiveAffinity],
   );
+
+  /** What leaving does with changes; see the component's comment. */
+  function keepChanges() {
+    if (kept.current || !items) return;
+    if (savedOutfit) {
+      if (!edited) return;
+      kept.current = true;
+      removeOutfit(savedOutfit.id);
+      if (!alreadySaved) saveOutfit(anchor.id, items);
+      return;
+    }
+    if (!fromFeed || (!edited && !savedHere)) return;
+    kept.current = true;
+    // Saved with the bookmark and then changed: the changed outfit replaces it.
+    const savedId = savedHere && sameItems(savedHere.items, items) ? savedHere.id : undefined;
+    if (savedHere && !savedId) removeOutfit(savedHere.id);
+    const savedOutfitId = savedId ?? (alreadySaved ? undefined : saveOutfit(anchor.id, items));
+    const tags = list.flatMap((i) => i.product.tags);
+    reactOutfit(tags, 1);
+    const cover = list.find((i) => i.product.id === anchor.id) ?? list[0];
+    rememberSwipe({
+      kind: "outfit",
+      styleId: activeStyle.id,
+      outfitKey: fromFeed,
+      tags,
+      direction: 1,
+      savedOutfitId,
+      image: cover?.product.image ?? anchor.image,
+      label: `Outfit · ${list.length} pieces`,
+    });
+    keepFeedOutfit(fromFeed, items, list);
+  }
+  // Also on a system back (swipe or hardware button), which skips goBack.
+  const keepOnLeave = useRef(keepChanges);
+  useEffect(() => {
+    keepOnLeave.current = keepChanges;
+  });
+  useEffect(() => () => keepOnLeave.current(), []);
+
+  function goBack() {
+    keepChanges();
+    if (window.history.length > 1) router.back();
+    else router.push(savedOutfit ? "/saved" : "/outfits");
+  }
 
   /**
    * Appends the next batch of alternatives to an open Swap sheet. When the
@@ -198,9 +255,8 @@ export function OutfitPageClient({
   /** Shows the outfit and keeps it in the URL, so a refresh or a return to this page shows it. */
   function applyItems(next: OutfitItems) {
     setItems(next);
-    setSaved(false);
     // Replacing (not pushing) keeps Back going to where the user came from.
-    window.history.replaceState(null, "", outfitHref(anchor.id, next));
+    window.history.replaceState(null, "", outfitHref(anchor.id, next, source));
   }
 
   function handleSwap(role: OutfitRole, product: Product) {
@@ -227,10 +283,13 @@ export function OutfitPageClient({
   const roleOf = (product: Product) => list.find((i) => i.product.id === product.id)?.role;
 
   function handleSave() {
-    if (!items || saved || alreadySaved) return;
-    saveOutfit(anchor.id, items);
-    setSaved(true);
+    if (!items || alreadySaved) return;
+    setSavedHere({ id: saveOutfit(anchor.id, items), items });
+    // From the feed, the like is counted once, on the way out.
+    if (!fromFeed) reactOutfit(list.flatMap((i) => i.product.tags), 1);
   }
+  /** Shown once the outfit has changed, where leaving keeps the change. */
+  const keepLabel = edited && fromFeed ? "Save & keep swiping" : edited && savedOutfit ? "Save changes" : null;
 
   if (loadError || !anchorRole) {
     return (
@@ -308,10 +367,10 @@ export function OutfitPageClient({
         </button>
         <button
           onClick={handleSave}
-          aria-label={saved || alreadySaved ? "Outfit saved" : "Save outfit"}
+          aria-label={alreadySaved ? "Outfit saved" : "Save outfit"}
           className="flex h-11 w-11 items-center justify-center"
         >
-          <BookmarkIcon filled={saved || alreadySaved} className={saved || alreadySaved ? "text-accent-700" : ""} />
+          <BookmarkIcon filled={alreadySaved} className={alreadySaved ? "text-accent-700" : ""} />
         </button>
       </div>
 
@@ -392,6 +451,18 @@ export function OutfitPageClient({
         </div>
       </div>
 
+      {keepLabel && (
+        <div className="flex-none border-t border-neutral-300 px-[22px] pt-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
+          <button
+            onClick={goBack}
+            className="flex h-[54px] w-full items-center justify-between bg-ink px-5 text-[13px] font-semibold tracking-[0.1em] text-paper uppercase transition-colors hover:bg-neutral-800"
+          >
+            <span>{keepLabel}</span>
+            <ArrowRightIcon />
+          </button>
+        </div>
+      )}
+
       {swap && (
         <SwapSheet
           key={swap.id}
@@ -410,7 +481,7 @@ export function OutfitPageClient({
       {lastSwap && (
         <div
           role="status"
-          className="fixed inset-x-4 bottom-[calc(28px+env(safe-area-inset-bottom))] z-30 mx-auto flex h-14 max-w-[448px] items-center justify-between bg-ink pr-1.5 pl-[18px] text-paper"
+          className={`fixed inset-x-4 ${keepLabel ? "bottom-[calc(94px+env(safe-area-inset-bottom))]" : "bottom-[calc(28px+env(safe-area-inset-bottom))]"} z-30 mx-auto flex h-14 max-w-[448px] items-center justify-between bg-ink pr-1.5 pl-[18px] text-paper`}
         >
           <span className="text-[13px] font-medium">
             <span className="capitalize">{lastSwap.label}</span> swapped

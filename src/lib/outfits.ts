@@ -293,11 +293,31 @@ export function reasonForLook(products: Product[], affinity: AffinityMap): strin
 
 const ROLE_SET = new Set<OutfitRole>(ROLE_DISPLAY_ORDER);
 
+/**
+ * Where an outfit page was opened from, so leaving it after changes can keep
+ * them there: the Outfits feed card (by its key) or a saved outfit (by id).
+ */
+export type OutfitSource = { feed: string } | { saved: string };
+
 /** Link to an outfit page showing exactly these pieces (anchor first, as the start product). */
-export function outfitHref(anchorId: string, items?: OutfitItems): string {
-  if (!items) return `/outfit/${anchorId}`;
-  const pairs = ROLE_DISPLAY_ORDER.flatMap((role) => (items[role] ? [`${role}:${items[role]}`] : []));
-  return `/outfit/${anchorId}?items=${encodeURIComponent(pairs.join(","))}`;
+export function outfitHref(anchorId: string, items?: OutfitItems, source?: OutfitSource): string {
+  const params = new URLSearchParams();
+  if (items) {
+    const pairs = ROLE_DISPLAY_ORDER.flatMap((role) => (items[role] ? [`${role}:${items[role]}`] : []));
+    params.set("items", pairs.join(","));
+  }
+  if (source && "feed" in source) params.set("feed", source.feed);
+  if (source && "saved" in source) params.set("saved", source.saved);
+  const query = params.toString();
+  return query ? `/outfit/${anchorId}?${query}` : `/outfit/${anchorId}`;
+}
+
+/** Reads the `feed` / `saved` params written by `outfitHref`. */
+export function parseOutfitSource(params: URLSearchParams): OutfitSource | undefined {
+  const feed = params.get("feed");
+  if (feed) return { feed };
+  const saved = params.get("saved");
+  return saved ? { saved } : undefined;
 }
 
 /** Parses the `items` query param written by `outfitHref`; ignores anything malformed. */

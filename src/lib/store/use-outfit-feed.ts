@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { fetchFeedPage, fetchProducts } from "@/lib/api";
 import { composeOutfits, type FeedOutfit } from "@/lib/outfit-feed";
 import { categoriesForRole, ROLE_DISPLAY_ORDER } from "@/lib/outfits";
 import { useCatalog } from "@/lib/store/product-catalog";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
-import type { Product, ShopperGender } from "@/lib/types";
+import type { OutfitItems, Product, ShopperGender } from "@/lib/types";
 
 const ANCHOR_PAGE = 20;
 const CANDIDATES_PER_SLOT = 50;
@@ -35,13 +35,45 @@ interface StyleOutfits {
   outfits: FeedOutfit[];
   index: number;
   recent: string[];
+  /** True right after the outfit before `index` was kept from its page, until the next move. */
+  kept?: boolean;
 }
 
 /**
  * Composed outfits outlive the Outfits page for the session, so opening an
- * outfit and coming back lands on the same card.
+ * outfit and coming back lands on the same card. The outfit page can change
+ * them too (see `keepFeedOutfit`), so the feed subscribes rather than copies.
  */
 let session: Record<string, StyleOutfits> = {};
+const NO_OUTFITS: Record<string, StyleOutfits> = {};
+const listeners = new Set<() => void>();
+
+function updateSession(fn: (all: Record<string, StyleOutfits>) => Record<string, StyleOutfits>) {
+  session = fn(session);
+  listeners.forEach((listener) => listener());
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+/**
+ * Keeps the feed's current outfit as changed on its page and moves past it,
+ * as a right swipe would. False when that outfit is no longer the current
+ * card (e.g. the page was reloaded, which starts the feed afresh).
+ */
+export function keepFeedOutfit(key: string, items: OutfitItems, pieces: FeedOutfit["pieces"]): boolean {
+  for (const [id, feed] of Object.entries(session)) {
+    const outfit = feed.outfits[feed.index];
+    if (outfit?.key !== key) continue;
+    const outfits = feed.outfits.map((o, i) => (i === feed.index ? { ...o, items, pieces } : o));
+    updateSession((all) => ({ ...all, [id]: { ...feed, outfits, index: feed.index + 1, kept: true } }));
+    return true;
+  }
+  return false;
+}
 
 export type OutfitFeedStatus = "ready" | "loading" | "error" | "needs_gender";
 
@@ -56,10 +88,7 @@ export function useOutfitFeed() {
   const gender = activeStyle.gender;
   // Outfits are kept per style *and* gender: switching gender starts fresh.
   const styleId = `${activeStyle.id}:${gender ?? "-"}`;
-  const [byStyle, setByStyle] = useState<Record<string, StyleOutfits>>(() => session);
-  useEffect(() => {
-    session = byStyle;
-  }, [byStyle]);
+  const byStyle = useSyncExternalStore(subscribe, () => session, () => NO_OUTFITS);
   const [errors, setErrors] = useState<Record<string, boolean>>({});
   const inFlight = useRef(new Set<string>());
 
@@ -79,7 +108,7 @@ export function useOutfitFeed() {
         const pool = await poolFor(gender);
         ingest([...page.products, ...pool]);
         const composed = composeOutfits(page.products, pool, affinity, recent);
-        setByStyle((all) => {
+        updateSession((all) => {
           const prev = all[styleId] ?? { outfits: [], index: 0, recent: [] };
           return {
             ...all,
@@ -100,16 +129,23 @@ export function useOutfitFeed() {
     nextOutfit: current.outfits[current.index + 1] as FeedOutfit | undefined,
     status: (!gender ? "needs_gender" : failed ? "error" : remaining <= 0 ? "loading" : "ready") as OutfitFeedStatus,
     advance: () =>
-      setByStyle((all) => {
+      updateSession((all) => {
         const prev = all[styleId];
-        return prev ? { ...all, [styleId]: { ...prev, index: prev.index + 1 } } : all;
+        return prev ? { ...all, [styleId]: { ...prev, index: prev.index + 1, kept: false } } : all;
       }),
     /** Key of the outfit before the current one — the one an undo returns to. */
     previousKey: current.outfits[current.index - 1]?.key as string | undefined,
     back: () =>
-      setByStyle((all) => {
+      updateSession((all) => {
         const prev = all[styleId];
-        return prev && prev.index > 0 ? { ...all, [styleId]: { ...prev, index: prev.index - 1 } } : all;
+        return prev && prev.index > 0 ? { ...all, [styleId]: { ...prev, index: prev.index - 1, kept: false } } : all;
+      }),
+    /** The previous outfit was just kept from its page (changed or saved there) rather than swiped. */
+    kept: !!current.kept,
+    clearKept: () =>
+      updateSession((all) => {
+        const prev = all[styleId];
+        return prev?.kept ? { ...all, [styleId]: { ...prev, kept: false } } : all;
       }),
     retry: () => setErrors((e) => ({ ...e, [styleId]: false })),
   };
