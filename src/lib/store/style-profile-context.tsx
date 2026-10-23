@@ -39,8 +39,8 @@ export type LastSwipe = {
   styleId: string;
   tags: StyleTag[];
   direction: 1 | -1;
-  /** Thumbnail and alt text for the undo button. */
-  image: string;
+  /** Thumbnails (one per piece for an outfit, at most three) and alt text for the undo button. */
+  images: string[];
   label: string;
 } & (
   | {

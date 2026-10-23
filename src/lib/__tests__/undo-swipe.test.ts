@@ -25,7 +25,7 @@ function productSwipe(direction: 1 | -1, prevReaction: "like" | "dislike" | null
     direction,
     prevReaction,
     prevFeedIndex: 0,
-    image: "",
+    images: [],
     label: "",
   };
 }
@@ -85,7 +85,7 @@ describe("undo swipe", () => {
         tags: ["neutral"],
         direction: 1,
         savedOutfitId: "look-1",
-        image: "",
+        images: [],
         label: "",
       },
     });

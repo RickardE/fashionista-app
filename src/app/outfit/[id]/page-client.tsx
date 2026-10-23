@@ -20,6 +20,7 @@ import {
   generateOutfit,
   outfitHref,
   outfitItemList,
+  outfitThumbnails,
   outfitTotal,
   parseOutfitItems,
   parseOutfitSource,
@@ -180,7 +181,6 @@ export function OutfitPageClient({
     const savedOutfitId = savedId ?? (alreadySaved ? undefined : saveOutfit(anchor.id, items));
     const tags = list.flatMap((i) => i.product.tags);
     reactOutfit(tags, 1);
-    const cover = list.find((i) => i.product.id === anchor.id) ?? list[0];
     rememberSwipe({
       kind: "outfit",
       styleId: activeStyle.id,
@@ -188,7 +188,7 @@ export function OutfitPageClient({
       tags,
       direction: 1,
       savedOutfitId,
-      image: cover?.product.image ?? anchor.image,
+      images: outfitThumbnails(list, anchor.id),
       label: `Outfit · ${list.length} pieces`,
     });
     keepFeedOutfit(fromFeed, items, list);

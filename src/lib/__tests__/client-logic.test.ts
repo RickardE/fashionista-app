@@ -5,6 +5,7 @@ import {
   generateOutfit,
   outfitHref,
   outfitItemList,
+  outfitThumbnails,
   parseOutfitItems,
   parseOutfitSource,
   pieceLabel,
@@ -221,6 +222,13 @@ describe("outfit links", () => {
     expect(parseOutfitSource(params(fromFeed))).toEqual({ feed: `${items.top}:${items.top}` });
     expect(parseOutfitSource(params(outfitHref(items.top, items, { saved: "o1" })))).toEqual({ saved: "o1" });
     expect(parseOutfitSource(params(outfitHref(items.top, items)))).toBeUndefined();
+  });
+
+  it("pictures an outfit by its starting piece first, at most three pieces", () => {
+    const piece = (id: string) => ({ product: product({ id, image: `${id}.jpg` }) });
+    const pieces = ["coat", "shirt", "jeans", "shoes"].map(piece);
+    expect(outfitThumbnails(pieces, "jeans")).toEqual(["jeans.jpg", "coat.jpg", "shirt.jpg"]);
+    expect(outfitThumbnails(pieces.slice(0, 2), "gone")).toEqual(["coat.jpg", "shirt.jpg"]);
   });
 
   it("ignores malformed items", () => {

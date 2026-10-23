@@ -7,7 +7,7 @@ import { GenderChoiceCard } from "@/components/GenderChoice";
 import { OutfitFeedCard } from "@/components/OutfitFeedCard";
 import { TipBanner } from "@/components/TipBanner";
 import { isUndoKey, UndoSwipeButton } from "@/components/UndoSwipeButton";
-import { outfitHref } from "@/lib/outfits";
+import { outfitHref, outfitThumbnails } from "@/lib/outfits";
 import { useStyleProfile } from "@/lib/store/style-profile-context";
 import { useOutfitFeed } from "@/lib/store/use-outfit-feed";
 import { pulseSavedTab, useTips } from "@/lib/tips";
@@ -73,7 +73,6 @@ export function OutfitDeck() {
     tips.markSeen("outfits");
     setUndoTip(!tips.hasSeen("undo"));
     tips.markSeen("undo");
-    const cover = outfit.pieces.find((p) => p.product.id === outfit.anchorId) ?? outfit.pieces[0];
     rememberSwipe({
       kind: "outfit",
       styleId: activeStyle.id,
@@ -81,7 +80,7 @@ export function OutfitDeck() {
       tags,
       direction,
       savedOutfitId,
-      image: cover.product.image,
+      images: outfitThumbnails(outfit.pieces, outfit.anchorId),
       label: `Outfit · ${outfit.pieces.length} pieces`,
     });
     setReturning(null);
@@ -163,7 +162,7 @@ export function OutfitDeck() {
       <UndoSwipeButton
         visible={!!undoable && feed.status !== "needs_gender"}
         tip={undoTip}
-        image={undoable?.image}
+        images={undoable?.images}
         label={undoable?.label}
         onUndo={undo}
       />

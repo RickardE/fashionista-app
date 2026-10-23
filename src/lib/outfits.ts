@@ -293,6 +293,12 @@ export function reasonForLook(products: Product[], affinity: AffinityMap): strin
 
 const ROLE_SET = new Set<OutfitRole>(ROLE_DISPLAY_ORDER);
 
+/** Photos that stand for an outfit in a small space: its starting piece first, at most three. */
+export function outfitThumbnails(pieces: { product: Product }[], anchorId: string): string[] {
+  const anchor = pieces.filter((p) => p.product.id === anchorId);
+  return [...anchor, ...pieces.filter((p) => p.product.id !== anchorId)].slice(0, 3).map((p) => p.product.image);
+}
+
 /**
  * Where an outfit page was opened from, so leaving it after changes can keep
  * them there: the Outfits feed card (by its key) or a saved outfit (by id).

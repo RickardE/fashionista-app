@@ -110,7 +110,7 @@ export function FeedDeck() {
       direction,
       prevReaction: activeStyle.liked[current.id] ? "like" : activeStyle.disliked[current.id] ? "dislike" : null,
       prevFeedIndex: feedIndex,
-      image: current.image,
+      images: [current.image],
       label: `${current.brand} — ${current.name}`,
     });
     setReturning(null);
@@ -211,7 +211,7 @@ export function FeedDeck() {
       <UndoSwipeButton
         visible={!!undoable && feed.status !== "needs_gender"}
         tip={undoTip}
-        image={undoable?.image}
+        images={undoable?.images}
         label={undoable?.label}
         onUndo={undo}
       />
