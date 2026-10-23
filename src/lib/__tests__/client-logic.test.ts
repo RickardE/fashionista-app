@@ -23,6 +23,7 @@ const product = (p: Partial<Product>): Product => ({
   price: 1000,
   currency: "SEK",
   image: "https://www.johnells.se/pub_images/x.jpg",
+  images: ["https://www.johnells.se/pub_images/x.jpg"],
   productType: "clothing",
   category: "shirts",
   colors: [],

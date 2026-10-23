@@ -16,6 +16,7 @@ function product(category: Product["category"], enrichment: Enrichment, extra: P
     price: 1000,
     currency: "SEK",
     image: "",
+    images: [],
     productType: category === "shoes" ? "shoes" : "clothing",
     category,
     gender: "men",

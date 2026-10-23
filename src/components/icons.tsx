@@ -149,6 +149,23 @@ export function SearchIcon({ className }: { className?: string }) {
   );
 }
 
+export function ZoomInIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      width="17"
+      height="17"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      className={className}
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3M11 8v6M8 11h6" />
+    </svg>
+  );
+}
+
 export function FiltersIcon({ className }: { className?: string }) {
   return (
     <svg

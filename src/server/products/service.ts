@@ -85,6 +85,7 @@ export function toProductDto(row: Row): Product {
     price: minor / 100,
     currency: row.currency ?? "SEK",
     image: row.images[0] ?? "",
+    images: row.images,
     productType: row.productType as ProductType,
     category: row.category as Category,
     subcategory: row.subcategory ?? undefined,

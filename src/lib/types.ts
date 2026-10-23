@@ -61,7 +61,10 @@ export interface Product {
   /** Current price in major units (e.g. SEK), sale price if one applies. */
   price: number;
   currency: string;
+  /** The main photo — the first of `images`. */
   image: string;
+  /** Every photo of the product, main one first. Often just the one. */
+  images: string[];
   productType: ProductType;
   category: Category;
   subcategory?: string;

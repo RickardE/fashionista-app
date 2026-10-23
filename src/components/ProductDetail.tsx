@@ -8,7 +8,9 @@ import {
   HeartIcon,
   ArrowUpRightIcon,
   LayersIcon,
+  ZoomInIcon,
 } from "@/components/icons";
+import { PhotoZoom } from "@/components/PhotoZoom";
 import { fetchProducts } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import { roleFor, shopperGenderFor } from "@/lib/outfits";
@@ -85,16 +87,7 @@ export function ProductDetail({
       </div>
 
       <div className="no-scrollbar flex-1 overflow-y-auto">
-        <div className="relative aspect-[390/488] w-full bg-neutral-200">
-          <Image
-            src={product.image}
-            alt={`${product.brand} — ${product.name}`}
-            fill
-            sizes="480px"
-            priority
-            className="object-cover"
-          />
-        </div>
+        <ProductGallery key={product.id} product={product} />
         <div className="px-[22px] pt-[22px] pb-10">
           <div className="text-[10px] font-semibold tracking-[0.12em] text-neutral-700 uppercase">
             {product.brand}
@@ -171,6 +164,64 @@ export function ProductDetail({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The product's photos, swiped sideways, with a dot per photo when there is
+ * more than one. Tapping one opens it full screen to zoom in.
+ */
+function ProductGallery({ product }: { product: Product }) {
+  const photos = product.images.length > 0 ? product.images : [product.image];
+  const [current, setCurrent] = useState(0);
+  const [zoomed, setZoomed] = useState<string | null>(null);
+  const alt = `${product.brand} — ${product.name}`;
+
+  return (
+    <div className="relative aspect-[390/488] w-full bg-neutral-200">
+      <div
+        onScroll={(e) => {
+          const strip = e.currentTarget;
+          setCurrent(Math.round(strip.scrollLeft / strip.clientWidth));
+        }}
+        className="no-scrollbar absolute inset-0 flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
+      >
+        {photos.map((src, i) => (
+          <button
+            key={src}
+            onClick={() => setZoomed(src)}
+            aria-label={photos.length > 1 ? `Zoom in on photo ${i + 1}` : "Zoom in on photo"}
+            className="relative h-full w-full flex-none cursor-zoom-in snap-start"
+          >
+            <Image
+              src={src}
+              alt={photos.length > 1 ? `${alt}, photo ${i + 1} of ${photos.length}` : alt}
+              fill
+              sizes="480px"
+              priority={i === 0}
+              className="object-cover"
+            />
+          </button>
+        ))}
+      </div>
+      <span
+        aria-hidden
+        className="pointer-events-none absolute right-3 bottom-3 flex h-8 w-8 items-center justify-center rounded-full bg-paper/80 backdrop-blur-sm"
+      >
+        <ZoomInIcon className="h-4 w-4" />
+      </span>
+      {photos.length > 1 && (
+        <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-3.5 flex justify-center gap-1.5">
+          {photos.map((src, i) => (
+            <span
+              key={src}
+              className={`h-1.5 w-1.5 rounded-full transition-colors ${i === current ? "bg-ink" : "bg-paper/80"}`}
+            />
+          ))}
+        </div>
+      )}
+      {zoomed && <PhotoZoom src={zoomed} alt={alt} onClose={() => setZoomed(null)} />}
     </div>
   );
 }

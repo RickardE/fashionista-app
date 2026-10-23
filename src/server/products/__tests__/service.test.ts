@@ -49,6 +49,7 @@ describe("feed", () => {
       price: 999,
       currency: "SEK",
       image: "https://img.johnells.se/LIN-100.jpg",
+      images: ["https://img.johnells.se/LIN-100.jpg"],
       productType: "clothing",
       category: "shirts",
       subcategory: "linen shirt",
@@ -67,7 +68,7 @@ describe("feed", () => {
   it("never exposes source identifiers", async () => {
     const page = await getFeedPage(db, { limit: 10 });
     // Image URLs are the merchant's own asset paths; everything else must be STYLEAI's.
-    const json = JSON.stringify(page.products.map((p) => ({ ...p, image: undefined })));
+    const json = JSON.stringify(page.products.map((p) => ({ ...p, image: undefined, images: undefined })));
     expect(json).not.toMatch(/LIN-100|item_group_id|externalId|go\.johnells|johnells\.se\/p\//);
   });
 
