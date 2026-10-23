@@ -116,11 +116,11 @@ export function FeedDeck() {
     setReturning(null);
     react(current, direction);
     if (direction > 0) {
-      flash(`Saved to ${activeStyle.name}`);
-      if (!tips.hasSeen("first-like")) {
-        pulseSavedTab();
-        tips.markSeen("first-like");
-      }
+      // Only the first save says where likes go; after that the Saved tab's pop is enough.
+      if (!tips.hasSeen("first-like")) flash(`Saved to ${activeStyle.name}`);
+      else setNotice("");
+      tips.markSeen("first-like");
+      pulseSavedTab();
     } else if (!tips.hasSeen("first-pass")) {
       flash("Got it, less like this");
       tips.markSeen("first-pass");
